@@ -10,6 +10,7 @@ import {
   TestTube, Calculator, ListChecks, FileText,
 } from 'lucide-react'
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
+import { toLocalInput, localInputToISO } from '@/lib/local-time'
 import ReportIssueButton from '@/components/ReportIssueButton'
 import PoolContacts from '@/components/PoolContacts'
 import AttachmentPanel from '@/components/AttachmentPanel'
@@ -438,7 +439,7 @@ function WaterTestingTab() {
   const [filterPool, setFilterPool] = useState('')
   const [filterRisk, setFilterRisk] = useState('')
   const [form, setForm] = useState({
-    pool_id: '', tested_at: new Date().toISOString().slice(0, 16),
+    pool_id: '', tested_at: toLocalInput(),
     free_chlorine: '', combined_chlorine: '', total_chlorine: '', ph: '',
     total_alkalinity: '', calcium_hardness: '', cyanuric_acid: '',
     total_dissolved_solids: '', salt_level: '', phosphates: '',
@@ -464,7 +465,7 @@ function WaterTestingTab() {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
-    const payload: Record<string, any> = { ...form }
+    const payload: Record<string, any> = { ...form, tested_at: localInputToISO(form.tested_at) }
     // Convert empty strings to null for numeric fields
     const numFields = ['free_chlorine','combined_chlorine','total_chlorine','ph','total_alkalinity','calcium_hardness',
       'cyanuric_acid','total_dissolved_solids','salt_level','phosphates','temperature_c','turbidity']
@@ -808,7 +809,7 @@ function StaffTab() {
     setEditingShift(sh)
     setForm({
       staff_id: sh.staff_id ?? '', pool_id: sh.pool_id ?? '', shift_type: sh.shift_type ?? 'service_visit',
-      scheduled_start: sh.scheduled_start?.slice(0, 16) ?? '', scheduled_end: sh.scheduled_end?.slice(0, 16) ?? '',
+      scheduled_start: toLocalInput(sh.scheduled_start), scheduled_end: toLocalInput(sh.scheduled_end),
       notes: sh.notes ?? '', status: sh.status ?? 'scheduled',
     })
     setShowAddShift(true)
@@ -820,7 +821,12 @@ function StaffTab() {
     const res = await fetch('/api/admin/shifts', {
       method: editingShift ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(editingShift ? { id: editingShift.id, ...form } : form),
+      body: JSON.stringify({
+        ...(editingShift ? { id: editingShift.id } : {}),
+        ...form,
+        scheduled_start: localInputToISO(form.scheduled_start),
+        scheduled_end: localInputToISO(form.scheduled_end),
+      }),
     })
     if (res.ok) { setShowAddShift(false); load() }
     setSaving(false)
@@ -2144,7 +2150,7 @@ function ChemicalsTab() {
     reorder_point: '0', supplier: '', safety_data_sheet_url: '',
   })
   const [usageForm, setUsageForm] = useState({
-    pool_id: '', chemical_id: '', quantity: '', notes: '', applied_at: new Date().toISOString().slice(0, 16),
+    pool_id: '', chemical_id: '', quantity: '', notes: '', applied_at: toLocalInput(),
   })
   const [stockTakeCounts, setStockTakeCounts] = useState<Record<string, string>>({})
   const [savingStockTake, setSavingStockTake] = useState(false)
@@ -2209,7 +2215,7 @@ function ChemicalsTab() {
     setSaving(true)
     const res = await fetch('/api/admin/chemicals', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'log_usage', ...usageForm }),
+      body: JSON.stringify({ action: 'log_usage', ...usageForm, applied_at: localInputToISO(usageForm.applied_at) }),
     })
     if (res.ok) { setShowUsageModal(false); load() }
     setSaving(false)
