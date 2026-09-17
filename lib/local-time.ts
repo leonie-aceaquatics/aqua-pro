@@ -1,20 +1,46 @@
-// Helpers for <input type="datetime-local">, whose value is a *local* wall-clock string
-// ("2026-09-18T01:12", no zone). Date.toISOString() is UTC, so using it directly shifts
-// the shown/stored time by the user's offset (+10h in Sydney) — these keep both directions local.
+// Helpers for <input type="datetime-local">, whose value is a zone-less wall-clock string
+// ("2026-09-18T01:12"). All entry and display in AquaPro is in Melbourne time, whatever
+// device the user is on — Date.toISOString() is UTC and the device zone can't be trusted
+// (an iPad set to the wrong zone would otherwise log tests hours out).
+
+export const APP_TZ = 'Australia/Melbourne'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
-// ISO timestamp (or now) → "YYYY-MM-DDTHH:mm" in the browser's local zone, for the input's value
+// Wall-clock parts of an instant in APP_TZ
+function zonedParts(d: Date) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: APP_TZ, hourCycle: 'h23',
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }).formatToParts(d)
+  const get = (t: string) => Number(parts.find(p => p.type === t)?.value ?? 0)
+  return { y: get('year'), mo: get('month'), d: get('day'), h: get('hour'), mi: get('minute'), s: get('second') }
+}
+
+// Offset (ms) of APP_TZ from UTC at a given instant — handles daylight saving
+function tzOffsetMs(ts: number): number {
+  const p = zonedParts(new Date(ts))
+  return Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi, p.s) - ts
+}
+
+// ISO timestamp (or now) → "YYYY-MM-DDTHH:mm" in Melbourne time, for the input's value
 export function toLocalInput(iso?: string | Date | null): string {
   const d = iso ? new Date(iso) : new Date()
   if (isNaN(d.getTime())) return ''
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  const p = zonedParts(d)
+  return `${p.y}-${pad(p.mo)}-${pad(p.d)}T${pad(p.h)}:${pad(p.mi)}`
 }
 
-// "YYYY-MM-DDTHH:mm" from the input → UTC ISO string for the API. Browsers parse a
-// zone-less datetime string as local time, so new Date() does the conversion.
+// "YYYY-MM-DDTHH:mm" from the input, read as Melbourne time → UTC ISO string for the API
 export function localInputToISO(value: string): string {
   if (!value) return value
-  const d = new Date(value)
-  return isNaN(d.getTime()) ? value : d.toISOString()
+  const m = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/)
+  if (!m) return value
+  const [, y, mo, d, h, mi] = m.map(Number)
+  const asUTC = Date.UTC(y, mo - 1, d, h, mi)
+  // First guess using the offset at that wall-clock-as-UTC instant, then re-check so a
+  // time entered right at a DST changeover still resolves to the right offset
+  let ts = asUTC - tzOffsetMs(asUTC)
+  ts = asUTC - tzOffsetMs(ts)
+  return new Date(ts).toISOString()
 }
