@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, ClipboardList, FlaskConical } from 'lucide-react'
+import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, ClipboardList, FlaskConical, Package } from 'lucide-react'
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
 import ShiftChecklist from '@/components/ShiftChecklist'
 import PlantLog from '@/components/PlantLog'
 import SiteTaskList from '@/components/SiteTaskList'
+import SiteStockCount from '@/components/SiteStockCount'
 import ReportIssueButton from '@/components/ReportIssueButton'
 
 export default function TechnicianPage() {
@@ -16,6 +17,7 @@ export default function TechnicianPage() {
   const [showTestForm, setShowTestForm] = useState(false)
   const [showChecklist, setShowChecklist] = useState(false)
   const [showPlantLog, setShowPlantLog] = useState(false)
+  const [showStockCount, setShowStockCount] = useState(false)
   const [testForm, setTestForm] = useState({
     free_chlorine: '', combined_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '',
     calcium_hardness: '', cyanuric_acid: '', salt_level: '', phosphates: '',
@@ -291,6 +293,12 @@ export default function TechnicianPage() {
                   <FlaskConical size={16} /> Plant Room Log
                 </button>
               )}
+              {selected.pool_id && (
+                <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#6c5ce7' }}
+                  onClick={() => setShowStockCount(true)}>
+                  <Package size={16} /> Count Stock
+                </button>
+              )}
               {selected.status !== 'completed' && (
                 <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', padding: '14px' }}
                   onClick={() => handleCompleteShift(selected.id)}>
@@ -384,6 +392,16 @@ export default function TechnicianPage() {
           staffName={user ? `${user.firstName} ${user.lastName}` : ''}
           onClose={() => setShowChecklist(false)}
           onSubmitted={() => { setShowChecklist(false); setSelected(null) }}
+        />
+      )}
+
+      {/* Site stock count */}
+      {showStockCount && selected && (
+        <SiteStockCount
+          fullScreen
+          poolId={selected.pool_id ?? ''}
+          poolName={selected.pools?.name ?? ''}
+          onClose={() => setShowStockCount(false)}
         />
       )}
 

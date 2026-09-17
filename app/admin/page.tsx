@@ -18,6 +18,7 @@ import MicrobiologyTab from '@/components/MicrobiologyTab'
 import RiskRegisterTab from '@/components/RiskRegisterTab'
 import ChemistryCalculatorTab from '@/components/ChemistryCalculatorTab'
 import SiteTasksAdmin from '@/components/SiteTasksAdmin'
+import SiteStockTab from '@/components/SiteStockTab'
 import WqrmpTab from '@/components/WqrmpTab'
 
 type Tab = 'overview' | 'pools' | 'water-testing' | 'microbiology' | 'chemistry-calc' | 'staff' | 'checklists' | 'assets' | 'compliance' | 'risk' | 'risk-register' | 'remote-sites' | 'chemicals' | 'closures' | 'wqrmp' | 'errors'
@@ -2135,7 +2136,7 @@ function RiskTab() {
 
 // ── CHEMICALS TAB ─────────────────────────────────────────────────────────────
 function ChemicalsTab() {
-  const [subTab, setSubTab] = useState<'inventory' | 'stock_take' | 'to_order' | 'usage'>('inventory')
+  const [subTab, setSubTab] = useState<'inventory' | 'site_stock' | 'stock_take' | 'to_order' | 'usage'>('inventory')
   const [chemicals, setChemicals] = useState<any[]>([])
   const [usage, setUsage] = useState<any[]>([])
   const [orders, setOrders] = useState<any[]>([])
@@ -2156,7 +2157,7 @@ function ChemicalsTab() {
   const [stockTakeCounts, setStockTakeCounts] = useState<Record<string, string>>({})
   const [savingStockTake, setSavingStockTake] = useState(false)
   const [showAddOrder, setShowAddOrder] = useState(false)
-  const [orderForm, setOrderForm] = useState({ chemical_id: '', quantity_needed: '', notes: '' })
+  const [orderForm, setOrderForm] = useState({ chemical_id: '', pool_id: '', quantity_needed: '', notes: '' })
   const [showReceived, setShowReceived] = useState(false)
 
   const load = useCallback(() => {
@@ -2249,7 +2250,7 @@ function ChemicalsTab() {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orderForm),
     })
-    if (res.ok) { setShowAddOrder(false); setOrderForm({ chemical_id: '', quantity_needed: '', notes: '' }); load() }
+    if (res.ok) { setShowAddOrder(false); setOrderForm({ chemical_id: '', pool_id: '', quantity_needed: '', notes: '' }); load() }
     setSaving(false)
   }
 
@@ -2289,8 +2290,9 @@ function ChemicalsTab() {
 
       <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', background: 'var(--surface)', borderRadius: '10px', padding: '4px', width: 'fit-content' }}>
         {[
-          { id: 'inventory', label: 'Inventory' },
-          { id: 'stock_take', label: 'Stock Take' },
+          { id: 'inventory', label: 'Depot Inventory' },
+          { id: 'site_stock', label: 'Site Stock' },
+          { id: 'stock_take', label: 'Depot Stock Take' },
           { id: 'to_order', label: `To Order${orders.filter(o => o.status === 'pending').length ? ` (${orders.filter(o => o.status === 'pending').length})` : ''}` },
           { id: 'usage', label: 'Usage Log' },
         ].map(t => (
@@ -2368,10 +2370,12 @@ function ChemicalsTab() {
         </div>
       )}
 
+      {subTab === 'site_stock' && <SiteStockTab />}
+
       {subTab === 'stock_take' && (
         <>
           <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>
-            Walk the shelf and enter the actual counted stock for each chemical, then save — anything at or below its reorder point is automatically added to the To Order list.
+            Depot / central store only — stock held at each site is counted under Site Stock. Walk the shelf and enter the actual counted stock for each chemical, then save — anything at or below its reorder point is automatically added to the To Order list.
           </div>
           <div className="table-wrap">
             <table>
@@ -2434,8 +2438,8 @@ function ChemicalsTab() {
                   <tr key={o.id}>
                     <td style={{ fontWeight: '600' }}>
                       {o.chemicals?.name ?? '—'}
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                        {Number(o.chemicals?.current_stock ?? 0)} / {Number(o.chemicals?.reorder_point ?? 0)} {o.chemicals?.unit}
+                      <div style={{ fontSize: '11px', color: o.pools ? 'var(--aqua)' : 'var(--text-muted)' }}>
+                        {o.pools ? `${o.pools.name} — site stock low` : `Depot · ${Number(o.chemicals?.current_stock ?? 0)} / ${Number(o.chemicals?.reorder_point ?? 0)} ${o.chemicals?.unit}`}
                       </div>
                     </td>
                     <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{o.chemicals?.supplier ?? '—'}</td>
@@ -2472,6 +2476,13 @@ function ChemicalsTab() {
                     <select required value={orderForm.chemical_id} onChange={e => setOrderForm(f => ({ ...f, chemical_id: e.target.value }))}>
                       <option value="">— Select Chemical —</option>
                       {chemicals.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div style={s.formGroup}>
+                    <label>For Site</label>
+                    <select value={orderForm.pool_id} onChange={e => setOrderForm(f => ({ ...f, pool_id: e.target.value }))}>
+                      <option value="">Depot / general</option>
+                      {pools.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
                   </div>
                   <div style={s.formGroup}>

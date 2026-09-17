@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabaseAdmin
     .from('chemical_orders')
-    .select('*, chemicals(name, unit, supplier, current_stock, reorder_point), staff:ordered_by(first_name, last_name)')
+    .select('*, chemicals(name, unit, supplier, current_stock, reorder_point), pools(name), staff:ordered_by(first_name, last_name)')
     .order('added_at', { ascending: false })
 
   if (!includeReceived) query = query.in('status', ['pending', 'ordered'])
@@ -30,10 +30,11 @@ export async function POST(req: NextRequest) {
     .from('chemical_orders')
     .insert({
       chemical_id: body.chemical_id,
+      pool_id: body.pool_id || null,
       quantity_needed: body.quantity_needed ? Number(body.quantity_needed) : null,
       notes: body.notes || null,
     })
-    .select('*, chemicals(name, unit, supplier, current_stock, reorder_point)')
+    .select('*, chemicals(name, unit, supplier, current_stock, reorder_point), pools(name)')
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -60,7 +61,7 @@ export async function PATCH(req: NextRequest) {
     .from('chemical_orders')
     .update(updates)
     .eq('id', id)
-    .select('*, chemicals(name, unit, supplier, current_stock, reorder_point), staff:ordered_by(first_name, last_name)')
+    .select('*, chemicals(name, unit, supplier, current_stock, reorder_point), pools(name), staff:ordered_by(first_name, last_name)')
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
