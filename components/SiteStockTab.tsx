@@ -47,7 +47,7 @@ export default function SiteStockTab() {
         {siteId ? (
           <SiteStockCount key={siteId} poolId={siteId} onSaved={load} />
         ) : (
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Pick a site (or click a cell above) to enter or correct its stock.</div>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Pick a site (or click a cell in the grid below) to enter or correct its stock.</div>
         )}
       </div>
 
