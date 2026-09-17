@@ -22,8 +22,15 @@ export async function POST(req: NextRequest) {
   if (error || !pool) return NextResponse.json({ error: 'Pool not found' }, { status: 404 })
   if (!pool.volume_litres) return NextResponse.json({ error: 'This pool has no volume set — dosing calculations need a real volume to work from.' }, { status: 400 })
 
+  // Combined chlorine is derived (total − free), never taken from the client
+  const combinedChlorine = body.free_chlorine != null && body.total_chlorine != null
+    ? Math.max(0, Math.round((Number(body.total_chlorine) - Number(body.free_chlorine)) * 100) / 100)
+    : undefined
+
   const values: WaterTestValues = {
     freeChlorine: body.free_chlorine ?? undefined,
+    totalChlorine: body.total_chlorine ?? undefined,
+    combinedChlorine,
     ph: body.ph ?? undefined,
     totalAlkalinity: body.total_alkalinity ?? undefined,
     calciumHardness: body.calcium_hardness ?? undefined,
@@ -46,7 +53,7 @@ export async function POST(req: NextRequest) {
   let lsi: number | null = null
   if (values.ph != null && values.temperatureC != null && values.calciumHardness != null && values.totalAlkalinity != null) {
     lsi = calculateLSI(values.ph, values.temperatureC, values.calciumHardness, values.totalAlkalinity, {
-      cyanuricAcid: values.cyanuricAcid, tds: values.totalDissolvedSolids,
+      cyanuricAcid: values.cyanuricAcid, tds: values.totalDissolvedSolids ?? values.saltLevel, // salt stands in for TDS here
     })
   }
 

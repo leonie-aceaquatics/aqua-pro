@@ -1,9 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Calculator } from 'lucide-react'
-import { RISK_COLOURS, RISK_LABELS } from '@/lib/water-chemistry'
+import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
 
-const BLANK = { free_chlorine: '', ph: '', total_alkalinity: '', calcium_hardness: '', cyanuric_acid: '', salt_level: '', temperature_c: '' }
+const BLANK = { free_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '', calcium_hardness: '', cyanuric_acid: '', salt_level: '', temperature_c: '' }
 
 export default function ChemistryCalculatorTab() {
   const [pools, setPools] = useState<any[]>([])
@@ -17,6 +17,21 @@ export default function ChemistryCalculatorTab() {
     fetch('/api/admin/pools').then(r => r.json()).then(d => setPools(d.pools ?? []))
   }, [])
 
+  // Combined chlorine = total − free (DPD3 − DPD1); shown read-only, recomputed server-side too
+  const combinedChlorine = values.free_chlorine !== '' && values.total_chlorine !== ''
+    ? Math.max(0, Math.round((Number(values.total_chlorine) - Number(values.free_chlorine)) * 100) / 100).toFixed(2)
+    : ''
+
+  // LSI is pool-independent, so it updates live as readings are typed — no pool or Calculate needed.
+  // Needs pH, temperature, CH and TA; CYA refines alkalinity and salt stands in for TDS (≥1000 ppm → 12.2 constant).
+  const lsi = [values.ph, values.temperature_c, values.calcium_hardness, values.total_alkalinity].every(v => v !== '')
+    ? calculateLSI(Number(values.ph), Number(values.temperature_c), Number(values.calcium_hardness), Number(values.total_alkalinity), {
+        cyanuricAcid: values.cyanuric_acid !== '' ? Number(values.cyanuric_acid) : undefined,
+        tds: values.salt_level !== '' ? Number(values.salt_level) : undefined,
+      })
+    : null
+  const lsiStatus = lsi !== null ? classifyLSI(lsi) : null
+
   async function calculate(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true); setError(''); setResult(null)
@@ -25,6 +40,7 @@ export default function ChemistryCalculatorTab() {
       body: JSON.stringify({
         pool_id: poolId,
         free_chlorine: values.free_chlorine ? Number(values.free_chlorine) : undefined,
+        total_chlorine: values.total_chlorine ? Number(values.total_chlorine) : undefined,
         ph: values.ph ? Number(values.ph) : undefined,
         total_alkalinity: values.total_alkalinity ? Number(values.total_alkalinity) : undefined,
         calcium_hardness: values.calcium_hardness ? Number(values.calcium_hardness) : undefined,
@@ -60,12 +76,25 @@ export default function ChemistryCalculatorTab() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
               <div><label>Free Chlorine (ppm)</label><input type="number" step="0.1" value={values.free_chlorine} onChange={e => setValues(v => ({ ...v, free_chlorine: e.target.value }))} /></div>
+              <div><label>Total Chlorine (ppm)</label><input type="number" step="0.1" value={values.total_chlorine} onChange={e => setValues(v => ({ ...v, total_chlorine: e.target.value }))} /></div>
+              <div><label>Combined Chlorine (ppm) · auto</label><input type="number" readOnly tabIndex={-1} value={combinedChlorine} placeholder="Total − Free" style={{ color: 'var(--text-muted)' }} /></div>
               <div><label>pH</label><input type="number" step="0.1" value={values.ph} onChange={e => setValues(v => ({ ...v, ph: e.target.value }))} /></div>
               <div><label>Total Alkalinity (ppm)</label><input type="number" value={values.total_alkalinity} onChange={e => setValues(v => ({ ...v, total_alkalinity: e.target.value }))} /></div>
               <div><label>Calcium Hardness (ppm)</label><input type="number" value={values.calcium_hardness} onChange={e => setValues(v => ({ ...v, calcium_hardness: e.target.value }))} /></div>
               <div><label>Cyanuric Acid (ppm)</label><input type="number" value={values.cyanuric_acid} onChange={e => setValues(v => ({ ...v, cyanuric_acid: e.target.value }))} /></div>
               <div><label>Salt Level (ppm)</label><input type="number" value={values.salt_level} onChange={e => setValues(v => ({ ...v, salt_level: e.target.value }))} /></div>
               <div><label>Temperature (°C)</label><input type="number" step="0.1" value={values.temperature_c} onChange={e => setValues(v => ({ ...v, temperature_c: e.target.value }))} /></div>
+            </div>
+            <div style={{ padding: '10px 12px', background: 'var(--surface-2)', borderRadius: '8px', border: `1px solid ${lsiStatus && lsiStatus !== 'balanced' ? '#e1705540' : 'var(--border)'}`, marginBottom: '14px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>LSI · auto</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '20px', fontWeight: '700', color: lsiStatus === 'balanced' ? '#00b894' : lsiStatus ? '#e17055' : 'var(--text-dim)' }}>
+                  {lsi !== null ? (lsi > 0 ? `+${lsi.toFixed(2)}` : lsi.toFixed(2)) : '—'}
+                </span>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  {lsiStatus ? LSI_LABELS[lsiStatus] : 'Enter pH, TA, CH and temperature'}
+                </span>
+              </div>
             </div>
             {error && <div style={{ color: 'var(--red)', fontSize: '12px', marginBottom: '12px' }}>{error}</div>}
             <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>{loading ? 'Calculating…' : 'Calculate'}</button>
@@ -75,25 +104,15 @@ export default function ChemistryCalculatorTab() {
         <div>
           {!result ? (
             <div className="card" style={{ color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center', padding: '48px 20px' }}>
-              Enter readings and calculate to see recommendations here.
+              Enter readings and calculate to see dosing recommendations here.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Risk Level</div>
-                  <div style={{ fontSize: '18px', fontWeight: '700', color: RISK_COLOURS[result.risk.riskLevel as keyof typeof RISK_COLOURS] }}>
-                    {RISK_LABELS[result.risk.riskLevel as keyof typeof RISK_LABELS]}
-                  </div>
+              <div className="card">
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Risk Level</div>
+                <div style={{ fontSize: '18px', fontWeight: '700', color: RISK_COLOURS[result.risk.riskLevel as keyof typeof RISK_COLOURS] }}>
+                  {RISK_LABELS[result.risk.riskLevel as keyof typeof RISK_LABELS]}
                 </div>
-                {result.lsi !== null && (
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>LSI (scale balance)</div>
-                    <div style={{ fontSize: '18px', fontWeight: '700', color: Math.abs(result.lsi) <= 0.3 ? '#00b894' : '#e17055' }}>
-                      {result.lsi > 0 ? '+' : ''}{result.lsi}
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div className="card">
