@@ -2112,7 +2112,7 @@ function ChemicalsTab() {
   const [editStock, setEditStock] = useState<{ id: string; stock: string } | null>(null)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
-    name: '', type: 'sanitiser', unit: 'L', current_stock: '0',
+    name: '', type: 'sanitiser', unit: 'drum', dose_unit: 'L', container_size: '', current_stock: '0',
     reorder_point: '0', supplier: '', safety_data_sheet_url: '',
   })
   const [usageForm, setUsageForm] = useState({
@@ -2149,7 +2149,7 @@ function ChemicalsTab() {
 
   function openAddChemical() {
     setEditingChemical(null)
-    setForm({ name: '', type: 'sanitiser', unit: 'L', current_stock: '0', reorder_point: '0', supplier: '', safety_data_sheet_url: '' })
+    setForm({ name: '', type: 'sanitiser', unit: 'drum', dose_unit: 'L', container_size: '', current_stock: '0', reorder_point: '0', supplier: '', safety_data_sheet_url: '' })
     setShowModal(true)
   }
 
@@ -2157,6 +2157,7 @@ function ChemicalsTab() {
     setEditingChemical(c)
     setForm({
       name: c.name ?? '', type: c.type ?? 'sanitiser', unit: c.unit ?? 'L',
+      dose_unit: c.dose_unit ?? c.unit ?? 'L', container_size: c.container_size ? String(c.container_size) : '',
       current_stock: String(c.current_stock ?? '0'), reorder_point: String(c.reorder_point ?? '0'),
       supplier: c.supplier ?? '', safety_data_sheet_url: c.safety_data_sheet_url ?? '',
     })
@@ -2271,7 +2272,7 @@ function ChemicalsTab() {
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>Chemical</th><th>Type</th><th>Unit</th><th>In Stock</th><th>Reorder At</th><th>Supplier</th><th></th></tr>
+              <tr><th>Chemical</th><th>Type</th><th>Counted / Dosed</th><th>In Stock</th><th>Reorder At</th><th>Supplier</th><th></th></tr>
             </thead>
             <tbody>
               {loading ? (
@@ -2287,7 +2288,12 @@ function ChemicalsTab() {
                       {lowStock && <span style={{ marginLeft: '8px', fontSize: '10px', color: '#e17055', fontWeight: '700' }}>LOW STOCK</span>}
                     </td>
                     <td><span style={s.badge(typeColour[c.type] ?? '#64748b')}>{c.type.replace('_', ' ')}</span></td>
-                    <td style={{ color: 'var(--text-muted)' }}>{c.unit}</td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                      {c.unit}
+                      {c.dose_unit && c.dose_unit !== c.unit && (
+                        <span> · dosed in {c.dose_unit}{Number(c.container_size) > 0 ? ` (${Number(c.container_size)} ${c.dose_unit}/${c.unit})` : ''}</span>
+                      )}
+                    </td>
                     <td>
                       {editStock !== null && editStock.id === c.id ? (
                         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -2467,7 +2473,7 @@ function ChemicalsTab() {
                 <tr key={u.id}>
                   <td style={{ fontWeight: '600' }}>{u.pools?.name ?? '—'}</td>
                   <td>{u.chemicals?.name ?? '—'}</td>
-                  <td>{u.quantity} {u.chemicals?.unit}</td>
+                  <td>{u.quantity} {u.chemicals?.dose_unit ?? u.chemicals?.unit}</td>
                   <td style={{ color: 'var(--text-muted)' }}>
                     {u.applier ? `${u.applier.first_name} ${u.applier.last_name}` : '—'}
                   </td>
@@ -2503,11 +2509,24 @@ function ChemicalsTab() {
               </div>
               <div style={{ ...s.formGrid, gridTemplateColumns: 'repeat(3,1fr)' }}>
                 <div style={s.formGroup}>
-                  <label>Unit</label>
+                  <label>Stock Counted In</label>
                   <select value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}>
                     {['drum','bucket','bag','box','each','L','kg','tablet','g','mL'].map(u => <option key={u}>{u}</option>)}
                   </select>
                 </div>
+                <div style={s.formGroup}>
+                  <label>Dosed In</label>
+                  <select value={form.dose_unit} onChange={e => setForm(f => ({ ...f, dose_unit: e.target.value }))}>
+                    {['L','kg','mL','g','tablet','each'].map(u => <option key={u}>{u}</option>)}
+                  </select>
+                </div>
+                <div style={s.formGroup}>
+                  <label>{form.dose_unit} per {form.unit}</label>
+                  <input type="number" step="0.01" min="0" placeholder={form.unit === form.dose_unit ? '1' : 'e.g. 15'}
+                    value={form.container_size} onChange={e => setForm(f => ({ ...f, container_size: e.target.value }))} />
+                </div>
+              </div>
+              <div style={{ ...s.formGrid, gridTemplateColumns: 'repeat(2,1fr)' }}>
                 <div style={s.formGroup}>
                   <label>Current Stock</label>
                   <input type="number" step="0.1" value={form.current_stock} onChange={e => setForm(f => ({ ...f, current_stock: e.target.value }))} />
@@ -2553,8 +2572,12 @@ function ChemicalsTab() {
               </div>
               <div style={s.formGrid}>
                 <div style={s.formGroup}>
-                  <label>Quantity Applied *</label>
-                  <input required type="number" step="0.01" value={usageForm.quantity} onChange={e => setUsageForm(f => ({ ...f, quantity: e.target.value }))} />
+                  {(() => {
+                    const sel = chemicals.find((c: any) => c.id === usageForm.chemical_id)
+                    const doseUnit = sel?.dose_unit ?? sel?.unit
+                    return <label>Quantity Applied{doseUnit ? ` (${doseUnit})` : ''} *</label>
+                  })()}
+                  <input required type="number" step="0.01" min="0" value={usageForm.quantity} onChange={e => setUsageForm(f => ({ ...f, quantity: e.target.value }))} />
                 </div>
                 <div style={s.formGroup}>
                   <label>Date / Time</label>

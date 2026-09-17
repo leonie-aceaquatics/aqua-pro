@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   if (section === 'usage') {
     const { data, error } = await supabaseAdmin
       .from('chemical_usage_log')
-      .select('*, chemicals(name, unit, type), pools(name), applier:applied_by(first_name, last_name)')
+      .select('*, chemicals(name, unit, dose_unit, type), pools(name), applier:applied_by(first_name, last_name)')
       .order('applied_at', { ascending: false })
       .limit(200)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -48,20 +48,23 @@ export async function POST(req: NextRequest) {
         quantity: body.quantity,
         notes: body.notes || null,
       })
-      .select('*, chemicals(name, unit), pools(name)')
+      .select('*, chemicals(name, unit, dose_unit), pools(name)')
       .single()
     if (ue) return NextResponse.json({ error: ue.message }, { status: 500 })
 
-    // Decrement stock
+    // Decrement stock. Quantity is in dose units (L/kg); stock is in containers (drum/bag),
+    // so convert via container_size. No container_size = 1:1 (dose unit is the stock unit).
     const { data: chem } = await supabaseAdmin
       .from('chemicals')
-      .select('current_stock')
+      .select('current_stock, container_size')
       .eq('id', body.chemical_id)
       .single()
     if (chem && chem.current_stock !== null) {
+      const perContainer = Number(chem.container_size) > 0 ? Number(chem.container_size) : 1
+      const used = Number(body.quantity) / perContainer
       await supabaseAdmin
         .from('chemicals')
-        .update({ current_stock: Math.max(0, Number(chem.current_stock) - Number(body.quantity)) })
+        .update({ current_stock: Math.max(0, Math.round((Number(chem.current_stock) - used) * 100) / 100) })
         .eq('id', body.chemical_id)
       await queueIfLowStock(body.chemical_id)
     }
@@ -98,6 +101,8 @@ export async function POST(req: NextRequest) {
       name: body.name,
       type: body.type,
       unit: body.unit ?? 'L',
+      dose_unit: body.dose_unit ?? body.unit ?? 'L',
+      container_size: body.container_size ? Number(body.container_size) : null,
       current_stock: body.current_stock ?? 0,
       reorder_point: body.reorder_point ?? 0,
       supplier: body.supplier || null,
@@ -116,6 +121,7 @@ export async function PATCH(req: NextRequest) {
 
   const body = await req.json()
   const { id, ...updates } = body
+  if ('container_size' in updates) updates.container_size = updates.container_size ? Number(updates.container_size) : null
   const { data, error } = await supabaseAdmin
     .from('chemicals')
     .update(updates)
