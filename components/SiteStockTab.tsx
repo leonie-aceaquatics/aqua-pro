@@ -36,6 +36,21 @@ export default function SiteStockTab() {
         Stock held at each site, as last counted by the technician on site. Anything at or below the chemical's reorder point is highlighted and added to the To Order list against that site.
       </div>
 
+      <div className="card" style={{ maxWidth: '640px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
+          <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)' }}>Count stock at a site</div>
+          <select value={siteId} onChange={e => setSiteId(e.target.value)} style={{ width: '240px' }}>
+            <option value="">Select site…</option>
+            {data.pools.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
+        {siteId ? (
+          <SiteStockCount key={siteId} poolId={siteId} onSaved={load} />
+        ) : (
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Pick a site (or click a cell above) to enter or correct its stock.</div>
+        )}
+      </div>
+
       {(sitesLow.length > 0 || neverCounted.length > 0) && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
           {sitesLow.map(x => (
@@ -56,7 +71,7 @@ export default function SiteStockTab() {
         </div>
       )}
 
-      <div className="table-wrap" style={{ marginBottom: '24px' }}>
+      <div className="table-wrap">
         <table>
           <thead>
             <tr>
@@ -90,20 +105,6 @@ export default function SiteStockTab() {
         </table>
       </div>
 
-      <div className="card" style={{ maxWidth: '640px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
-          <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)' }}>Count stock at a site</div>
-          <select value={siteId} onChange={e => setSiteId(e.target.value)} style={{ width: '240px' }}>
-            <option value="">Select site…</option>
-            {data.pools.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </div>
-        {siteId ? (
-          <SiteStockCount key={siteId} poolId={siteId} onSaved={load} />
-        ) : (
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Pick a site (or click a cell above) to enter or correct its stock.</div>
-        )}
-      </div>
     </>
   )
 }
