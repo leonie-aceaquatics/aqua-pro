@@ -17,6 +17,7 @@ import AttachmentPanel from '@/components/AttachmentPanel'
 import MicrobiologyTab from '@/components/MicrobiologyTab'
 import RiskRegisterTab from '@/components/RiskRegisterTab'
 import ChemistryCalculatorTab from '@/components/ChemistryCalculatorTab'
+import SiteTasksAdmin from '@/components/SiteTasksAdmin'
 import WqrmpTab from '@/components/WqrmpTab'
 
 type Tab = 'overview' | 'pools' | 'water-testing' | 'microbiology' | 'chemistry-calc' | 'staff' | 'checklists' | 'assets' | 'compliance' | 'risk' | 'risk-register' | 'remote-sites' | 'chemicals' | 'closures' | 'wqrmp' | 'errors'
@@ -2855,8 +2856,12 @@ function ChecklistsTab() {
   return (
     <>
       <div style={s.header}>
-        <div style={s.pageTitle}>Shift Checklists</div>
+        <div style={s.pageTitle}>Checklists</div>
       </div>
+
+      <SiteTasksAdmin pools={pools} />
+
+      <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', marginBottom: '12px' }}>Shift Checklists</div>
 
       <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
         <select value={filterPool} onChange={e => setFilterPool(e.target.value)} style={{ width: '220px' }}>

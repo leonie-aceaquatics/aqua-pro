@@ -27,6 +27,7 @@ add-staff-feedback-migration.sql       ← Error Log / staff feedback system
 add-chemical-orders-migration.sql      ← chemical stock take + reorder queue
 add-staff-last-login-migration.sql     ← staff.last_login_at tracking
 add-chemical-dose-units-migration.sql  ← chemicals.dose_unit + container_size (count stock in drums, log doses in litres)
+add-site-tasks-migration.sql           ← simple per-site visit task list (admin defines, technicians tick off daily)
 ```
 
 After running each migration, run `NOTIFY pgrst, 'reload schema';` in the SQL editor so PostgREST picks up the new tables/columns immediately instead of erroring on the next request.

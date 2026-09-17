@@ -5,6 +5,7 @@ import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, ClipboardLi
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
 import ShiftChecklist from '@/components/ShiftChecklist'
 import PlantLog from '@/components/PlantLog'
+import SiteTaskList from '@/components/SiteTaskList'
 import ReportIssueButton from '@/components/ReportIssueButton'
 
 export default function TechnicianPage() {
@@ -270,6 +271,8 @@ export default function TechnicianPage() {
                 </div>
               </div>
             )}
+
+            {selected.pool_id && <SiteTaskList poolId={selected.pool_id} />}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#0077b6' }}
