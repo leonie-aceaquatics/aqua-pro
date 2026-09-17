@@ -21,7 +21,8 @@ create index idx_site_chemical_stock_chemical on site_chemical_stock(chemical_id
 -- To Order entries can now say which site is low (null = depot)
 alter table chemical_orders add column if not exists pool_id uuid references pools(id) on delete set null;
 
--- Make the count part of the standard visit
+-- Make the count part of the standard visit (column add is a no-op if the seed already ran)
+alter table site_tasks add column if not exists category text;
 insert into site_tasks (label, category, sort_order)
 select 'Count chemical stock on site and record it in AquaPro', 'Compliance', 345
 where not exists (select 1 from site_tasks where label = 'Count chemical stock on site and record it in AquaPro' and is_active);
