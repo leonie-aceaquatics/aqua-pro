@@ -5,7 +5,7 @@ import { getSession } from '@/lib/auth'
 // GET  ?pool_id — the site's task list (global + pool-specific) with today's ticks
 // POST { pool_id, task_id, done } — tick / untick a task for today
 
-const todaySydney = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Australia/Sydney' })
+const todaySydney = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Australia/Melbourne' })
 
 export async function GET(req: NextRequest) {
   const user = await getSession()
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const [{ data: tasks, error: tErr }, { data: done, error: dErr }] = await Promise.all([
     supabaseAdmin
       .from('site_tasks')
-      .select('id, label, pool_id, sort_order')
+      .select('id, label, category, pool_id, sort_order')
       .eq('is_active', true)
       .or(`pool_id.is.null,pool_id.eq.${poolId}`)
       .order('sort_order')

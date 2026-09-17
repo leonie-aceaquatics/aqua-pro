@@ -8,6 +8,7 @@ create table site_tasks (
   id          uuid primary key default gen_random_uuid(),
   pool_id     uuid references pools(id) on delete cascade,   -- null = applies to every site
   label       text not null,
+  category    text,                                        -- e.g. Arrival, Water quality, Cleaning
   sort_order  int not null default 0,
   is_active   boolean not null default true,
   created_by  uuid references staff(id),
