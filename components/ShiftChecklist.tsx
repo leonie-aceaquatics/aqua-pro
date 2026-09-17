@@ -70,17 +70,17 @@ function YesNo({
       <div style={{ display: 'flex', gap: '8px' }}>
         <button type="button" onClick={() => onChange(true)} style={{
           flex: 1, padding: '10px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-          background: value === true ? '#00b89430' : '#121f35',
+          background: value === true ? '#00b89430' : 'var(--surface-2)',
           color: value === true ? '#00b894' : '#64748b',
           fontWeight: '600', fontSize: '13px',
-          outline: value === true ? '1px solid #00b89480' : '1px solid #1a2d45',
+          outline: value === true ? '1px solid #00b89480' : '1px solid var(--border)',
         }}>{yesLabel}</button>
         <button type="button" onClick={() => onChange(false)} style={{
           flex: 1, padding: '10px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-          background: value === false ? '#d6303130' : '#121f35',
+          background: value === false ? '#d6303130' : 'var(--surface-2)',
           color: value === false ? '#d63031' : '#64748b',
           fontWeight: '600', fontSize: '13px',
-          outline: value === false ? '1px solid #d6303180' : '1px solid #1a2d45',
+          outline: value === false ? '1px solid #d6303180' : '1px solid var(--border)',
         }}>{noLabel}</button>
       </div>
     </div>
@@ -97,10 +97,10 @@ function TriChoice({
         {options.map(o => (
           <button key={o.value} type="button" onClick={() => onChange(o.value)} style={{
             flex: 1, padding: '10px 6px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-            background: value === o.value ? o.colour + '30' : '#121f35',
+            background: value === o.value ? o.colour + '30' : 'var(--surface-2)',
             color: value === o.value ? o.colour : '#64748b',
             fontWeight: '600', fontSize: '12px',
-            outline: value === o.value ? `1px solid ${o.colour}80` : '1px solid #1a2d45',
+            outline: value === o.value ? `1px solid ${o.colour}80` : '1px solid var(--border)',
           }}>{o.label}</button>
         ))}
       </div>
@@ -115,7 +115,7 @@ function TextIn({ label, value, onChange, placeholder = '', type = 'text' }: {
     <div style={{ marginBottom: '14px' }}>
       <label style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</label>
       <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        style={{ background: '#0d1829', border: '1px solid #1a2d45', borderRadius: '8px', color: '#e2e8f0', padding: '10px 12px', fontSize: '14px', width: '100%', outline: 'none' }}
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '10px 12px', fontSize: '14px', width: '100%', outline: 'none' }}
       />
     </div>
   )
@@ -123,7 +123,7 @@ function TextIn({ label, value, onChange, placeholder = '', type = 'text' }: {
 
 function Section({ title, children, colour = '#00b4d8' }: { title: string; children: React.ReactNode; colour?: string }) {
   return (
-    <div style={{ background: '#0d1829', borderRadius: '12px', padding: '16px', marginBottom: '14px', border: `1px solid #1a2d4530` }}>
+    <div style={{ background: 'var(--surface)', borderRadius: '12px', padding: '16px', marginBottom: '14px', border: `1px solid var(--border-faint)` }}>
       <div style={{ fontSize: '11px', fontWeight: '800', color: colour, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '14px' }}>{title}</div>
       {children}
     </div>
@@ -300,7 +300,7 @@ function SessionsStep({
   return (
     <>
       {sessions.map((session, idx) => (
-        <div key={idx} style={{ background: '#0d1829', borderRadius: '12px', padding: '16px', marginBottom: '14px', border: '1px solid #1a2d45' }}>
+        <div key={idx} style={{ background: 'var(--surface)', borderRadius: '12px', padding: '16px', marginBottom: '14px', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
             <div style={{ fontWeight: '800', color: '#00b4d8', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
               Session {idx + 1}
@@ -313,7 +313,7 @@ function SessionsStep({
                 </button>
               )}
               <button type="button" onClick={() => updateSession(idx, 'sessionClosed', !session.sessionClosed)}
-                style={{ background: '#121f35', border: '1px solid #1a2d45', color: '#64748b', borderRadius: '6px', padding: '4px 12px', cursor: 'pointer', fontSize: '12px' }}>
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: '#64748b', borderRadius: '6px', padding: '4px 12px', cursor: 'pointer', fontSize: '12px' }}>
                 {session.sessionClosed ? 'Expand' : 'Collapse'}
               </button>
             </div>
@@ -322,7 +322,7 @@ function SessionsStep({
           {!session.sessionClosed && (
             <>
               {/* Session start */}
-              <div style={{ borderBottom: '1px solid #1a2d45', paddingBottom: '14px', marginBottom: '14px' }}>
+              <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '14px', marginBottom: '14px' }}>
                 <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b894', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>Session Start</div>
                 <TextIn label="Start Time" value={session.start_time} onChange={v => updateSession(idx, 'start_time', v)} type="time" />
                 <TextIn label="Lifeguards on Shift" value={session.lifeguards_on_shift} onChange={v => updateSession(idx, 'lifeguards_on_shift', v)} type="number" placeholder="1" />
@@ -350,7 +350,7 @@ function SessionsStep({
               </div>
 
               {/* Session observations */}
-              <div style={{ borderBottom: '1px solid #1a2d45', paddingBottom: '14px', marginBottom: '14px' }}>
+              <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '14px', marginBottom: '14px' }}>
                 <div style={{ fontSize: '11px', fontWeight: '700', color: '#fdcb6e', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>Observations</div>
                 <YesNo label="Rules Observed by Bathers" value={session.rules_observed} onChange={v => updateSession(idx, 'rules_observed', v)} />
                 {!session.rules_observed && (
@@ -363,7 +363,7 @@ function SessionsStep({
                     <textarea value={session.incident_description}
                       onChange={e => updateSession(idx, 'incident_description', e.target.value)}
                       placeholder="Describe the incident and actions taken…" rows={4}
-                      style={{ background: '#0d1829', border: '1px solid #1a2d45', borderRadius: '8px', color: '#e2e8f0', padding: '10px', fontSize: '14px', width: '100%', outline: 'none', resize: 'vertical' }}
+                      style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '10px', fontSize: '14px', width: '100%', outline: 'none', resize: 'vertical' }}
                     />
                   </div>
                 )}
@@ -382,7 +382,7 @@ function SessionsStep({
                 <div style={{ marginBottom: '14px' }}>
                   <label style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Session Notes</label>
                   <textarea value={session.notes} onChange={e => updateSession(idx, 'notes', e.target.value)} rows={2} placeholder="Any other observations…"
-                    style={{ background: '#0d1829', border: '1px solid #1a2d45', borderRadius: '8px', color: '#e2e8f0', padding: '10px', fontSize: '14px', width: '100%', outline: 'none' }}
+                    style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '10px', fontSize: '14px', width: '100%', outline: 'none' }}
                   />
                 </div>
               </div>
@@ -392,7 +392,7 @@ function SessionsStep({
       ))}
 
       <button type="button" onClick={() => setSessions(prev => [...prev, blankSession()])}
-        style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '14px', borderRadius: '12px', border: '2px dashed #1a2d45', background: 'transparent', color: '#00b4d8', cursor: 'pointer', justifyContent: 'center', fontSize: '14px', fontWeight: '600' }}>
+        style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '14px', borderRadius: '12px', border: '2px dashed var(--border)', background: 'transparent', color: '#00b4d8', cursor: 'pointer', justifyContent: 'center', fontSize: '14px', fontWeight: '600' }}>
         <Plus size={16} /> Add Session
       </button>
     </>
@@ -407,7 +407,7 @@ function EndOfShiftStep({ form, setForm }: { form: any; setForm: any }) {
       <div style={{ marginBottom: '14px' }}>
         <label style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Additional Notes</label>
         <textarea value={form.notes} onChange={e => setForm((f: any) => ({ ...f, notes: e.target.value }))} rows={3} placeholder="Any issues or handover notes for the next shift…"
-          style={{ background: '#0d1829', border: '1px solid #1a2d45', borderRadius: '8px', color: '#e2e8f0', padding: '10px', fontSize: '14px', width: '100%', outline: 'none' }}
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '10px', fontSize: '14px', width: '100%', outline: 'none' }}
         />
       </div>
     </Section>
@@ -526,7 +526,7 @@ export default function ShiftChecklist({ poolId, poolName, shiftId, staffName, o
 
   if (step === 'submitted') {
     return (
-      <div style={{ position: 'fixed', inset: 0, background: '#080e1a', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
         <div style={{ textAlign: 'center', maxWidth: '360px' }}>
           <div style={{ fontSize: '64px', marginBottom: '16px' }}>✅</div>
           <div style={{ fontSize: '22px', fontWeight: '800', color: '#e2e8f0', marginBottom: '8px' }}>Checklist Submitted</div>
@@ -549,16 +549,16 @@ export default function ShiftChecklist({ poolId, poolName, shiftId, staffName, o
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: '#080e1a', zIndex: 300, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 300, display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <div style={{ background: '#0d1829', borderBottom: '1px solid #1a2d45', padding: '14px 20px', flexShrink: 0 }}>
+      <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '14px 20px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <div>
             <div style={{ fontWeight: '700', fontSize: '16px', color: '#e2e8f0' }}>Shift Checklist</div>
             <div style={{ fontSize: '12px', color: '#64748b' }}>{poolName}</div>
           </div>
           <button onClick={handleSaveAndExit} disabled={exiting}
-            style={{ background: '#121f35', border: '1px solid #1a2d45', borderRadius: '8px', color: '#94a3b8', padding: '6px 14px', cursor: exiting ? 'default' : 'pointer', fontSize: '12px', opacity: exiting ? 0.6 : 1 }}>
+            style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#94a3b8', padding: '6px 14px', cursor: exiting ? 'default' : 'pointer', fontSize: '12px', opacity: exiting ? 0.6 : 1 }}>
             {exiting ? 'Saving…' : 'Save & Exit'}
           </button>
         </div>
@@ -567,7 +567,7 @@ export default function ShiftChecklist({ poolId, poolName, shiftId, staffName, o
           {steps.map((s, i) => (
             <div key={s.id} onClick={() => setStep(s.id)} style={{
               flex: 1, padding: '6px 4px', borderRadius: '6px', cursor: 'pointer', textAlign: 'center',
-              background: step === s.id ? '#00b4d830' : i < stepIdx ? '#00b89420' : '#121f35',
+              background: step === s.id ? '#00b4d830' : i < stepIdx ? '#00b89420' : 'var(--surface-2)',
               fontSize: '10px', fontWeight: '700',
               color: step === s.id ? '#00b4d8' : i < stepIdx ? '#00b894' : '#64748b',
             }}>
@@ -591,7 +591,7 @@ export default function ShiftChecklist({ poolId, poolName, shiftId, staffName, o
       </div>
 
       {/* Footer nav */}
-      <div style={{ background: '#0d1829', borderTop: '1px solid #1a2d45', padding: '14px 20px', display: 'flex', gap: '10px', flexShrink: 0 }}>
+      <div style={{ background: 'var(--surface)', borderTop: '1px solid var(--border)', padding: '14px 20px', display: 'flex', gap: '10px', flexShrink: 0 }}>
         {stepIdx > 0 && (
           <button onClick={() => setStep(steps[stepIdx - 1].id)} className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center', padding: '13px' }}>
             <ChevronLeft size={16} /> Back

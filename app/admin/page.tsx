@@ -47,13 +47,13 @@ const s = {
   page: { display: 'flex', minHeight: '100vh' } as React.CSSProperties,
   sidebar: {
     width: '220px', flexShrink: 0,
-    background: '#0d1829', borderRight: '1px solid #1a2d45',
+    background: 'var(--surface)', borderRight: '1px solid var(--border)',
     display: 'flex', flexDirection: 'column' as const,
     position: 'sticky' as const, top: 0, height: '100vh', overflow: 'hidden',
   } as React.CSSProperties,
   logo: {
     padding: '20px 16px',
-    borderBottom: '1px solid #1a2d45',
+    borderBottom: '1px solid var(--border)',
     display: 'flex', alignItems: 'center', gap: '10px',
   } as React.CSSProperties,
   logoIcon: {
@@ -605,7 +605,7 @@ function WaterTestingTab() {
                     onChange={e => setForm(f => ({ ...f, tested_at: e.target.value }))} />
                 </div>
               </div>
-              <div style={{ background: '#121f35', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+              <div style={{ background: 'var(--surface-2)', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
                 <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Sanitiser
                 </div>
@@ -620,7 +620,7 @@ function WaterTestingTab() {
                   {numField('bromine', 'Bromine (ppm)', '4.0')}
                 </div>
               </div>
-              <div style={{ background: '#121f35', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+              <div style={{ background: 'var(--surface-2)', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
                 <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Balance
                 </div>
@@ -629,7 +629,7 @@ function WaterTestingTab() {
                   {numField('total_alkalinity', 'Total Alkalinity (ppm)', '100')}
                   {numField('calcium_hardness', 'Calcium Hardness (ppm)', '300')}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '12px', padding: '10px 12px', background: '#0d1829', borderRadius: '8px', border: `1px solid ${lsiStatus && lsiStatus !== 'balanced' ? '#e1705540' : '#1a2d45'}` }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '12px', padding: '10px 12px', background: 'var(--surface)', borderRadius: '8px', border: `1px solid ${lsiStatus && lsiStatus !== 'balanced' ? '#e1705540' : 'var(--border)'}` }}>
                   <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>LSI · auto</span>
                   <span style={{ fontSize: '18px', fontWeight: '700', color: lsiColour }}>{lsi !== null ? (lsi > 0 ? `+${lsi.toFixed(2)}` : lsi.toFixed(2)) : '—'}</span>
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -637,7 +637,7 @@ function WaterTestingTab() {
                   </span>
                 </div>
               </div>
-              <div style={{ background: '#121f35', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+              <div style={{ background: 'var(--surface-2)', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
                 <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Other Parameters
                 </div>
@@ -699,8 +699,8 @@ function WaterTestingTab() {
                 const isOut = min !== null && max !== null && (Number(val) < Number(min) || Number(val) > Number(max))
                 return (
                   <div key={label as string} style={{
-                    background: '#121f35', borderRadius: '8px', padding: '12px',
-                    border: `1px solid ${isOut ? '#d6303140' : '#1a2d45'}`,
+                    background: 'var(--surface-2)', borderRadius: '8px', padding: '12px',
+                    border: `1px solid ${isOut ? '#d6303140' : 'var(--border)'}`,
                   }}>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>{label as string}</div>
                     <div style={{ fontSize: '18px', fontWeight: '700', color: isOut ? 'var(--red)' : 'var(--text)' }}>
@@ -715,7 +715,7 @@ function WaterTestingTab() {
             </div>
 
             {/* AI Advice */}
-            <div style={{ borderTop: '1px solid #1a2d45', paddingTop: '20px' }}>
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                 <div style={{ fontWeight: '700', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Activity size={16} color="var(--aqua)" />
@@ -730,8 +730,8 @@ function WaterTestingTab() {
               </div>
               {selectedTest.ai_advice ? (
                 <div style={{
-                  background: '#121f35', borderRadius: '8px', padding: '16px',
-                  border: '1px solid #1a2d45', color: 'var(--text)',
+                  background: 'var(--surface-2)', borderRadius: '8px', padding: '16px',
+                  border: '1px solid var(--border)', color: 'var(--text)',
                   fontSize: '13px', lineHeight: '1.7', whiteSpace: 'pre-wrap',
                 }}>
                   {selectedTest.ai_advice}
@@ -1108,7 +1108,7 @@ function StaffTab() {
               </div>
               {selectedRoute?.id === route.id && (
                 <div>
-                  <div style={{ borderTop: '1px solid #1a2d45', paddingTop: '16px' }}>
+                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                       <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)' }}>POOLS IN ROUTE (visit order)</div>
                       <button className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '12px' }}
@@ -1121,7 +1121,7 @@ function StaffTab() {
                     ) : (() => {
                       const sortedPools = [...(route.route_pools ?? [])].sort((a: any, b: any) => a.visit_order - b.visit_order)
                       return sortedPools.map((rp: any, idx: number) => (
-                        <div key={rp.pool_id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0', borderBottom: '1px solid #1a2d4530' }}>
+                        <div key={rp.pool_id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0', borderBottom: '1px solid var(--border-faint)' }}>
                           <span style={{ width: '24px', height: '24px', borderRadius: '99px', background: 'var(--aqua)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}>{idx + 1}</span>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontWeight: '600' }}>{rp.pools?.name ?? rp.pool_id}</div>
@@ -1630,7 +1630,7 @@ function AssetsTab() {
             {serviceLogs.length === 0 ? (
               <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '24px', fontSize: '13px' }}>No service history yet</div>
             ) : serviceLogs.map((log: any) => (
-              <div key={log.id} style={{ padding: '12px 0', borderBottom: '1px solid #1a2d45' }}>
+              <div key={log.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <span style={s.badge('#00b4d8')}>{log.service_type.replace('_', ' ')}</span>
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{log.service_date}</span>
@@ -2046,7 +2046,7 @@ function RiskTab() {
           ) : sortedPools.map((p: any) => (
             <div key={p.id} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '10px 0', borderBottom: '1px solid #1a2d45',
+              padding: '10px 0', borderBottom: '1px solid var(--border)',
             }}>
               <div>
                 <div style={{ fontWeight: '600', fontSize: '14px' }}>{p.name}</div>
@@ -2066,7 +2066,7 @@ function RiskTab() {
             <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '24px' }}>No open incidents</div>
           ) : incidents.map((i: any) => (
             <div key={i.id} style={{
-              padding: '12px 0', borderBottom: '1px solid #1a2d45',
+              padding: '12px 0', borderBottom: '1px solid var(--border)',
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                 <span style={{ fontWeight: '600' }}>{i.pools?.name}</span>
@@ -3199,7 +3199,7 @@ function RemoteSitesTab() {
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>
               Configure your IoT sensor / smart controller to POST readings to this webhook. Each sensor authenticates with its unique <code style={{ color: 'var(--aqua)' }}>sensor_key</code>.
             </div>
-            <code style={{ background: '#121f35', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', color: 'var(--aqua)', display: 'block' }}>
+            <code style={{ background: 'var(--surface-2)', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', color: 'var(--aqua)', display: 'block' }}>
               POST {process.env.NEXT_PUBLIC_APP_URL ?? ''}/api/iot/ingest
             </code>
             <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -3260,7 +3260,7 @@ function RemoteSitesTab() {
                 <div style={{ marginBottom: '16px', color: 'var(--text-muted)', fontSize: '13px' }}>
                   Copy this sensor key and configure it on your IoT device. <strong style={{ color: 'var(--red)' }}>It will not be shown again.</strong>
                 </div>
-                <div style={{ background: '#121f35', borderRadius: '8px', padding: '16px', border: '1px solid #00b4d840', marginBottom: '20px' }}>
+                <div style={{ background: 'var(--surface-2)', borderRadius: '8px', padding: '16px', border: '1px solid #00b4d840', marginBottom: '20px' }}>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px' }}>SENSOR KEY</div>
                   <code style={{ color: 'var(--aqua)', wordBreak: 'break-all', fontSize: '14px' }}>{key}</code>
                 </div>
@@ -3547,7 +3547,7 @@ export default function AdminPage() {
           })}
         </nav>
 
-        <div style={{ padding: '12px 16px', borderTop: '1px solid #1a2d45' }} className="admin-sidebar-footer">
+        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)' }} className="admin-sidebar-footer">
           {user && (
             <div style={{ marginBottom: '10px' }}>
               <div style={{ fontSize: '13px', fontWeight: '600', color: '#e2e8f0' }}>
@@ -3593,10 +3593,10 @@ export default function AdminPage() {
               {showNotifs && (
                 <div style={{
                   position: 'absolute', right: 0, top: '38px', width: '340px', zIndex: 1000,
-                  background: '#0d1829', border: '1px solid #1a2d45', borderRadius: '12px',
+                  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px',
                   boxShadow: '0 8px 32px rgba(0,0,0,0.5)', overflow: 'hidden',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid #1a2d45' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
                     <span style={{ fontWeight: '700', fontSize: '13px' }}>Notifications</span>
                     {unreadCount > 0 && (
                       <button onClick={markAllRead} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', color: 'var(--aqua)' }}>Mark all read</button>
@@ -3607,7 +3607,7 @@ export default function AdminPage() {
                       <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>No notifications</div>
                     ) : notifications.map((n: any) => (
                       <div key={n.id} style={{
-                        padding: '12px 16px', borderBottom: '1px solid #1a2d4530',
+                        padding: '12px 16px', borderBottom: '1px solid var(--border-faint)',
                         background: n.is_read ? 'transparent' : '#00b4d808',
                         cursor: 'pointer',
                       }} onClick={async () => {

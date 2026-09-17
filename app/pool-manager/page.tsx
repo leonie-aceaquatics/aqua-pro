@@ -43,9 +43,9 @@ export default function PoolManagerPage() {
   const riskLabel = RISK_LABELS[latestTest?.risk_level as keyof typeof RISK_LABELS] ?? 'No data'
 
   return (
-    <div style={{ minHeight: '100vh', background: '#080e1a', color: '#e2e8f0' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: '#e2e8f0' }}>
       {/* Header */}
-      <div style={{ background: '#0d1829', borderBottom: '1px solid #1a2d45', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg,#00b4d8,#0077b6)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>💧</div>
           <div>
@@ -113,8 +113,8 @@ export default function PoolManagerPage() {
                     const isOut = min !== null && max !== null && (Number(val) < Number(min) || Number(val) > Number(max))
                     return (
                       <div key={label as string} style={{
-                        background: '#0d1829', borderRadius: '10px', padding: '14px',
-                        border: `1px solid ${isOut ? '#d6303140' : '#1a2d45'}`,
+                        background: 'var(--surface)', borderRadius: '10px', padding: '14px',
+                        border: `1px solid ${isOut ? '#d6303140' : 'var(--border)'}`,
                       }}>
                         <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '4px' }}>{label as string}</div>
                         <div style={{ fontSize: '20px', fontWeight: '700', color: isOut ? '#d63031' : '#e2e8f0' }}>
@@ -136,7 +136,7 @@ export default function PoolManagerPage() {
                 const overdue = !!ev.due_date && new Date(ev.due_date) < new Date() && ev.status !== 'completed'
                 return (
                   <div key={ev.id} style={{
-                    background: '#0d1829', border: `1px solid ${overdue ? '#d6303140' : '#1a2d45'}`,
+                    background: 'var(--surface)', border: `1px solid ${overdue ? '#d6303140' : 'var(--border)'}`,
                     borderRadius: '10px', padding: '14px', marginBottom: '8px',
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   }}>

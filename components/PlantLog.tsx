@@ -28,7 +28,7 @@ const sectionTitle = (label: string) => (
 )
 
 const inputStyle: React.CSSProperties = {
-  background: '#0d1829', border: '1px solid #1a2d45', borderRadius: '8px',
+  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px',
   color: '#e2e8f0', padding: '10px 12px', fontSize: '16px', width: '100%', outline: 'none',
 }
 
@@ -39,7 +39,7 @@ const labelStyle: React.CSSProperties = {
 
 function BoolRow({ label, value, onChange }: { label: string; value: boolean | null; onChange: (v: boolean) => void }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #1a2d4540' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border-faint)' }}>
       <span style={{ fontSize: '13px', color: '#94a3b8' }}>{label}</span>
       <div style={{ display: 'flex', gap: '8px' }}>
         {(['Yes', 'No'] as const).map(opt => (
@@ -47,7 +47,7 @@ function BoolRow({ label, value, onChange }: { label: string; value: boolean | n
             padding: '4px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: '700', cursor: 'pointer',
             background: (opt === 'Yes' ? value === true : value === false) ? (opt === 'Yes' ? '#00b4d820' : '#d6303120') : 'transparent',
             color: (opt === 'Yes' ? value === true : value === false) ? (opt === 'Yes' ? '#00b4d8' : '#d63031') : '#64748b',
-            border: `1px solid ${(opt === 'Yes' ? value === true : value === false) ? (opt === 'Yes' ? '#00b4d8' : '#d63031') : '#1a2d45'}`,
+            border: `1px solid ${(opt === 'Yes' ? value === true : value === false) ? (opt === 'Yes' ? '#00b4d8' : '#d63031') : 'var(--border)'}`,
           }}>{opt}</button>
         ))}
       </div>
@@ -78,7 +78,7 @@ function NumRow({ label, placeholder, value, onChange }: { label: string; placeh
 
 function CheckRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <div onClick={() => onChange(!checked)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', background: checked ? '#00b4d810' : '#0d1829', border: `1px solid ${checked ? '#00b4d8' : '#1a2d45'}` }}>
+    <div onClick={() => onChange(!checked)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', background: checked ? '#00b4d810' : 'var(--surface)', border: `1px solid ${checked ? '#00b4d8' : 'var(--border)'}` }}>
       <span style={{ fontSize: '14px', color: '#e2e8f0' }}>{label}</span>
       <div style={{ width: '20px', height: '20px', borderRadius: '4px', border: `2px solid ${checked ? '#00b4d8' : '#334155'}`, background: checked ? '#00b4d8' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {checked && <span style={{ color: '#fff', fontSize: '12px', fontWeight: '900' }}>✓</span>}
@@ -226,19 +226,19 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
   }
 
   if (step === 'submitted') return (
-    <div style={{ position: 'fixed', inset: 0, background: '#080e1a', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px' }}>
       <CheckCircle size={56} color="#00b894" />
       <div style={{ fontSize: '18px', fontWeight: '700', color: '#e2e8f0' }}>Plant Log Saved</div>
     </div>
   )
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: '#080e1a', zIndex: 300, overflowY: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 300, overflowY: 'auto' }}>
       <div style={{ padding: '20px', maxWidth: '480px', margin: '0 auto', paddingBottom: '120px' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-          <button onClick={onClose} style={{ background: '#121f35', border: '1px solid #1a2d45', borderRadius: '8px', color: '#e2e8f0', padding: '8px 14px', cursor: 'pointer', fontSize: '13px' }}>✕ Cancel</button>
+          <button onClick={onClose} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '8px 14px', cursor: 'pointer', fontSize: '13px' }}>✕ Cancel</button>
           <div>
             <div style={{ fontWeight: '700', fontSize: '16px', color: '#e2e8f0' }}>Plant Room Log</div>
             <div style={{ fontSize: '12px', color: '#64748b' }}>{poolName}</div>
@@ -248,7 +248,7 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
         {/* Progress */}
         <div style={{ display: 'flex', gap: '4px', marginBottom: '24px' }}>
           {STEPS.map((s, i) => (
-            <div key={s} style={{ flex: 1, height: '3px', borderRadius: '99px', background: i <= stepIdx ? '#00b4d8' : '#1a2d45' }} />
+            <div key={s} style={{ flex: 1, height: '3px', borderRadius: '99px', background: i <= stepIdx ? '#00b4d8' : 'var(--border)' }} />
           ))}
         </div>
         <div style={{ fontSize: '12px', color: '#00b4d8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '20px' }}>
@@ -258,7 +258,7 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
         {/* ── Step 1: Pool Condition ── */}
         {step === 'pool_condition' && (
           <div>
-            <div style={{ background: '#0d1829', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+            <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
               {sectionTitle('Pool Condition')}
               <div style={{ marginBottom: '12px' }}>
                 <label style={labelStyle}>Water Clarity</label>
@@ -266,9 +266,9 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
                   {[['great', 'Great', '#00b894'], ['good', 'Good', '#00b4d8'], ['fair', 'Fair', '#fdcb6e'], ['concern', 'Concern', '#d63031']].map(([v, l, c]) => (
                     <button key={v} type="button" onClick={() => setWaterClarity(v)} style={{
                       padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700',
-                      background: waterClarity === v ? c + '20' : '#121f35',
+                      background: waterClarity === v ? c + '20' : 'var(--surface-2)',
                       color: waterClarity === v ? c : '#64748b',
-                      border: `1px solid ${waterClarity === v ? c : '#1a2d45'}`,
+                      border: `1px solid ${waterClarity === v ? c : 'var(--border)'}`,
                     }}>{l}</button>
                   ))}
                 </div>
@@ -280,7 +280,7 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
 
         {/* ── Step 2: Maintenance Tasks ── */}
         {step === 'maintenance' && (
-          <div style={{ background: '#0d1829', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+          <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
             {sectionTitle('Maintenance Tasks Completed')}
             <CheckRow label="Backwash" checked={backwash} onChange={setBackwash} />
             <CheckRow label="Lint Baskets" checked={lintBaskets} onChange={setLintBaskets} />
@@ -293,7 +293,7 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
         {/* ── Step 3: Controller & Alarms ── */}
         {step === 'controller' && (
           <div>
-            <div style={{ background: '#0d1829', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+            <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
               {sectionTitle('Controller Readings')}
               <BoolRow label="Controller Status OK" value={controllerOk} onChange={setControllerOk} />
               <div style={{ marginTop: '12px' }} />
@@ -305,7 +305,7 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
               <SelectRow label="CO2 Controller" value={co2Controller} onChange={setCo2Controller}
                 options={[{ value: 'auto', label: 'Auto' }, { value: 'manual', label: 'Manual' }, { value: 'off', label: 'Off' }]} />
             </div>
-            <div style={{ background: '#0d1829', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+            <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
               {sectionTitle('Alarms & Detectors')}
               <SelectRow label="Gas Detector (CO2)" value={gasDetector} onChange={setGasDetector}
                 options={[{ value: 'good', label: 'Good' }, { value: 'alarm', label: 'Alarm' }, { value: 'not_checked', label: 'Not Checked' }]} />
@@ -318,20 +318,20 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
         {/* ── Step 4: Pumps & Filters ── */}
         {step === 'pumps' && (
           <div>
-            <div style={{ background: '#0d1829', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+            <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
               {sectionTitle('Circulation Pump 1')}
               <SelectRow label="CP1 Status" value={cp1Status} onChange={setCp1Status} options={pumpOptions} />
               <BoolRow label="Pressure Gauge OK" value={cp1GaugeOk} onChange={setCp1GaugeOk} />
               <NumRow label="CP1 Pressure (psi)" placeholder="15" value={cp1Pressure} onChange={setCp1Pressure} />
             </div>
-            <div style={{ background: '#0d1829', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+            <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
               {sectionTitle('Circulation Pump 2')}
               <SelectRow label="CP2 Status" value={cp2Status} onChange={setCp2Status}
                 options={[...pumpOptions, { value: 'na', label: 'N/A' }]} />
               <BoolRow label="Pressure Gauge OK" value={cp2GaugeOk} onChange={setCp2GaugeOk} />
               <NumRow label="CP2 Pressure (psi)" placeholder="16" value={cp2Pressure} onChange={setCp2Pressure} />
             </div>
-            <div style={{ background: '#0d1829', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+            <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
               {sectionTitle('Heat Pump & Filters')}
               <SelectRow label="Heat Pump" value={heatPump} onChange={setHeatPump}
                 options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }, { value: 'fault', label: 'Fault' }, { value: 'na', label: 'N/A' }]} />
@@ -347,7 +347,7 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
         {/* ── Step 5: Dosing, Calibration & Submit ── */}
         {step === 'dosing' && (
           <div>
-            <div style={{ background: '#0d1829', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+            <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
               {sectionTitle('Dosing Pumps')}
               <SelectRow label="Chlorine Dosing Pump" value={chlorinePump} onChange={setChlorinePump} options={dosingOptions} />
               <SelectRow label="Acid Dosing Pump" value={acidPump} onChange={setAcidPump} options={dosingOptions} />
@@ -360,7 +360,7 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
                 </div>
               )}
             </div>
-            <div style={{ background: '#0d1829', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+            <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
               {sectionTitle('Photometric Calibration Required')}
               <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>Tick if controller reading differs significantly from manual test.</div>
               <CheckRow label="Calibrate FCL" checked={calFcl} onChange={setCalFcl} />
@@ -381,9 +381,9 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
         )}
 
         {/* Navigation */}
-        <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', background: '#0a1420', borderTop: '1px solid #1a2d45', padding: '16px 20px', display: 'flex', gap: '10px' }}>
+        <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', background: 'var(--bg)', borderTop: '1px solid var(--border)', padding: '16px 20px', display: 'flex', gap: '10px' }}>
           {stepIdx > 0 && (
-            <button onClick={() => setStep(STEPS[stepIdx - 1])} style={{ flex: 1, padding: '14px', background: '#121f35', border: '1px solid #1a2d45', borderRadius: '10px', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '14px', fontWeight: '600' }}>
+            <button onClick={() => setStep(STEPS[stepIdx - 1])} style={{ flex: 1, padding: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '10px', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '14px', fontWeight: '600' }}>
               <ChevronLeft size={16} /> Back
             </button>
           )}

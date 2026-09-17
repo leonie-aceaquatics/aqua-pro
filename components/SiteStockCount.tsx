@@ -60,7 +60,7 @@ export default function SiteStockCount({ poolId, poolName, onClose, onSaved, ful
             const v = counts[r.chemical.id] ?? ''
             const low = v !== '' && Number(r.chemical.reorder_point) > 0 && Number(v) <= Number(r.chemical.reorder_point)
             return (
-              <div key={r.chemical.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: '#0d1829', borderRadius: '8px', border: `1px solid ${low ? '#e1705560' : '#1a2d45'}` }}>
+              <div key={r.chemical.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--surface)', borderRadius: '8px', border: `1px solid ${low ? '#e1705560' : 'var(--border)'}` }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.chemical.name}</div>
                   <div style={{ fontSize: '11px', color: low ? '#e17055' : '#64748b' }}>
@@ -69,7 +69,7 @@ export default function SiteStockCount({ poolId, poolName, onClose, onSaved, ful
                 </div>
                 <input type="number" inputMode="decimal" step="0.5" min="0" value={v} placeholder="—"
                   onChange={e => setCounts(c => ({ ...c, [r.chemical.id]: e.target.value }))}
-                  style={{ width: '76px', padding: '10px 8px', fontSize: '16px', textAlign: 'center', background: '#121f35', border: '1px solid #1a2d45', borderRadius: '8px', color: '#e2e8f0' }} />
+                  style={{ width: '76px', padding: '10px 8px', fontSize: '16px', textAlign: 'center', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0' }} />
                 <span style={{ fontSize: '12px', color: '#64748b', width: '38px' }}>{r.chemical.unit}</span>
               </div>
             )
@@ -89,10 +89,10 @@ export default function SiteStockCount({ poolId, poolName, onClose, onSaved, ful
 
   if (!fullScreen) return body
   return (
-    <div style={{ position: 'fixed', inset: 0, background: '#080e1a', zIndex: 300, overflowY: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 300, overflowY: 'auto' }}>
       <div style={{ padding: '20px', maxWidth: '480px', margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-          <button onClick={onClose} style={{ background: '#121f35', border: '1px solid #1a2d45', borderRadius: '8px', color: '#e2e8f0', padding: '8px 14px', cursor: 'pointer' }}>
+          <button onClick={onClose} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '8px 14px', cursor: 'pointer' }}>
             ← Back
           </button>
           <div style={{ fontWeight: '700', fontSize: '16px', color: '#e2e8f0' }}>Count Stock</div>

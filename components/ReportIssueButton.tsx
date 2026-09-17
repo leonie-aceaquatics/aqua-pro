@@ -114,9 +114,9 @@ export default function ReportIssueButton({ iconOnly = true }: { iconOnly?: bool
                         style={{
                           flex: 1, padding: '8px', borderRadius: '8px', fontSize: '12px', fontWeight: '700',
                           textTransform: 'capitalize', cursor: 'pointer',
-                          background: type === t ? '#00b4d820' : '#121f35',
+                          background: type === t ? '#00b4d820' : 'var(--surface-2)',
                           color: type === t ? '#00b4d8' : '#64748b',
-                          border: `1px solid ${type === t ? '#00b4d8' : '#1a2d45'}`,
+                          border: `1px solid ${type === t ? '#00b4d8' : 'var(--border)'}`,
                         }}>
                         {t}
                       </button>

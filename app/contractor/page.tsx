@@ -51,8 +51,8 @@ export default function ContractorPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#080e1a', maxWidth: '480px', margin: '0 auto' }}>
-      <div style={{ background: '#0d1829', borderBottom: '1px solid #1a2d45', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', maxWidth: '480px', margin: '0 auto' }}>
+      <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg,#00b4d8,#0077b6)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>💧</div>
           <div>
@@ -88,7 +88,7 @@ export default function ContractorPage() {
           </div>
         ) : shifts.map(shift => (
           <div key={shift.id} onClick={() => setSelected(shift)} style={{
-            background: '#0d1829', border: '1px solid #1a2d45', borderRadius: '12px',
+            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px',
             padding: '16px', marginBottom: '12px', cursor: 'pointer',
             opacity: shift.status === 'completed' ? 0.6 : 1,
           }}>
@@ -137,11 +137,11 @@ function ContractorSheetPanel({ shift, onClose, onComplete, completeError }: {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div style={{ background: '#0d1829', borderTop: '1px solid #1a2d45', borderRadius: '20px 20px 0 0', padding: '24px', width: '100%', maxWidth: '480px', margin: '0 auto' }}>
+      <div style={{ background: 'var(--surface)', borderTop: '1px solid var(--border)', borderRadius: '20px 20px 0 0', padding: '24px', width: '100%', maxWidth: '480px', margin: '0 auto' }}>
         <div style={{ fontWeight: '700', fontSize: '18px', color: '#e2e8f0', marginBottom: '4px' }}>{shift.pools?.name ?? 'Assignment'}</div>
         <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '20px' }}>{(shift.shift_type ?? '').replace('_', ' ') || '—'}</div>
         {shift.notes && (
-          <div style={{ background: '#121f35', borderRadius: '8px', padding: '12px', marginBottom: '16px', fontSize: '13px', color: '#94a3b8', border: '1px solid #1a2d45' }}>
+          <div style={{ background: 'var(--surface-2)', borderRadius: '8px', padding: '12px', marginBottom: '16px', fontSize: '13px', color: '#94a3b8', border: '1px solid var(--border)' }}>
             {shift.notes}
           </div>
         )}
@@ -149,7 +149,7 @@ function ContractorSheetPanel({ shift, onClose, onComplete, completeError }: {
           <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Completion Notes</label>
           <textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)}
             placeholder="Any issues, observations, or work completed…"
-            style={{ background: '#121f35', border: '1px solid #1a2d45', borderRadius: '8px', color: '#e2e8f0', padding: '10px', fontSize: '14px', width: '100%', outline: 'none' }}
+            style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '10px', fontSize: '14px', width: '100%', outline: 'none' }}
           />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

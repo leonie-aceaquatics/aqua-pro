@@ -132,7 +132,7 @@ export default function TechnicianPage() {
       <input type="number" step="0.01" placeholder={placeholder}
         value={testForm[key as keyof typeof testForm] as string}
         onChange={e => setTestForm(f => ({ ...f, [key]: e.target.value }))}
-        style={{ background: '#0d1829', border: '1px solid #1a2d45', borderRadius: '8px', color: '#e2e8f0', padding: '10px 12px', fontSize: '16px', width: '100%', outline: 'none' }}
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '10px 12px', fontSize: '16px', width: '100%', outline: 'none' }}
       />
     </div>
   )
@@ -151,9 +151,9 @@ export default function TechnicianPage() {
   const lsiStatus = lsi !== null ? classifyLSI(lsi) : null
 
   return (
-    <div style={{ minHeight: '100vh', background: '#080e1a', maxWidth: '480px', margin: '0 auto' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', maxWidth: '480px', margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ background: '#0d1829', borderBottom: '1px solid #1a2d45', padding: '16px 20px', position: 'sticky', top: 0, zIndex: 100 }}>
+      <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '16px 20px', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg,#00b4d8,#0077b6)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>💧</div>
@@ -193,7 +193,7 @@ export default function TechnicianPage() {
           </div>
         ) : shifts.map(shift => (
           <div key={shift.id} onClick={() => handleSelectShift(shift)} style={{
-            background: '#0d1829', border: '1px solid #1a2d45', borderRadius: '12px',
+            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px',
             padding: '16px', marginBottom: '12px', cursor: 'pointer',
             opacity: shift.status === 'completed' ? 0.6 : 1,
           }}>
@@ -239,7 +239,7 @@ export default function TechnicianPage() {
       {selected && !showTestForm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}
           onClick={e => { if (e.target === e.currentTarget) setSelected(null) }}>
-          <div style={{ background: '#0d1829', borderTop: '1px solid #1a2d45', borderRadius: '20px 20px 0 0', padding: '24px', width: '100%', maxWidth: '480px', margin: '0 auto' }}>
+          <div style={{ background: 'var(--surface)', borderTop: '1px solid var(--border)', borderRadius: '20px 20px 0 0', padding: '24px', width: '100%', maxWidth: '480px', margin: '0 auto' }}>
             <div style={{ fontWeight: '700', fontSize: '18px', color: '#e2e8f0', marginBottom: '4px' }}>
               {selected.pools?.name ?? 'Admin Shift'}
             </div>
@@ -248,7 +248,7 @@ export default function TechnicianPage() {
             </div>
 
             {lastTest && (
-              <div style={{ background: '#121f35', borderRadius: '10px', padding: '14px', marginBottom: '16px', border: '1px solid #1a2d45' }}>
+              <div style={{ background: 'var(--surface-2)', borderRadius: '10px', padding: '14px', marginBottom: '16px', border: '1px solid var(--border)' }}>
                 <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Last Test</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ fontSize: '12px', color: '#94a3b8' }}>
@@ -319,10 +319,10 @@ export default function TechnicianPage() {
 
       {/* Water test form */}
       {showTestForm && selected && (
-        <div style={{ position: 'fixed', inset: 0, background: '#080e1a', zIndex: 300, overflowY: 'auto' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 300, overflowY: 'auto' }}>
           <div style={{ padding: '20px', maxWidth: '480px', margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <button onClick={() => setShowTestForm(false)} style={{ background: '#121f35', border: '1px solid #1a2d45', borderRadius: '8px', color: '#e2e8f0', padding: '8px 14px', cursor: 'pointer' }}>
+              <button onClick={() => setShowTestForm(false)} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '8px 14px', cursor: 'pointer' }}>
                 ← Back
               </button>
               <div style={{ fontWeight: '700', fontSize: '16px', color: '#e2e8f0' }}>Log Water Test</div>
@@ -330,23 +330,23 @@ export default function TechnicianPage() {
             <div style={{ marginBottom: '20px', color: '#64748b', fontSize: '13px' }}>{selected.pools?.name}</div>
 
             <form onSubmit={handleLogTest}>
-              <div style={{ background: '#0d1829', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+              <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
                 <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Sanitiser</div>
                 {numInput('free_chlorine', 'Free Chlorine (ppm)', '2.0')}
                 {numInput('total_chlorine', 'Total Chlorine (ppm)', '2.5')}
                 <div style={{ marginBottom: '12px' }}>
                   <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Combined Chlorine (ppm) · auto</label>
                   <input type="number" readOnly tabIndex={-1} value={combinedChlorine} placeholder="Total − Free"
-                    style={{ background: '#0d1829', border: '1px solid #1a2d45', borderRadius: '8px', color: '#94a3b8', padding: '10px 12px', fontSize: '16px', width: '100%', outline: 'none' }}
+                    style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', color: '#94a3b8', padding: '10px 12px', fontSize: '16px', width: '100%', outline: 'none' }}
                   />
                 </div>
               </div>
-              <div style={{ background: '#0d1829', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+              <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
                 <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Balance</div>
                 {numInput('ph', 'pH', '7.4')}
                 {numInput('total_alkalinity', 'Total Alkalinity (ppm)', '100')}
                 {numInput('calcium_hardness', 'Calcium Hardness (ppm)', '300')}
-                <div style={{ padding: '10px 12px', background: '#080e1a', borderRadius: '8px', border: `1px solid ${lsiStatus && lsiStatus !== 'balanced' ? '#e1705540' : '#1a2d45'}` }}>
+                <div style={{ padding: '10px 12px', background: 'var(--bg)', borderRadius: '8px', border: `1px solid ${lsiStatus && lsiStatus !== 'balanced' ? '#e1705540' : 'var(--border)'}` }}>
                   <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>LSI · auto</div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
                     <span style={{ fontSize: '20px', fontWeight: '700', color: lsiStatus === 'balanced' ? '#00b894' : lsiStatus ? '#e17055' : '#475569' }}>
@@ -358,7 +358,7 @@ export default function TechnicianPage() {
                   </div>
                 </div>
               </div>
-              <div style={{ background: '#0d1829', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+              <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
                 <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Other</div>
                 {numInput('cyanuric_acid', 'CYA (ppm)', '40')}
                 {numInput('salt_level', 'Salt (ppm)', '3000')}
@@ -369,7 +369,7 @@ export default function TechnicianPage() {
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Notes</label>
                 <textarea rows={3} value={testForm.notes} onChange={e => setTestForm(f => ({ ...f, notes: e.target.value }))}
-                  style={{ background: '#0d1829', border: '1px solid #1a2d45', borderRadius: '8px', color: '#e2e8f0', padding: '10px 12px', fontSize: '14px', width: '100%', outline: 'none' }}
+                  style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '10px 12px', fontSize: '14px', width: '100%', outline: 'none' }}
                 />
               </div>
               {testError && (
