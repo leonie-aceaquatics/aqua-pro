@@ -9,7 +9,7 @@ import {
   ChevronUp, ChevronDown, Pencil, Power,
   TestTube, Calculator, ListChecks, FileText,
 } from 'lucide-react'
-import { RISK_COLOURS, RISK_LABELS } from '@/lib/water-chemistry'
+import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
 import ReportIssueButton from '@/components/ReportIssueButton'
 import PoolContacts from '@/components/PoolContacts'
 import AttachmentPanel from '@/components/AttachmentPanel'
@@ -498,6 +498,22 @@ function WaterTestingTab() {
     </div>
   )
 
+  // Combined chlorine = total - free (DPD3 - DPD1); shown read-only, computed on the server too
+  const combinedChlorine = form.free_chlorine !== '' && form.total_chlorine !== ''
+    ? Math.max(0, Math.round((Number(form.total_chlorine) - Number(form.free_chlorine)) * 100) / 100).toFixed(2)
+    : ''
+
+  // LSI = pH + temp + calcium + alkalinity factors − TDS constant; needs all four, CYA/TDS refine it
+  const lsiInputs = [form.ph, form.temperature_c, form.calcium_hardness, form.total_alkalinity]
+  const lsi = lsiInputs.every(v => v !== '')
+    ? calculateLSI(Number(form.ph), Number(form.temperature_c), Number(form.calcium_hardness), Number(form.total_alkalinity), {
+        cyanuricAcid: form.cyanuric_acid !== '' ? Number(form.cyanuric_acid) : undefined,
+        tds: form.total_dissolved_solids !== '' ? Number(form.total_dissolved_solids) : undefined,
+      })
+    : null
+  const lsiStatus = lsi !== null ? classifyLSI(lsi) : null
+  const lsiColour = lsiStatus === 'balanced' ? 'var(--green)' : lsiStatus ? 'var(--orange)' : 'var(--text-dim)'
+
   return (
     <>
       <div style={s.header}>
@@ -592,8 +608,12 @@ function WaterTestingTab() {
                 </div>
                 <div style={{ ...s.formGrid, gridTemplateColumns: 'repeat(4,1fr)' }}>
                   {numField('free_chlorine', 'Free Chlorine (ppm)', '2.0')}
-                  {numField('combined_chlorine', 'Combined Chlorine (ppm)', '0.0')}
                   {numField('total_chlorine', 'Total Chlorine (ppm)', '2.5')}
+                  <div style={s.formGroup}>
+                    <label>Combined Chlorine (ppm) · auto</label>
+                    <input type="number" readOnly tabIndex={-1} value={combinedChlorine} placeholder="Total − Free"
+                      style={{ opacity: 0.7, cursor: 'default' }} />
+                  </div>
                   {numField('bromine', 'Bromine (ppm)', '4.0')}
                 </div>
               </div>
@@ -605,6 +625,13 @@ function WaterTestingTab() {
                   {numField('ph', 'pH', '7.4')}
                   {numField('total_alkalinity', 'Total Alkalinity (ppm)', '100')}
                   {numField('calcium_hardness', 'Calcium Hardness (ppm)', '300')}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '12px', padding: '10px 12px', background: '#0d1829', borderRadius: '8px', border: `1px solid ${lsiStatus && lsiStatus !== 'balanced' ? '#e1705540' : '#1a2d45'}` }}>
+                  <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>LSI · auto</span>
+                  <span style={{ fontSize: '18px', fontWeight: '700', color: lsiColour }}>{lsi !== null ? (lsi > 0 ? `+${lsi.toFixed(2)}` : lsi.toFixed(2)) : '—'}</span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                    {lsiStatus ? LSI_LABELS[lsiStatus] : 'Needs pH, alkalinity, calcium hardness and temperature'}
+                  </span>
                 </div>
               </div>
               <div style={{ background: '#121f35', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
@@ -664,6 +691,7 @@ function WaterTestingTab() {
                 ['Phosphates', selectedTest.phosphates, 'ppb', 0, 100],
                 ['Temperature', selectedTest.temperature_c, '°C', null, null],
                 ['Turbidity', selectedTest.turbidity, 'NTU', 0, 0.5],
+                ['LSI', selectedTest.langelier_saturation_index, '', -0.3, 0.3],
               ].filter(([,v]) => v !== null && v !== undefined).map(([label, val, unit, min, max]) => {
                 const isOut = min !== null && max !== null && (Number(val) < Number(min) || Number(val) > Number(max))
                 return (

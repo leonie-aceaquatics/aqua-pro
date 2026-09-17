@@ -45,7 +45,9 @@ export async function POST(req: NextRequest) {
 
   let lsi: number | null = null
   if (values.ph != null && values.temperatureC != null && values.calciumHardness != null && values.totalAlkalinity != null) {
-    lsi = calculateLSI(values.ph, values.temperatureC, values.calciumHardness, values.totalAlkalinity)
+    lsi = calculateLSI(values.ph, values.temperatureC, values.calciumHardness, values.totalAlkalinity, {
+      cyanuricAcid: values.cyanuricAcid, tds: values.totalDissolvedSolids,
+    })
   }
 
   return NextResponse.json({ lsi, doses, risk, ph_correction_method: correctionMethod })

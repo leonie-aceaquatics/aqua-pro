@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
-import { classifyRisk } from '@/lib/water-chemistry'
+import { classifyRisk, calculateLSI } from '@/lib/water-chemistry'
 import type { PoolType, SanitiserType, WaterTestValues } from '@/lib/water-chemistry'
 
 export async function GET(req: NextRequest) {
@@ -32,6 +32,12 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
+
+  // Combined chlorine is derived, not measured: DPD1 gives free, DPD3 gives total,
+  // combined (chloramines) = total - free. Always recompute when both are present.
+  if (body.free_chlorine != null && body.total_chlorine != null) {
+    body.combined_chlorine = Math.max(0, Math.round((Number(body.total_chlorine) - Number(body.free_chlorine)) * 100) / 100)
+  }
 
   // Fetch pool for type/sanitiser info
   const { data: pool } = await supabaseAdmin
@@ -64,6 +70,14 @@ export async function POST(req: NextRequest) {
     closeThresholdPhHigh: pool?.close_threshold_ph_high,
   })
 
+  // LSI needs pH, temperature, calcium hardness and alkalinity; CYA and TDS refine it when present
+  const lsi = body.ph != null && body.temperature_c != null && body.calcium_hardness != null && body.total_alkalinity != null
+    ? calculateLSI(Number(body.ph), Number(body.temperature_c), Number(body.calcium_hardness), Number(body.total_alkalinity), {
+        cyanuricAcid: body.cyanuric_acid != null ? Number(body.cyanuric_acid) : undefined,
+        tds: body.total_dissolved_solids != null ? Number(body.total_dissolved_solids) : undefined,
+      })
+    : null
+
   const { data, error } = await supabaseAdmin
     .from('water_tests')
     .insert({
@@ -84,6 +98,7 @@ export async function POST(req: NextRequest) {
       phosphates: body.phosphates ?? null,
       temperature_c: body.temperature_c ?? null,
       turbidity: body.turbidity ?? null,
+      langelier_saturation_index: lsi,
       risk_level: riskLevel,
       risk_flags: flags,
       notes: body.notes ?? null,

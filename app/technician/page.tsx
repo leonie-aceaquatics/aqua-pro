@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, ClipboardList, FlaskConical } from 'lucide-react'
-import { RISK_COLOURS, RISK_LABELS } from '@/lib/water-chemistry'
+import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
 import ShiftChecklist from '@/components/ShiftChecklist'
 import PlantLog from '@/components/PlantLog'
 import ReportIssueButton from '@/components/ReportIssueButton'
@@ -133,6 +133,19 @@ export default function TechnicianPage() {
       />
     </div>
   )
+
+  // Combined chlorine = total - free (DPD3 - DPD1); shown read-only, computed on the server too
+  const combinedChlorine = testForm.free_chlorine !== '' && testForm.total_chlorine !== ''
+    ? Math.max(0, Math.round((Number(testForm.total_chlorine) - Number(testForm.free_chlorine)) * 100) / 100).toFixed(2)
+    : ''
+
+  // LSI = pH + temp + calcium + alkalinity factors − TDS constant; needs all four, CYA refines it
+  const lsi = [testForm.ph, testForm.temperature_c, testForm.calcium_hardness, testForm.total_alkalinity].every(v => v !== '')
+    ? calculateLSI(Number(testForm.ph), Number(testForm.temperature_c), Number(testForm.calcium_hardness), Number(testForm.total_alkalinity), {
+        cyanuricAcid: testForm.cyanuric_acid !== '' ? Number(testForm.cyanuric_acid) : undefined,
+      })
+    : null
+  const lsiStatus = lsi !== null ? classifyLSI(lsi) : null
 
   return (
     <div style={{ minHeight: '100vh', background: '#080e1a', maxWidth: '480px', margin: '0 auto' }}>
@@ -309,14 +322,30 @@ export default function TechnicianPage() {
               <div style={{ background: '#0d1829', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
                 <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Sanitiser</div>
                 {numInput('free_chlorine', 'Free Chlorine (ppm)', '2.0')}
-                {numInput('combined_chlorine', 'Combined Chlorine (ppm)', '0.0')}
                 {numInput('total_chlorine', 'Total Chlorine (ppm)', '2.5')}
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Combined Chlorine (ppm) · auto</label>
+                  <input type="number" readOnly tabIndex={-1} value={combinedChlorine} placeholder="Total − Free"
+                    style={{ background: '#0d1829', border: '1px solid #1a2d45', borderRadius: '8px', color: '#94a3b8', padding: '10px 12px', fontSize: '16px', width: '100%', outline: 'none' }}
+                  />
+                </div>
               </div>
               <div style={{ background: '#0d1829', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
                 <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Balance</div>
                 {numInput('ph', 'pH', '7.4')}
                 {numInput('total_alkalinity', 'Total Alkalinity (ppm)', '100')}
                 {numInput('calcium_hardness', 'Calcium Hardness (ppm)', '300')}
+                <div style={{ padding: '10px 12px', background: '#080e1a', borderRadius: '8px', border: `1px solid ${lsiStatus && lsiStatus !== 'balanced' ? '#e1705540' : '#1a2d45'}` }}>
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>LSI · auto</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+                    <span style={{ fontSize: '20px', fontWeight: '700', color: lsiStatus === 'balanced' ? '#00b894' : lsiStatus ? '#e17055' : '#475569' }}>
+                      {lsi !== null ? (lsi > 0 ? `+${lsi.toFixed(2)}` : lsi.toFixed(2)) : '—'}
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>
+                      {lsiStatus ? LSI_LABELS[lsiStatus] : 'Enter pH, TA, CH and temperature'}
+                    </span>
+                  </div>
+                </div>
               </div>
               <div style={{ background: '#0d1829', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
                 <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Other</div>

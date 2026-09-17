@@ -151,13 +151,61 @@ export function classifyRisk(
 }
 
 // ── Langelier Saturation Index (scale balance) ────────────────────────────────
-// LSI = pH - pHs
-// pHs = pK2 - pKsp + pCa + pAlk
-export function calculateLSI(ph: number, tempC: number, calciumHardness: number, totalAlkalinity: number): number {
-  const tempF = (tempC * 9) / 5 + 32
-  const tf = 0.8 + (tempF / 100)
-  const pHs = (9.3 + tf) - (Math.log10(calciumHardness) - 0.4) - Math.log10(totalAlkalinity)
-  return Math.round((ph - pHs) * 100) / 100
+// Pool-industry (APSP / CPO / Taylor) form:
+//   LSI = pH + TF + CF + AF − TDSF
+//   TF   temperature factor (Taylor table, interpolated between rows)
+//   CF   = log10(calcium hardness) − 0.4
+//   AF   = log10(carbonate alkalinity), carbonate alk = TA − CYA/3 (cyanurate correction at pool pH)
+//   TDSF = 12.1 below 1000 ppm TDS, 12.2 at/above (salt pools)
+// −0.3 … +0.3 balanced; below is corrosive (etching), above is scale-forming.
+
+const LSI_TEMP_FACTORS: [number, number][] = [   // [°C, TF]
+  [0, 0.0], [2.8, 0.1], [7.8, 0.2], [11.7, 0.3], [15.6, 0.4],
+  [18.9, 0.5], [24.4, 0.6], [28.9, 0.7], [34.4, 0.8], [40.6, 0.9],
+]
+
+function lsiTemperatureFactor(tempC: number): number {
+  const t = LSI_TEMP_FACTORS
+  if (tempC <= t[0][0]) return t[0][1]
+  if (tempC >= t[t.length - 1][0]) return t[t.length - 1][1]
+  for (let i = 1; i < t.length; i++) {
+    const [c1, f1] = t[i]
+    if (tempC <= c1) {
+      const [c0, f0] = t[i - 1]
+      return f0 + ((tempC - c0) / (c1 - c0)) * (f1 - f0)
+    }
+  }
+  return t[t.length - 1][1]
+}
+
+export interface LSIOptions {
+  cyanuricAcid?: number   // ppm — corrects alkalinity for cyanurate
+  tds?: number            // ppm — picks the 12.1 / 12.2 constant
+}
+
+export function calculateLSI(
+  ph: number, tempC: number, calciumHardness: number, totalAlkalinity: number, opts: LSIOptions = {},
+): number {
+  const carbonateAlk = Math.max(1, totalAlkalinity - (opts.cyanuricAcid ?? 0) / 3)
+  const tf = lsiTemperatureFactor(tempC)
+  const cf = Math.log10(Math.max(1, calciumHardness)) - 0.4
+  const af = Math.log10(carbonateAlk)
+  const tdsf = (opts.tds ?? 0) >= 1000 ? 12.2 : 12.1
+  return Math.round((ph + tf + cf + af - tdsf) * 100) / 100
+}
+
+export type LSIStatus = 'corrosive' | 'balanced' | 'scaling'
+
+export function classifyLSI(lsi: number): LSIStatus {
+  if (lsi < -0.3) return 'corrosive'
+  if (lsi > 0.3) return 'scaling'
+  return 'balanced'
+}
+
+export const LSI_LABELS: Record<LSIStatus, string> = {
+  corrosive: 'Corrosive — water will etch plaster/grout and attack metal',
+  balanced:  'Balanced',
+  scaling:   'Scale-forming — calcium will deposit on surfaces and heaters',
 }
 
 // ── Chemical dose calculator ───────────────────────────────────────────────────
