@@ -177,8 +177,14 @@ export function buildWelcomeEmail(firstName: string, email: string, password: st
             ${contacts}
             ${help}
 
+            <p style="margin:28px 0 0;font-size:14px;color:#e2e8f0;line-height:1.6;">
+              Welcome aboard,<br>
+              <strong>Leonie</strong><br>
+              <span style="color:#94a3b8;">Ace Aquatics · 0433 414 987</span>
+            </p>
+
             <p style="margin:24px 0 0;font-size:12px;color:#334155;line-height:1.6;">
-              Keep this email — it has your login. Your password can be changed by the office if you forget it.
+              Keep this email — it has your login. If you forget your password, ring Leonie to reset it.
             </p>
           </td>
         </tr>
