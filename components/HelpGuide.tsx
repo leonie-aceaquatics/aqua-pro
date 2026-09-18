@@ -15,6 +15,7 @@ export const TECH_GUIDE: Section[] = [
       'Add it to your home screen so it opens like an app: Safari → Share → "Add to Home Screen".',
       "You'll land on Today's Jobs. Every site you're scheduled at today is listed, with its address and start time.",
       'Tap a site to open it. Everything you do at that site happens from the panel that slides up.',
+      'Change your password the first time you log in: tap ? at the top, scroll to the bottom and use Change my password.',
     ],
   },
   {
@@ -54,7 +55,7 @@ export const TECH_GUIDE: Section[] = [
         'Green — all good.',
         'Yellow — keep an eye on it.',
         'Orange — action required: adjust chemicals and re-test.',
-        'Red — CLOSE THE POOL and phone Tony immediately.',
+        'Red — CLOSE THE POOL and phone Tony immediately (0422 470 214).',
       ] },
       'If you make a mistake, log a new test with the right numbers and put "correction" in the notes — the office can see both.',
     ],
@@ -98,12 +99,19 @@ export const TECH_GUIDE: Section[] = [
     ],
   },
   {
+    title: 'Who to call', colour: '#00b4d8',
+    steps: [
+      'Anything about a pool or site — out-of-range results, faults, closures, chemicals: Tony 0422 470 214.',
+      'Anything admin — logins, rosters, the app itself: Leonie 0433 414 987.',
+    ],
+  },
+  {
     title: 'Something out of range or broken', colour: '#e17055',
     steps: [
-      'Red water result → close the pool, phone Tony, then log what you did.',
+      'Red water result → close the pool, phone Tony (0422 470 214), then log what you did.',
       'Orange result → dose to bring it into range, re-test before you leave, log both tests.',
-      'Equipment fault, leak, safety issue → put it in the Faults or Breakdowns box on the water test, add photos, and tell Tony.',
-      'Out of chemicals → put 0 in Count Stock so it goes on the order list, and tell the office if it is urgent.',
+      'Equipment fault, leak, safety issue → put it in the Faults or Breakdowns box on the water test, add photos, and tell Tony (0422 470 214).',
+      'Out of chemicals → put 0 in Count Stock so it goes on the order list, and ring Tony (0422 470 214) if it is urgent.',
     ],
   },
   {
@@ -111,8 +119,8 @@ export const TECH_GUIDE: Section[] = [
     steps: [
       'Tap the bug icon (top right) → Report an Issue. Say what you tapped and what happened. A screenshot helps.',
       'No signal at the site? Write your readings down, and enter them in the app as soon as you have reception — use the Date / Time box to put the real test time in.',
-      "Can't log in? Ask the office to reset your password.",
-      'A shift missing from Today\'s Jobs? Close the app fully and reopen it. If it is still missing, the office may not have rostered it yet — ring them.',
+      "Can't log in? Ring Leonie (0433 414 987) to reset your password. Once you're in, change it yourself under Change my password at the bottom of this screen.",
+      'A shift missing from Today\'s Jobs? Close the app fully and reopen it. If it is still missing, it may not be rostered yet — ring Leonie (0433 414 987).',
     ],
   },
 ]

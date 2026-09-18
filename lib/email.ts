@@ -116,11 +116,18 @@ export function buildWelcomeEmail(firstName: string, email: string, password: st
     `Tap the site to open it.`,
     `${strong('Site Tasks')} — work through the tick list in order (Arrival → Water quality → Equipment → Cleaning → Safety → Departure). Tick each one as you do it.`,
     `${strong('Log Water Test')} — type in your readings. Combined chlorine and LSI fill in themselves. Add what the system screen shows, any chemicals you added by hand, and any faults. Then add photos and tap Done.`,
+    `${strong('Dose Calculator')} — not sure what to add? Type in your readings and it tells you which chemical and how much for that pool. Nothing is saved, so use it before you dose.`,
     `${strong('Count Stock')} — how many drums / bags of each chemical are on site. Anything low goes on the order list automatically.`,
+    `${strong('Plant Room Log')} — at sites with a plant room: backwash, baskets, controller and alarms, pumps, filters, dosing pumps, then photos of gauges or leaks.`,
     `${strong('Mark Complete')} when you're leaving.`,
   ]) + p(`${strong('Red result = close the pool and phone Tony.')} Orange = adjust and re-test before you leave.`) : ''
+  const contacts = h('Who to call') + li([
+    `${strong('Anything about a pool or site')} — out-of-range results, faults, closures, chemicals: ${strong('Tony 0422 470 214')}.`,
+    `${strong('Anything admin')} — logins, rosters, the app itself: ${strong('Leonie 0433 414 987')}.`,
+  ])
+  const password = p(`${strong('Change your password')} the first time you log in: tap ${strong('?')} at the top of the app and scroll to ${strong('Change my password')}.`)
 
-  const help = h('Stuck?') + p(`The ${strong('?')} button in the app has the guide. If the app itself misbehaves, use the bug icon → ${strong('Report an Issue')} and the office gets it straight away. Otherwise ring the office.`)
+  const help = h('Stuck?') + p(`The ${strong('?')} button in the app has the guide. If the app itself misbehaves, use the bug icon → ${strong('Report an Issue')} and the office gets it straight away. Otherwise ring Leonie.`)
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -165,7 +172,9 @@ export function buildWelcomeEmail(firstName: string, email: string, password: st
 
             ${install}
             ${firstLogin}
+            ${password}
             ${onSite}
+            ${contacts}
             ${help}
 
             <p style="margin:24px 0 0;font-size:12px;color:#334155;line-height:1.6;">

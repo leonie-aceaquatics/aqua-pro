@@ -5,6 +5,7 @@ import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, FlaskConica
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
 import PlantLog from '@/components/PlantLog'
 import ChemistryCalculatorTab from '@/components/ChemistryCalculatorTab'
+import ChangePassword from '@/components/ChangePassword'
 import SiteTaskList from '@/components/SiteTaskList'
 import SiteStockCount from '@/components/SiteStockCount'
 import HelpGuide, { TECH_GUIDE } from '@/components/HelpGuide'
@@ -532,6 +533,7 @@ export default function TechnicianPage() {
             </div>
             <div style={{ color: '#64748b', fontSize: '13px', marginBottom: '16px' }}>Tap a heading to open it. If you're stuck, phone the office.</div>
             <HelpGuide sections={TECH_GUIDE} dark />
+            <ChangePassword />
           </div>
         </div>
       )}
