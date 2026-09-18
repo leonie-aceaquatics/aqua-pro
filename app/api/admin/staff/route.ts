@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   // Welcome email with their login — on by default, admin can untick it in the form
   if (body.send_email !== false) {
     const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/login`
-    after(() => sendWelcomeEmail(data.first_name, data.email, body.password, loginUrl).catch(e => console.error('Welcome email failed:', e)))
+    after(() => sendWelcomeEmail(data.first_name, data.email, body.password, loginUrl, data.role).catch(e => console.error('Welcome email failed:', e)))
   }
   return NextResponse.json({ staff: data })
 }
@@ -69,7 +69,7 @@ export async function PATCH(req: NextRequest) {
   // Re-send login details when a password is set and the admin asked for it
   if (newPassword && send_email) {
     const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/login`
-    after(() => sendWelcomeEmail(data.first_name, data.email, newPassword, loginUrl).catch(e => console.error('Login email failed:', e)))
+    after(() => sendWelcomeEmail(data.first_name, data.email, newPassword, loginUrl, data.role).catch(e => console.error('Login email failed:', e)))
   }
   return NextResponse.json({ staff: data })
 }

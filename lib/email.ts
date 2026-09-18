@@ -82,7 +82,39 @@ export function buildShiftReminderEmail(staffName: string, poolName: string, shi
   `)
 }
 
-export function buildWelcomeEmail(firstName: string, email: string, password: string, loginUrl: string) {
+export function buildWelcomeEmail(firstName: string, email: string, password: string, loginUrl: string, role: string = 'technician') {
+  const isTech = !['admin', 'manager'].includes(role)
+  const h = (t: string) => `<p style="margin:28px 0 10px;font-size:13px;font-weight:700;color:#00b4d8;text-transform:uppercase;letter-spacing:0.08em;">${t}</p>`
+  const p = (t: string) => `<p style="margin:0 0 12px;font-size:14px;color:#94a3b8;line-height:1.6;">${t}</p>`
+  const li = (items: string[]) => `<ol style="margin:0 0 12px;padding-left:20px;color:#cbd5e1;font-size:14px;line-height:1.7;">${items.map(i => `<li style="margin-bottom:6px;">${i}</li>`).join('')}</ol>`
+  const strong = (t: string) => `<strong style="color:#e2e8f0;">${t}</strong>`
+
+  const whatItIs = isTech
+    ? p(`AquaPro is the app we use to run every site visit. It tells you where you're going today, gives you the tick list for the site, takes your water test readings (and works out combined chlorine and LSI for you), records the stock on site, and sends everything straight to the office — so there's no paperwork and nothing gets lost.`)
+    : p(`AquaPro is our pool operations system. The office dashboard shows every site's water quality, what each technician has done, stock at each site, what needs ordering, compliance and incidents. The technician app is what the crew use on site.`)
+
+  const install = h('Put it on your phone') + p(`It works like an app but there is nothing to download from the App Store — it lives in your browser.`) + li([
+    `${strong('iPhone:')} open the link below in ${strong('Safari')} (not Chrome). Tap the Share button (the square with the arrow) at the bottom, scroll down and tap ${strong('Add to Home Screen')}, then ${strong('Add')}.`,
+    `${strong('Android:')} open the link below in ${strong('Chrome')}. Tap the three dots (top right) and choose ${strong('Add to Home screen')} or ${strong('Install app')}.`,
+    `An ${strong('AquaPro')} icon appears on your home screen. Open it from there from now on — it stays logged in.`,
+  ])
+
+  const firstLogin = h('Your first login') + li([
+    `Tap the AquaPro icon (or the button below) and sign in with the details above.`,
+    isTech ? `You'll see ${strong("Today's Jobs")} — every site you're rostered at today. If it's empty, you're not rostered yet; that's fine.` : `Choose ${strong('Office dashboard')} or ${strong('Technician app')} — you can switch between them any time.`,
+    `Tap the ${strong('?')} at the top of the technician app for the full "How to use AquaPro" guide — it's written for the job, step by step.`,
+  ])
+
+  const onSite = isTech ? h('At each site') + li([
+    `Tap the site to open it.`,
+    `${strong('Site Tasks')} — work through the tick list in order (Arrival → Water quality → Equipment → Cleaning → Safety → Departure). Tick each one as you do it.`,
+    `${strong('Log Water Test')} — type in your readings. Combined chlorine and LSI fill in themselves. Add what the system screen shows, any chemicals you added by hand, and any faults. Then add photos and tap Done.`,
+    `${strong('Count Stock')} — how many drums / bags of each chemical are on site. Anything low goes on the order list automatically.`,
+    `${strong('Mark Complete')} when you're leaving.`,
+  ]) + p(`${strong('Red result = close the pool and phone Tony.')} Orange = adjust and re-test before you leave.`) : ''
+
+  const help = h('Stuck?') + p(`The ${strong('?')} button in the app has the guide. If the app itself misbehaves, use the bug icon → ${strong('Report an Issue')} and the office gets it straight away. Otherwise ring the office.`)
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
@@ -93,17 +125,15 @@ export function buildWelcomeEmail(firstName: string, email: string, password: st
         <tr>
           <td style="background:#0a1628;border-radius:12px 12px 0 0;padding:28px 32px;border-bottom:1px solid #0e2040;">
             <p style="margin:0;font-size:22px;font-weight:800;color:#00b4d8;letter-spacing:2px;">AQUAPRO</p>
-            <p style="margin:4px 0 0;font-size:11px;color:#334155;letter-spacing:0.08em;text-transform:uppercase;">Pool Maintenance Management</p>
+            <p style="margin:4px 0 0;font-size:11px;color:#334155;letter-spacing:0.08em;text-transform:uppercase;">Ace Aquatics · Pool Operations</p>
           </td>
         </tr>
         <tr>
           <td style="background:#0f1e35;padding:32px;border:1px solid #0e2040;border-top:none;">
             <p style="margin:0 0 16px;font-size:22px;font-weight:700;color:#ffffff;">Welcome, ${firstName}</p>
-            <p style="margin:0 0 24px;font-size:15px;color:#94a3b8;line-height:1.6;">
-              Your AquaPro account is ready. Use the details below to sign in. On your phone, open the link in Safari and choose Share → Add to Home Screen so it opens like an app.
-            </p>
+            ${whatItIs}
 
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;background:#070e1c;border:1px solid #0e2040;border-radius:10px;overflow:hidden;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 8px;background:#070e1c;border:1px solid #0e2040;border-radius:10px;overflow:hidden;">
               <tr><td style="padding:20px 24px;">
                 <p style="margin:0 0 14px;font-size:11px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.08em;">Your Login Details</p>
                 <p style="margin:0 0 10px;font-size:13px;color:#64748b;">
@@ -115,25 +145,30 @@ export function buildWelcomeEmail(firstName: string, email: string, password: st
               </td></tr>
             </table>
 
-            <table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+            <table cellpadding="0" cellspacing="0" style="margin:16px 0 8px;">
               <tr>
                 <td style="background:#00b4d8;border-radius:8px;">
                   <a href="${loginUrl}" style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;">
-                    Sign in to AquaPro →
+                    Open AquaPro →
                   </a>
                 </td>
               </tr>
             </table>
+            <p style="margin:0;font-size:12px;color:#64748b;">Link: <a href="${loginUrl}" style="color:#00b4d8;">${loginUrl}</a></p>
 
-            <p style="margin:0;font-size:12px;color:#334155;line-height:1.6;">
-              We recommend changing your password after your first login.<br>
-              If you have any issues, reply to this email.
+            ${install}
+            ${firstLogin}
+            ${onSite}
+            ${help}
+
+            <p style="margin:24px 0 0;font-size:12px;color:#334155;line-height:1.6;">
+              Keep this email — it has your login. Your password can be changed by the office if you forget it.
             </p>
           </td>
         </tr>
         <tr>
           <td style="background:#070e1c;border-radius:0 0 12px 12px;padding:16px 32px;border:1px solid #0e2040;border-top:none;">
-            <p style="margin:0;font-size:11px;color:#334155;">AquaPro · <a href="${loginUrl}" style="color:#334155;">${loginUrl}</a></p>
+            <p style="margin:0;font-size:11px;color:#334155;">AquaPro · Ace Aquatics · <a href="${loginUrl}" style="color:#334155;">${loginUrl}</a></p>
           </td>
         </tr>
       </table>
@@ -143,8 +178,8 @@ export function buildWelcomeEmail(firstName: string, email: string, password: st
 </html>`
 }
 
-export async function sendWelcomeEmail(firstName: string, email: string, password: string, loginUrl: string) {
-  await sendEmail(email, 'Your AquaPro account is ready', buildWelcomeEmail(firstName, email, password, loginUrl))
+export async function sendWelcomeEmail(firstName: string, email: string, password: string, loginUrl: string, role: string = 'technician') {
+  await sendEmail(email, 'Welcome to AquaPro — your login and how to get started', buildWelcomeEmail(firstName, email, password, loginUrl, role))
 }
 
 export function buildStaffFeedbackEmail(
