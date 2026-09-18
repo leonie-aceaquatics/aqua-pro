@@ -108,7 +108,7 @@ export function buildWelcomeEmail(firstName: string, email: string, password: st
 
   const firstLogin = h('Your first login') + li([
     `Tap the AquaPro icon (or the button below) and sign in with the details above.`,
-    isTech ? `You'll see ${strong("Today's Jobs")} — every site you're rostered at today. If it's empty, you're not rostered yet; that's fine.` : `Choose ${strong('Office dashboard')} or ${strong('Technician app')} — you can switch between them any time.`,
+    isTech ? `You'll see ${strong("Today's Jobs")} — every site you're rostered at today. Not rostered, or at a different site? Scroll down to ${strong('Visit any site')} and pick it from the list.` : `Choose ${strong('Office dashboard')} or ${strong('Technician app')} — you can switch between them any time.`,
     `Tap the ${strong('?')} at the top of the technician app for the full "How to use AquaPro" guide — it's written for the job, step by step.`,
   ])
 

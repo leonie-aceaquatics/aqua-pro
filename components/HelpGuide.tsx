@@ -13,7 +13,8 @@ export const TECH_GUIDE: Section[] = [
     steps: [
       'Open the AquaPro link on your phone and log in with the email and password you were given.',
       'Add it to your home screen so it opens like an app: Safari → Share → "Add to Home Screen".',
-      "You'll land on Today's Jobs. Every site you're scheduled at today is listed, with its address and start time.",
+      "You'll land on Today's Jobs. Every site you're rostered at today is listed, with its address and start time.",
+      'Not rostered, or at a different site? Scroll down to "Visit any site" and pick it from the list — everything works the same.',
       'Tap a site to open it. Everything you do at that site happens from the panel that slides up.',
       'Change your password the first time you log in: tap ? at the top, scroll to the bottom and use Change my password.',
     ],
@@ -120,7 +121,7 @@ export const TECH_GUIDE: Section[] = [
       'Tap the bug icon (top right) → Report an Issue. Say what you tapped and what happened. A screenshot helps.',
       'No signal at the site? Write your readings down, and enter them in the app as soon as you have reception — use the Date / Time box to put the real test time in.',
       "Can't log in? Ring Leonie (0433 414 987) to reset your password. Once you're in, change it yourself under Change my password at the bottom of this screen.",
-      'A shift missing from Today\'s Jobs? Close the app fully and reopen it. If it is still missing, it may not be rostered yet — ring Leonie (0433 414 987).',
+      'A shift missing from Today\'s Jobs? Use "Visit any site" at the bottom of the screen to open it anyway, and let Leonie know (0433 414 987) so the roster gets fixed.',
     ],
   },
 ]

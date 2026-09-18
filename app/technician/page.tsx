@@ -31,7 +31,7 @@ export default function TechnicianPage() {
   const [doses, setDoses] = useState<{ chemical_id: string; quantity: string }[]>([])
   const [chemicals, setChemicals] = useState<any[]>([])
   const [savedTest, setSavedTest] = useState<any>(null)   // just-saved test, for the photo step
-  const [allPools, setAllPools] = useState<any[]>([])      // admins/managers: visit any site, rostered or not
+  const [allPools, setAllPools] = useState<any[]>([])      // everyone: visit any site, rostered or not
   const isOffice = user && ['admin', 'manager'].includes(user.role)
   const [saving, setSaving] = useState(false)
   const [lastTest, setLastTest] = useState<any>(null)
@@ -56,7 +56,7 @@ export default function TechnicianPage() {
       setUser(u.user)
       setShifts(s.shifts ?? [])
       setLoading(false)
-      if (u.user && ['admin', 'manager'].includes(u.user.role)) {
+      if (u.user) {
         fetch('/api/admin/pools').then(r => r.json()).then(d => setAllPools(d.pools ?? [])).catch(() => {})
       }
     }).catch(() => {
@@ -215,7 +215,8 @@ export default function TechnicianPage() {
         ) : shifts.length === 0 ? (
           <div style={{ textAlign: 'center', color: '#64748b', padding: '48px' }}>
             <Clock size={32} style={{ marginBottom: '12px', opacity: 0.4 }} />
-            <div>No shifts scheduled for today</div>
+            <div>No shifts rostered for today</div>
+            <div style={{ fontSize: '12px', marginTop: '6px' }}>Pick the site you&apos;re at from the list below.</div>
           </div>
         ) : shifts.map(shift => (
           <div key={shift.id} onClick={() => handleSelectShift(shift)} style={{
@@ -261,8 +262,8 @@ export default function TechnicianPage() {
         ))}
       </div>
 
-      {/* Office users: open any site without a rostered shift */}
-      {isOffice && allPools.length > 0 && (
+      {/* Open any site without a rostered shift — techs are often at sites the roster hasn't caught up with */}
+      {allPools.length > 0 && (
         <div style={{ padding: '0 20px 24px' }}>
           <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Visit any site</div>
           <select value="" onChange={e => {
