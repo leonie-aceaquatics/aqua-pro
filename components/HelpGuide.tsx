@@ -27,7 +27,6 @@ export const TECH_GUIDE: Section[] = [
       ] },
       { text: '2. Log Water Test — enter your readings.', sub: [] },
       { text: '3. Count Stock — count what chemicals are on the shelf.', sub: [] },
-      { text: 'Dose Calculator (calculator icon at the top, or the button on the site panel) — type in readings to get LSI and what to add, without saving anything.', sub: [] },
       { text: '4. Plant Room Log — if the site has a plant room (see below).', sub: [] },
       { text: '5. Mark Complete — when you are leaving the site.', sub: [] },
     ],
@@ -58,6 +57,16 @@ export const TECH_GUIDE: Section[] = [
         'Red — CLOSE THE POOL and phone Tony immediately.',
       ] },
       'If you make a mistake, log a new test with the right numbers and put "correction" in the notes — the office can see both.',
+    ],
+  },
+  {
+    title: 'Dose Calculator', colour: '#b8860b',
+    steps: [
+      'Tap Dose Calculator on the site panel (the pool is already picked), or the calculator icon at the top of the app to choose any pool.',
+      'Type in the readings you have. Combined Chlorine and LSI fill in by themselves, same as the water test.',
+      'Tap Calculate. It shows the risk level and exactly what to add — which chemical and how many litres or kg — worked out from that pool\'s volume, and whether the site corrects pH with acid or CO₂.',
+      'Nothing is saved. It is for working out a dose before you add it. Once you have dosed and re-tested, log the real result in Log Water Test.',
+      'If it says the pool has no volume set, the office needs to add the litres under Pools before it can work out doses for that site.',
     ],
   },
   {
@@ -121,10 +130,11 @@ export const ADMIN_GUIDE: Section[] = [
   {
     title: 'Setting things up', colour: '#00b894',
     steps: [
-      'Staff — add technicians (they get a welcome email with their login). Set their role: technician for field staff.',
+      'Staff — add technicians (they get a welcome email with their login). Set their role: technician for field staff. After you save, a green bar confirms the email went; a red bar means it did not and says why.',
       'Shifts — schedule who goes where. A technician only sees sites they are rostered at today.',
-      'Pools — pool type, sanitiser and volume drive the target ranges and dosing calculator, so keep them accurate.',
-      'Checklists → Site Tasks — the tick list technicians see. "All sites" tasks show everywhere; pick a pool to add tasks just for it.',
+      'Pools — pool type, sanitiser and volume drive the target ranges and dosing calculator, so keep them accurate. Without a volume the Dose Calculator cannot work out doses for that site.',
+      'Chemistry Calculator — the same dose calculator technicians have, for any pool, without logging a test.',
+      'Site Tasks — the tick list technicians see on every visit. "All sites" tasks show everywhere; pick a pool to add tasks just for it. (There is no lifeguard shift checklist — none of our sites are lifeguarded.)',
       'Chemicals → Depot Inventory — the chemical list, units and reorder points. The reorder point applies at every site.',
     ],
   },
@@ -132,7 +142,7 @@ export const ADMIN_GUIDE: Section[] = [
     title: 'Sharing this guide', colour: '#fdcb6e',
     steps: [
       'Admins and managers are asked "Where to?" at login — Office dashboard or Technician app — and can switch any time: "Technician app" in the dashboard sidebar, or the dashboard icon in the technician app header. In the technician app you can open any site via "Visit any site", rostered or not.',
-      'Adding staff sends them a welcome email with their login. To re-send login details, edit the person, type a new password and tick "Email login details".',
+      'Adding staff sends them a welcome email with their login. To re-send login details, edit the person, type a new password and tick "Email login details". If the red bar says "Username and Password not accepted", the Gmail App Password in Vercel (EMAIL_PASS) needs replacing.',
       'Technicians see the "How to use AquaPro" guide from the ? button at the top of their app — the same text as the technician section on this page.',
       'To change the wording, ask for it to be updated in components/HelpGuide.tsx.',
     ],
