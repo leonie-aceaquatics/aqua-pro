@@ -40,8 +40,8 @@ export const TECH_GUIDE: Section[] = [
         'Combined Chlorine = Total Chlorine − Free Chlorine. Enter Free and Total and it appears.',
         'LSI (water balance) appears once you have pH, Total Alkalinity, Calcium Hardness AND Temperature. Green = balanced. Orange = corrosive or scale-forming.',
       ] },
-      { text: 'Chemtrol / Controller — type what the controller screen shows for pH and Free Cl.', sub: [
-        'The app shows the difference against your test. If it says "calibrate", calibrate the controller and tick Calibrated.',
+      { text: 'System Screen Values — type what the dosing system / controller screen (Chemtrol, Dulcomarin, etc.) shows for pH and Free Cl.', sub: [
+        'The app shows the difference against your test. If it says "calibrate", calibrate the system and tick Calibrated.',
       ] },
       { text: 'Chemicals Added — only if you dosed by hand.', sub: [
         'Tap Add chemical, pick the product, enter how much (litres / kg). It comes off that site\'s stock automatically.',

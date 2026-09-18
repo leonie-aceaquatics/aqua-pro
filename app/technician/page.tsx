@@ -411,10 +411,10 @@ export default function TechnicianPage() {
                 {numInput('turbidity', 'Turbidity (NTU)', '0')}
               </div>
 
-              {/* Chemtrol / controller: what the screen says vs what the test says, and whether it was calibrated */}
+              {/* System screen (Chemtrol, Dulcomarin, etc.): what it says vs what the test says, and whether it was calibrated */}
               <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
-                <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Chemtrol / Controller</div>
-                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>What the controller screen shows right now. Calibrate if it's out from your test.</div>
+                <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>System Screen Values</div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>What the dosing system / controller screen shows right now (Chemtrol, Dulcomarin, etc). Calibrate if it's out from your test.</div>
                 {([['controller_ph', 'ph', 'pH on screen', '7.4', 0.2, 'calibrate_ph'], ['controller_fcl', 'free_chlorine', 'Free Cl on screen (ppm)', '2.0', 0.5, 'calibrate_fcl']] as const).map(([key, manualKey, label, ph, tol, calKey]) => {
                   const ctrl = testForm[key], manual = testForm[manualKey]
                   const diff = ctrl !== '' && manual !== '' ? Number(ctrl) - Number(manual) : null

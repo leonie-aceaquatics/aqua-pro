@@ -250,7 +250,7 @@ export function buildWaterTestResultsEmail(test: Record<string, any>, poolName: 
     if (controller === null || controller === undefined) return ''
     const diff = manual !== null && manual !== undefined ? Number(controller) - Number(manual) : null
     return `<tr>
-        <td style="padding:8px 12px;color:#94a3b8;border-bottom:1px solid #1a2d45">Chemtrol ${label}</td>
+        <td style="padding:8px 12px;color:#94a3b8;border-bottom:1px solid #1a2d45">System screen ${label}</td>
         <td style="padding:8px 12px;text-align:right;color:#e2e8f0;border-bottom:1px solid #1a2d45">${Number(controller)}${diff !== null ? ` <span style="color:${Math.abs(diff) > (label === 'pH' ? 0.2 : 0.5) ? '#e17055' : '#64748b'}">(${diff > 0 ? '+' : ''}${diff.toFixed(2)} vs test)</span>` : ''}${calibrated ? ' · <span style="color:#00b894">calibrated</span>' : ''}</td>
       </tr>`
   }

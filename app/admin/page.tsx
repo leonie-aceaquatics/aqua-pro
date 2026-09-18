@@ -448,6 +448,7 @@ function WaterTestingTab() {
     total_alkalinity: '', calcium_hardness: '', cyanuric_acid: '',
     total_dissolved_solids: '', salt_level: '', phosphates: '',
     temperature_c: '', turbidity: '', notes: '',
+    controller_ph: '', controller_fcl: '', calibrate_ph: false, calibrate_fcl: false,
   })
   const [saving, setSaving] = useState(false)
 
@@ -472,7 +473,7 @@ function WaterTestingTab() {
     const payload: Record<string, any> = { ...form, tested_at: localInputToISO(form.tested_at) }
     // Convert empty strings to null for numeric fields
     const numFields = ['free_chlorine','combined_chlorine','total_chlorine','ph','total_alkalinity','calcium_hardness',
-      'cyanuric_acid','total_dissolved_solids','salt_level','phosphates','temperature_c','turbidity']
+      'cyanuric_acid','total_dissolved_solids','salt_level','phosphates','temperature_c','turbidity','controller_ph','controller_fcl']
     numFields.forEach(f => { if (payload[f] === '') payload[f] = null })
     const res = await fetch('/api/admin/water-tests', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -640,6 +641,32 @@ function WaterTestingTab() {
                 </div>
               </div>
               <div style={{ background: 'var(--surface-2)', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  System Screen Values
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>What the dosing system / controller screen showed (Chemtrol, Dulcomarin, etc.) — compared to the test above.</div>
+                <div style={{ ...s.formGrid, gridTemplateColumns: 'repeat(2,1fr)' }}>
+                  {([['controller_ph', 'ph', 'pH on screen', '7.4', 0.2, 'calibrate_ph'], ['controller_fcl', 'free_chlorine', 'Free Cl on screen (ppm)', '2.0', 0.5, 'calibrate_fcl']] as const).map(([key, manualKey, label, ph, tol, calKey]) => {
+                    const diff = form[key] !== '' && form[manualKey] !== '' ? Number(form[key]) - Number(form[manualKey]) : null
+                    const out = diff !== null && Math.abs(diff) > tol
+                    return (
+                      <div key={key}>
+                        {numField(key, label, ph)}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '-8px' }}>
+                          <span style={{ fontSize: '11px', color: out ? 'var(--orange)' : 'var(--text-muted)' }}>
+                            {diff === null ? '' : `${diff > 0 ? '+' : ''}${diff.toFixed(2)} vs test${out ? ' — calibrate' : ' — OK'}`}
+                          </span>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text)', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={form[calKey]} onChange={e => setForm(f => ({ ...f, [calKey]: e.target.checked }))} />
+                            Calibrated
+                          </label>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+              <div style={{ background: 'var(--surface-2)', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
                 <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Other Parameters
                 </div>
@@ -716,10 +743,10 @@ function WaterTestingTab() {
               })}
             </div>
 
-            {/* Chemtrol vs test, fault, photos — from the technician form */}
+            {/* System screen vs test, fault, photos */}
             {(selectedTest.controller_ph != null || selectedTest.controller_fcl != null) && (
               <div style={{ background: 'var(--surface-2)', borderRadius: '8px', padding: '12px 14px', marginBottom: '16px', fontSize: '13px' }}>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>Chemtrol / controller at time of test</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>System screen values at time of test</div>
                 {([['pH', selectedTest.controller_ph, selectedTest.ph, selectedTest.calibrate_ph, 0.2], ['Free Cl', selectedTest.controller_fcl, selectedTest.free_chlorine, selectedTest.calibrate_fcl, 0.5]] as const)
                   .filter(([, c]) => c != null).map(([label, c, m, cal, tol]) => {
                     const diff = m != null ? Number(c) - Number(m) : null
