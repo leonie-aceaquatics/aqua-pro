@@ -125,7 +125,7 @@ export function buildWelcomeEmail(firstName: string, email: string, password: st
     `${strong('Anything about a pool or site')} — out-of-range results, faults, closures, chemicals: ${strong('Tony 0422 470 214')}.`,
     `${strong('Anything admin')} — logins, rosters, the app itself: ${strong('Leonie 0433 414 987')}.`,
   ])
-  const password = p(`${strong('Change your password')} the first time you log in: tap ${strong('?')} at the top of the app and scroll to ${strong('Change my password')}.`)
+  const changePassword = p(`${strong('Change your password')} the first time you log in: tap ${strong('?')} at the top of the app and scroll to ${strong('Change my password')}.`)
 
   const help = h('Stuck?') + p(`The ${strong('?')} button in the app has the guide. If the app itself misbehaves, use the bug icon → ${strong('Report an Issue')} and the office gets it straight away. Otherwise ring Leonie.`)
 
@@ -172,7 +172,7 @@ export function buildWelcomeEmail(firstName: string, email: string, password: st
 
             ${install}
             ${firstLogin}
-            ${password}
+            ${changePassword}
             ${onSite}
             ${contacts}
             ${help}
