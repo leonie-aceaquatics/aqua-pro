@@ -7,6 +7,13 @@ alter table pools drop constraint if exists pools_pool_type_check;
 alter table pools add constraint pools_pool_type_check
   check (pool_type in ('indoor', 'outdoor', 'spa', 'wading', 'hydrotherapy', 'leisure', 'splash_pad'));
 
+-- 1b. the splash pad sites
+update pools set pool_type = 'splash_pad'
+where name ilike 'Warburton Water World%'
+   or name ilike 'Seville Water Play Park%'
+   or name ilike 'Olinda Splash Pad%'
+   or name ilike 'Lilydale Splash Pad%';
+
 -- 2. site tasks can apply to every pool of a type (pool_id null + pool_type set)
 alter table site_tasks add column if not exists pool_type text;
 create index if not exists idx_site_tasks_pool_type on site_tasks(pool_type);
