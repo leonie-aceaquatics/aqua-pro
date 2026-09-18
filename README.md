@@ -47,6 +47,8 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...
 # Email (Gmail App Password — not your regular password)
 EMAIL_USER=your@gmail.com
 EMAIL_PASS=xxxx xxxx xxxx xxxx
+# Where every logged water test result is emailed (defaults to info@aceaquatics.com.au)
+RESULTS_EMAIL=info@aceaquatics.com.au
 
 # AI
 ANTHROPIC_API_KEY=sk-ant-...

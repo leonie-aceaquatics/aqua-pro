@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { sendWaterTestResultsEmail } from '@/lib/email'
 import { classifyRisk, calculateLSI } from '@/lib/water-chemistry'
 import type { PoolType, SanitiserType, WaterTestValues } from '@/lib/water-chemistry'
 
@@ -118,6 +119,12 @@ export async function POST(req: NextRequest) {
       body: `Water test flagged ${flags.join(', ')} as out of range.`,
     }).then(() => {})
   }
+
+  // Every result goes to the office inbox. Sent after the response so a slow SMTP
+  // round-trip never delays the save; the helper swallows send failures.
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
+  const testedBy = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email
+  after(() => sendWaterTestResultsEmail(data, data?.pools?.name ?? 'Unknown pool', testedBy, `${appUrl}/admin`))
 
   return NextResponse.json({ test: data })
 }

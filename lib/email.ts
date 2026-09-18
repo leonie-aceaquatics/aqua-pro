@@ -200,3 +200,75 @@ export function buildStaffFeedbackDoneEmail(title: string, dashboardUrl: string)
 export async function sendStaffFeedbackDoneEmail(email: string, title: string, dashboardUrl: string) {
   try { await sendEmail(email, `Fixed: ${title}`, buildStaffFeedbackDoneEmail(title, dashboardUrl)) } catch {}
 }
+
+// ── Water test results ─────────────────────────────────────────────────────────
+// Every logged water test is emailed to the office inbox so there's a record outside
+// the app and someone sees each result as it comes in. Override with RESULTS_EMAIL.
+export const RESULTS_EMAIL = process.env.RESULTS_EMAIL ?? 'info@aceaquatics.com.au'
+
+const RESULT_FIELDS: [key: string, label: string, unit: string][] = [
+  ['free_chlorine', 'Free Chlorine', 'ppm'],
+  ['total_chlorine', 'Total Chlorine', 'ppm'],
+  ['combined_chlorine', 'Combined Chlorine', 'ppm'],
+  ['bromine', 'Bromine', 'ppm'],
+  ['ph', 'pH', ''],
+  ['total_alkalinity', 'Total Alkalinity', 'ppm'],
+  ['calcium_hardness', 'Calcium Hardness', 'ppm'],
+  ['cyanuric_acid', 'Cyanuric Acid', 'ppm'],
+  ['total_dissolved_solids', 'TDS', 'ppm'],
+  ['salt_level', 'Salt', 'ppm'],
+  ['phosphates', 'Phosphates', 'ppb'],
+  ['temperature_c', 'Temperature', '°C'],
+  ['turbidity', 'Turbidity', 'NTU'],
+]
+
+export function buildWaterTestResultsEmail(test: Record<string, any>, poolName: string, testedBy: string, testUrl: string) {
+  const risk = test.risk_level as string
+  const riskColour = risk === 'red' ? '#d63031' : risk === 'orange' ? '#e17055' : risk === 'yellow' ? '#fdcb6e' : '#00b894'
+  const riskLabel = risk === 'red' ? 'CLOSE POOL — CRITICAL' : risk === 'orange' ? 'Action Required' : risk === 'yellow' ? 'Monitor' : 'All Good'
+  const flags: string[] = test.risk_flags ?? []
+  const flagged = (label: string) => flags.some(f => f.toLowerCase().includes(label.toLowerCase()))
+  const when = new Date(test.tested_at).toLocaleString('en-AU', { timeZone: 'Australia/Melbourne', dateStyle: 'medium', timeStyle: 'short' })
+
+  const rows = RESULT_FIELDS
+    .filter(([key]) => test[key] !== null && test[key] !== undefined)
+    .map(([key, label, unit]) => {
+      const bad = flagged(label)
+      return `<tr>
+        <td style="padding:8px 12px;color:#94a3b8;border-bottom:1px solid #1a2d45">${label}</td>
+        <td style="padding:8px 12px;text-align:right;font-weight:700;color:${bad ? '#e17055' : '#e2e8f0'};border-bottom:1px solid #1a2d45">${Number(test[key])}${unit ? ' ' + unit : ''}${bad ? ' ⚠' : ''}</td>
+      </tr>`
+    }).join('')
+
+  const lsi = test.langelier_saturation_index
+  const lsiRow = lsi !== null && lsi !== undefined ? `<tr>
+        <td style="padding:8px 12px;color:#94a3b8">LSI</td>
+        <td style="padding:8px 12px;text-align:right;font-weight:700;color:${Math.abs(Number(lsi)) <= 0.3 ? '#00b894' : '#e17055'}">${Number(lsi) > 0 ? '+' : ''}${Number(lsi).toFixed(2)} · ${Number(lsi) < -0.3 ? 'corrosive' : Number(lsi) > 0.3 ? 'scale-forming' : 'balanced'}</td>
+      </tr>` : ''
+
+  return base(`
+    <h2 style="margin:0 0 4px;color:#ffffff">Water Test — ${poolName}</h2>
+    <div style="color:#64748b;font-size:13px;margin-bottom:20px">${when} · tested by ${testedBy}</div>
+    <div style="background:${riskColour}22;border:1px solid ${riskColour};border-radius:8px;padding:12px 16px;margin-bottom:20px">
+      <div style="color:${riskColour};font-weight:700;font-size:16px">${riskLabel}</div>
+      ${flags.length ? `<div style="color:#cbd5e1;font-size:13px;margin-top:4px">${flags.join(' · ')}</div>` : ''}
+    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a1628;border-radius:8px;margin-bottom:20px;font-size:14px">
+      ${rows}${lsiRow}
+    </table>
+    ${test.notes ? `<div style="background:#1a2d45;border-radius:8px;padding:12px 16px;margin-bottom:20px;color:#e2e8f0;font-size:14px"><span style="color:#64748b;font-size:12px;display:block;margin-bottom:4px">Notes</span>${String(test.notes).replace(/</g, '&lt;')}</div>` : ''}
+    <a href="${testUrl}" style="display:inline-block;background:#00b4d8;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600">
+      Open in AquaPro
+    </a>
+  `)
+}
+
+export async function sendWaterTestResultsEmail(test: Record<string, any>, poolName: string, testedBy: string, testUrl: string) {
+  const risk = test.risk_level as string
+  const prefix = risk === 'red' ? '🚨 ' : risk === 'orange' ? '⚠️ ' : ''
+  try {
+    await sendEmail(RESULTS_EMAIL, `${prefix}Water test: ${poolName}`, buildWaterTestResultsEmail(test, poolName, testedBy, testUrl))
+  } catch (e) {
+    console.error('Water test results email failed:', e)
+  }
+}
