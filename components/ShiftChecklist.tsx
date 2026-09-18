@@ -467,7 +467,7 @@ export default function ShiftChecklist({ poolId, poolName, shiftId, staffName, o
     return {
       ...(checklistId ? { id: checklistId } : {}),
       pool_id: poolId,
-      shift_id: shiftId,
+      shift_id: shiftId || null,
       ...form,
       sessions,
       checklist_date: new Date().toLocaleDateString('en-CA', { timeZone: 'Australia/Sydney' }),

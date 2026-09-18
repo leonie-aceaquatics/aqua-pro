@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, ClipboardList, FlaskConical, Package, HelpCircle, Camera, Plus, X } from 'lucide-react'
+import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, ClipboardList, FlaskConical, Package, HelpCircle, Camera, Plus, X, LayoutDashboard } from 'lucide-react'
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
 import ShiftChecklist from '@/components/ShiftChecklist'
 import PlantLog from '@/components/PlantLog'
@@ -30,6 +30,8 @@ export default function TechnicianPage() {
   const [doses, setDoses] = useState<{ chemical_id: string; quantity: string }[]>([])
   const [chemicals, setChemicals] = useState<any[]>([])
   const [savedTest, setSavedTest] = useState<any>(null)   // just-saved test, for the photo step
+  const [allPools, setAllPools] = useState<any[]>([])      // admins/managers: visit any site, rostered or not
+  const isOffice = user && ['admin', 'manager'].includes(user.role)
   const [saving, setSaving] = useState(false)
   const [lastTest, setLastTest] = useState<any>(null)
   const [loadError, setLoadError] = useState(false)
@@ -53,6 +55,9 @@ export default function TechnicianPage() {
       setUser(u.user)
       setShifts(s.shifts ?? [])
       setLoading(false)
+      if (u.user && ['admin', 'manager'].includes(u.user.role)) {
+        fetch('/api/admin/pools').then(r => r.json()).then(d => setAllPools(d.pools ?? [])).catch(() => {})
+      }
     }).catch(() => {
       setLoadError(true)
       setLoading(false)
@@ -174,6 +179,9 @@ export default function TechnicianPage() {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            {isOffice && (
+              <a href="/admin" title="Office dashboard" style={{ color: '#00b4d8', display: 'flex' }}><LayoutDashboard size={19} /></a>
+            )}
             <button onClick={() => setShowHelp(true)} title="How to use AquaPro" style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex' }}>
               <HelpCircle size={19} />
             </button>
@@ -249,6 +257,20 @@ export default function TechnicianPage() {
         ))}
       </div>
 
+      {/* Office users: open any site without a rostered shift */}
+      {isOffice && allPools.length > 0 && (
+        <div style={{ padding: '0 20px 24px' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Visit any site</div>
+          <select value="" onChange={e => {
+            const p = allPools.find(x => x.id === e.target.value)
+            if (p) handleSelectShift({ id: null, pool_id: p.id, pools: p, status: 'adhoc', shift_type: 'service_visit' })
+          }} style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', color: '#e2e8f0', padding: '12px', fontSize: '14px' }}>
+            <option value="">Choose a site…</option>
+            {allPools.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
+      )}
+
       {/* Shift detail / action panel */}
       {selected && !showTestForm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}
@@ -313,7 +335,7 @@ export default function TechnicianPage() {
                   <Package size={16} /> Count Stock
                 </button>
               )}
-              {selected.status !== 'completed' && (
+              {selected.id && selected.status !== 'completed' && (
                 <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', padding: '14px' }}
                   onClick={() => handleCompleteShift(selected.id)}>
                   <CheckCircle size={16} /> Mark Complete
@@ -492,7 +514,7 @@ export default function TechnicianPage() {
         <ShiftChecklist
           poolId={selected.pool_id ?? ''}
           poolName={selected.pools?.name ?? 'Shift'}
-          shiftId={selected.id}
+          shiftId={selected.id ?? ''}
           staffName={user ? `${user.firstName} ${user.lastName}` : ''}
           onClose={() => setShowChecklist(false)}
           onSubmitted={() => { setShowChecklist(false); setSelected(null) }}
@@ -530,7 +552,7 @@ export default function TechnicianPage() {
         <PlantLog
           poolId={selected.pool_id ?? ''}
           poolName={selected.pools?.name ?? 'Plant Room'}
-          shiftId={selected.id}
+          shiftId={selected.id ?? ''}
           onClose={() => setShowPlantLog(false)}
           onSubmitted={() => { setShowPlantLog(false); setSelected(null) }}
         />

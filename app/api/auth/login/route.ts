@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
     : staff.role === 'pool_manager' ? '/pool-manager'
     : '/admin'
 
-  const res = NextResponse.json({ ok: true, redirect })
+  // Admins and managers can work in either the office dashboard or the technician app
+  const res = NextResponse.json({ ok: true, redirect, role: staff.role, canChoose: ['admin', 'manager'].includes(staff.role) })
   res.headers.set('Set-Cookie', setSessionCookie(staff.id))
   return res
 }

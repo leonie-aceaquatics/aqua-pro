@@ -838,7 +838,7 @@ function StaffTab() {
   const [routePoolForm, setRoutePoolForm] = useState({ pool_id: '', service_frequency: 'weekly' })
   const [unavailForm, setUnavailForm] = useState({ staff_id: '', start_date: '', end_date: '', reason: '' })
   const [staffForm, setStaffForm] = useState({
-    email: '', password: '', first_name: '', last_name: '', role: 'technician', phone: '', is_active: true,
+    email: '', password: '', first_name: '', last_name: '', role: 'technician', phone: '', is_active: true, send_email: true,
   })
   const [saving, setSaving] = useState(false)
 
@@ -895,13 +895,13 @@ function StaffTab() {
 
   function openAddStaff() {
     setEditingStaffMember(null)
-    setStaffForm({ email: '', password: '', first_name: '', last_name: '', role: 'technician', phone: '', is_active: true })
+    setStaffForm({ email: '', password: '', first_name: '', last_name: '', role: 'technician', phone: '', is_active: true, send_email: true })
     setShowStaffModal(true)
   }
 
   function openEditStaff(m: any) {
     setEditingStaffMember(m)
-    setStaffForm({ email: m.email ?? '', password: '', first_name: m.first_name ?? '', last_name: m.last_name ?? '', role: m.role ?? 'technician', phone: m.phone ?? '', is_active: m.is_active ?? true })
+    setStaffForm({ email: m.email ?? '', password: '', first_name: m.first_name ?? '', last_name: m.last_name ?? '', role: m.role ?? 'technician', phone: m.phone ?? '', is_active: m.is_active ?? true, send_email: true })
     setShowStaffModal(true)
   }
 
@@ -1088,6 +1088,12 @@ function StaffTab() {
                     <label>{editingStaffMember ? 'Reset Password (leave blank to keep current)' : 'Password *'}</label>
                     <input required={!editingStaffMember} type="password" value={staffForm.password} onChange={e => setStaffForm(f => ({ ...f, password: e.target.value }))} />
                   </div>
+                  {(!editingStaffMember || staffForm.password) && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text)', cursor: 'pointer', marginBottom: '14px' }}>
+                      <input type="checkbox" checked={staffForm.send_email} onChange={e => setStaffForm(f => ({ ...f, send_email: e.target.checked }))} />
+                      Email login details to this person{editingStaffMember ? ' (with the new password)' : ''}
+                    </label>
+                  )}
                   <div style={s.formGrid}>
                     <div style={s.formGroup}>
                       <label>Role *</label>
@@ -3639,6 +3645,12 @@ export default function AdminPage() {
               <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'capitalize' }}>{user.role}</div>
             </div>
           )}
+          <a href="/technician" style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            color: 'var(--aqua)', fontSize: '12px', textDecoration: 'none', padding: '6px 0',
+          }}>
+            <Droplets size={13} /> Technician app
+          </a>
           <button onClick={handleLogout} style={{
             display: 'flex', alignItems: 'center', gap: '8px',
             background: 'none', border: 'none', color: '#64748b',

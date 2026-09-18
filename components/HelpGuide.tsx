@@ -139,6 +139,8 @@ export const ADMIN_GUIDE: Section[] = [
   {
     title: 'Sharing this guide', colour: '#fdcb6e',
     steps: [
+      'Admins and managers are asked "Where to?" at login — Office dashboard or Technician app — and can switch any time: "Technician app" in the dashboard sidebar, or the dashboard icon in the technician app header. In the technician app you can open any site via "Visit any site", rostered or not.',
+      'Adding staff sends them a welcome email with their login. To re-send login details, edit the person, type a new password and tick "Email login details".',
       'Technicians see the "How to use AquaPro" guide from the ? button at the top of their app — the same text as the technician section on this page.',
       'To change the wording, ask for it to be updated in components/HelpGuide.tsx.',
     ],

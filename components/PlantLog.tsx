@@ -165,7 +165,7 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
     const n = (v: string) => v === '' ? null : parseFloat(v)
     const payload = {
       pool_id: poolId,
-      shift_id: shiftId ?? null,
+      shift_id: shiftId || null,
       logged_at: new Date().toISOString(),
       water_clarity: waterClarity || null,
       pool_floor_checked: poolFloorChecked,

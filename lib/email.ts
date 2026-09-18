@@ -100,7 +100,7 @@ export function buildWelcomeEmail(firstName: string, email: string, password: st
           <td style="background:#0f1e35;padding:32px;border:1px solid #0e2040;border-top:none;">
             <p style="margin:0 0 16px;font-size:22px;font-weight:700;color:#ffffff;">Welcome, ${firstName}</p>
             <p style="margin:0 0 24px;font-size:15px;color:#94a3b8;line-height:1.6;">
-              Your AquaPro admin account is ready. Use the credentials below to sign in and start configuring your pool management system.
+              Your AquaPro account is ready. Use the details below to sign in. On your phone, open the link in Safari and choose Share → Add to Home Screen so it opens like an app.
             </p>
 
             <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;background:#070e1c;border:1px solid #0e2040;border-radius:10px;overflow:hidden;">

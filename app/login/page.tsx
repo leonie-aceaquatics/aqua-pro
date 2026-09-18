@@ -8,6 +8,7 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [choose, setChoose] = useState(false)   // admin/manager: pick dashboard or technician app
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -27,6 +28,7 @@ export default function LoginPage() {
       return
     }
 
+    if (data.canChoose) { setChoose(true); setLoading(false); return }
     router.push(data.redirect ?? '/admin')
   }
 
@@ -68,6 +70,19 @@ export default function LoginPage() {
 
         {/* Login card */}
         <div className="card">
+          {choose ? (
+            <>
+              <h1 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 6px', color: 'var(--text)' }}>Where to?</h1>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>You can switch between the two at any time from the menu.</div>
+              <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', marginBottom: '10px', fontSize: '15px' }} onClick={() => router.push('/admin')}>
+                Office dashboard
+              </button>
+              <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: '15px' }} onClick={() => router.push('/technician')}>
+                Technician app
+              </button>
+            </>
+          ) : (
+          <>
           <h1 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 24px', color: 'var(--text)' }}>
             Sign in
           </h1>
@@ -119,6 +134,8 @@ export default function LoginPage() {
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
+          </>
+          )}
         </div>
 
         <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '12px', color: 'var(--text-dim)' }}>
