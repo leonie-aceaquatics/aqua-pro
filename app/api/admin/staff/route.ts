@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse, after } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
 import { hashPassword } from '@/lib/password'
@@ -37,12 +37,22 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Welcome email with their login — on by default, admin can untick it in the form
+  // Welcome email with their login — on by default, admin can untick it in the form.
+  // Sent before responding so the admin sees whether it actually went.
+  let email_sent: boolean | null = null
+  let email_error: string | null = null
   if (body.send_email !== false) {
     const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/login`
-    after(() => sendWelcomeEmail(data.first_name, data.email, body.password, loginUrl, data.role).catch(e => console.error('Welcome email failed:', e)))
+    try {
+      await sendWelcomeEmail(data.first_name, data.email, body.password, loginUrl, data.role)
+      email_sent = true
+    } catch (e: any) {
+      console.error('Welcome email failed:', e)
+      email_sent = false
+      email_error = e?.message ?? String(e)
+    }
   }
-  return NextResponse.json({ staff: data })
+  return NextResponse.json({ staff: data, email_sent, email_error })
 }
 
 export async function PATCH(req: NextRequest) {
@@ -67,9 +77,18 @@ export async function PATCH(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   // Re-send login details when a password is set and the admin asked for it
+  let email_sent: boolean | null = null
+  let email_error: string | null = null
   if (newPassword && send_email) {
     const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/login`
-    after(() => sendWelcomeEmail(data.first_name, data.email, newPassword, loginUrl, data.role).catch(e => console.error('Login email failed:', e)))
+    try {
+      await sendWelcomeEmail(data.first_name, data.email, newPassword, loginUrl, data.role)
+      email_sent = true
+    } catch (e: any) {
+      console.error('Login email failed:', e)
+      email_sent = false
+      email_error = e?.message ?? String(e)
+    }
   }
-  return NextResponse.json({ staff: data })
+  return NextResponse.json({ staff: data, email_sent, email_error })
 }

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CheckCircle, Camera } from 'lucide-react'
+import AttachmentPanel from './AttachmentPanel'
 
 type Step = 'pool_condition' | 'maintenance' | 'controller' | 'pumps' | 'dosing' | 'submitted'
 
@@ -91,6 +92,7 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
   const [step, setStep] = useState<Step>('pool_condition')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [savedLogId, setSavedLogId] = useState<string | null>(null)   // just-saved log, for the photo step
 
   // Pool condition
   const [waterClarity, setWaterClarity] = useState('')
@@ -105,11 +107,6 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
 
   // Controller
   const [controllerOk, setControllerOk] = useState<boolean | null>(null)
-  const [ctrlPh, setCtrlPh] = useState('')
-  const [ctrlFcl, setCtrlFcl] = useState('')
-  const [ctrlTcl, setCtrlTcl] = useState('')
-  const [ctrlCcl, setCtrlCcl] = useState('')
-  const [ctrlTemp, setCtrlTemp] = useState('')
   const [co2Controller, setCo2Controller] = useState('')
   const [gasDetector, setGasDetector] = useState('')
   const [dulcomarinAlarm, setDulcomarinAlarm] = useState<boolean | null>(null)
@@ -175,11 +172,6 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
       auto_vac_done: autoVac,
       dosing_done: dosing,
       controller_status_ok: controllerOk,
-      controller_ph: n(ctrlPh),
-      controller_fcl: n(ctrlFcl),
-      controller_tcl: n(ctrlTcl),
-      controller_ccl: n(ctrlCcl),
-      controller_temp_c: n(ctrlTemp),
       co2_controller: co2Controller || null,
       gas_detector_co2: gasDetector || null,
       dulcomarin_alarm: dulcomarinAlarm,
@@ -212,8 +204,9 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
         body: JSON.stringify(payload),
       })
       if (res.ok) {
-        setStep('submitted')
-        setTimeout(() => onSubmitted(), 1800)
+        const data = await res.json().catch(() => ({}))
+        setSavedLogId(data.log?.id ?? null)
+        setStep('submitted')      // stay on screen for photos; closes when they tap Done
       } else {
         const data = await res.json().catch(() => ({}))
         setError(data.error ?? 'Could not save this plant log — try again.')
@@ -226,9 +219,23 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
   }
 
   if (step === 'submitted') return (
-    <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px' }}>
-      <CheckCircle size={56} color="#00b894" />
-      <div style={{ fontSize: '18px', fontWeight: '700', color: '#e2e8f0' }}>Plant Log Saved</div>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 300, overflowY: 'auto' }}>
+      <div style={{ padding: '20px', maxWidth: '480px', margin: '0 auto' }}>
+        <div style={{ background: '#00b89418', border: '1px solid #00b89440', borderRadius: '10px', padding: '14px 16px', marginBottom: '16px' }}>
+          <div style={{ fontWeight: '700', color: '#00b894', marginBottom: '2px' }}><CheckCircle size={16} style={{ verticalAlign: '-3px', marginRight: '6px' }} />Plant log saved</div>
+          <div style={{ fontSize: '13px', color: '#94a3b8' }}>{poolName}</div>
+        </div>
+        {savedLogId && (
+          <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '16px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}><Camera size={13} style={{ verticalAlign: '-2px', marginRight: '4px' }} />Photos of the plant room</div>
+            <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>Optional. Gauges, controller screen, leaks, alarms, anything the office should see. They're attached to this log.</div>
+            <AttachmentPanel entityType="plant_log" entityId={savedLogId} />
+          </div>
+        )}
+        <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: '15px' }} onClick={onSubmitted}>
+          Done
+        </button>
+      </div>
     </div>
   )
 
@@ -294,14 +301,9 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
         {step === 'controller' && (
           <div>
             <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
-              {sectionTitle('Controller Readings')}
+              {sectionTitle('Controller')}
               <BoolRow label="Controller Status OK" value={controllerOk} onChange={setControllerOk} />
               <div style={{ marginTop: '12px' }} />
-              <NumRow label="pH (controller)" placeholder="7.4" value={ctrlPh} onChange={setCtrlPh} />
-              <NumRow label="FCL (controller)" placeholder="2.0" value={ctrlFcl} onChange={setCtrlFcl} />
-              <NumRow label="TCL (controller)" placeholder="2.0" value={ctrlTcl} onChange={setCtrlTcl} />
-              <NumRow label="CCL (controller)" placeholder="0.0" value={ctrlCcl} onChange={setCtrlCcl} />
-              <NumRow label="Temperature °C (controller)" placeholder="28" value={ctrlTemp} onChange={setCtrlTemp} />
               <SelectRow label="CO2 Controller" value={co2Controller} onChange={setCo2Controller}
                 options={[{ value: 'auto', label: 'Auto' }, { value: 'manual', label: 'Manual' }, { value: 'off', label: 'Off' }]} />
             </div>
@@ -362,7 +364,7 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
             </div>
             <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
               {sectionTitle('Photometric Calibration Required')}
-              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>Tick if controller reading differs significantly from manual test.</div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>Tick if the controller screen differs from your water test by more than about 0.2 pH or 0.5 ppm chlorine.</div>
               <CheckRow label="Calibrate FCL" checked={calFcl} onChange={setCalFcl} />
               <CheckRow label="Calibrate TCL" checked={calTcl} onChange={setCalTcl} />
               <CheckRow label="Calibrate pH" checked={calPh} onChange={setCalPh} />

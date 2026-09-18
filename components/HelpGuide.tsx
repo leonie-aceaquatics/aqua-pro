@@ -27,7 +27,7 @@ export const TECH_GUIDE: Section[] = [
       ] },
       { text: '2. Log Water Test — enter your readings.', sub: [] },
       { text: '3. Count Stock — count what chemicals are on the shelf.', sub: [] },
-      { text: '4. Plant Room Log / Shift Checklist — if the site needs them (see below).', sub: [] },
+      { text: '4. Plant Room Log — if the site has a plant room (see below).', sub: [] },
       { text: '5. Mark Complete — when you are leaving the site.', sub: [] },
     ],
   },
@@ -74,18 +74,9 @@ export const TECH_GUIDE: Section[] = [
     title: 'Plant Room Log', colour: '#0d6e4e',
     steps: [
       'For sites with a plant room. Tap Plant Room Log on the site panel.',
-      'Work down the sections: Pool Condition, Maintenance Tasks (backwash, lint baskets, sample line filter, auto-vac, dosing), Controller Readings, Alarms, Pumps, Heat Pump & Filters, Dosing Pumps.',
-      'Controller Readings are what the controller screen shows — compare them to your manual test. If they are more than about 0.2 pH or 0.5 ppm chlorine apart, tick "Photometric Calibration Required".',
-      'Tap Submit Plant Log at the bottom when done.',
-    ],
-  },
-  {
-    title: 'Shift Checklist (lifeguard / supervised sites)', colour: '#0077b6',
-    steps: [
-      'Only for sites where you are the duty person for a session (e.g. school swim, public swim). Most maintenance visits do not need this — use Site Tasks instead.',
-      'Tap Shift Checklist. It walks you through: Pre-Shift Details → Operational Checks → Pool Condition → Safety Equipment → Oxygen → AED → Sessions → End of Shift.',
-      'Anything you mark as failed or a concern is flagged to the office straight away.',
-      'You can Save & Exit part-way and come back to it later in the day.',
+      'Work down the sections: Pool Condition, Maintenance Tasks (backwash, lint baskets, sample line filter, auto-vac, dosing), Controller & Alarms, Pumps, Heat Pump & Filters, Dosing Pumps.',
+      'Water readings go in Log Water Test, not here. If the controller screen is more than about 0.2 pH or 0.5 ppm chlorine away from your test, tick "Photometric Calibration Required".',
+      'Tap Submit Plant Log at the bottom when done, then add photos of gauges, the controller screen or any leaks on the next screen.',
     ],
   },
   {
@@ -121,7 +112,7 @@ export const ADMIN_GUIDE: Section[] = [
     title: 'Daily', colour: '#00b4d8',
     steps: [
       'Overview — today\'s risk levels per pool and anything red/orange.',
-      'Checklists → Tasks Done — pick a date to see exactly what each technician ticked off at each site, and who skipped what.',
+      'Site Tasks → Tasks Done — pick a date to see exactly what each technician ticked off at each site, and who skipped what.',
       'Water Testing — every result. Click one for the full readings, LSI and AI advice. Every result is also emailed to info@aceaquatics.com.au.',
       'Chemicals → Site Stock — which sites are low (orange strip at the top). Items at/below reorder are already on the To Order list against that site.',
     ],

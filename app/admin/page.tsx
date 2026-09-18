@@ -22,7 +22,7 @@ import SiteStockTab from '@/components/SiteStockTab'
 import HelpGuide, { TECH_GUIDE, ADMIN_GUIDE } from '@/components/HelpGuide'
 import WqrmpTab from '@/components/WqrmpTab'
 
-type Tab = 'overview' | 'pools' | 'water-testing' | 'microbiology' | 'chemistry-calc' | 'staff' | 'checklists' | 'assets' | 'compliance' | 'risk' | 'risk-register' | 'remote-sites' | 'chemicals' | 'closures' | 'wqrmp' | 'errors' | 'help'
+type Tab = 'overview' | 'pools' | 'water-testing' | 'microbiology' | 'chemistry-calc' | 'staff' | 'site-tasks' | 'assets' | 'compliance' | 'risk' | 'risk-register' | 'remote-sites' | 'chemicals' | 'closures' | 'wqrmp' | 'errors' | 'help'
 
 const NAV: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'overview',      label: 'Overview',       icon: BarChart2 },
@@ -31,7 +31,7 @@ const NAV: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'microbiology',  label: 'Microbiology',   icon: TestTube },
   { id: 'chemistry-calc', label: 'Chemistry Calculator', icon: Calculator },
   { id: 'staff',         label: 'Staff & Shifts',  icon: Users },
-  { id: 'checklists',    label: 'Checklists',     icon: ClipboardList },
+  { id: 'site-tasks',    label: 'Site Tasks',     icon: ClipboardList },
   { id: 'assets',        label: 'Asset Register', icon: Package },
   { id: 'compliance',    label: 'Compliance',     icon: Shield },
   { id: 'chemicals',     label: 'Chemicals',      icon: FlaskConical },
@@ -841,6 +841,7 @@ function StaffTab() {
     email: '', password: '', first_name: '', last_name: '', role: 'technician', phone: '', is_active: true, send_email: true,
   })
   const [saving, setSaving] = useState(false)
+  const [staffNotice, setStaffNotice] = useState<{ ok: boolean; text: string } | null>(null)
 
   const load = useCallback(() => {
     Promise.all([
@@ -915,7 +916,16 @@ function StaffTab() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(editingStaffMember ? { id: editingStaffMember.id, ...payload } : payload),
     })
-    if (res.ok) { setShowStaffModal(false); load() }
+    const data = await res.json().catch(() => ({}))
+    if (res.ok) {
+      setShowStaffModal(false); load()
+      const who = `${payload.first_name} (${payload.email})`
+      if (data.email_sent === true) setStaffNotice({ ok: true, text: `Saved. Login details emailed to ${who}.` })
+      else if (data.email_sent === false) setStaffNotice({ ok: false, text: `Saved, but the login email to ${who} did NOT send: ${data.email_error ?? 'unknown error'}` })
+      else setStaffNotice(null)
+    } else {
+      setStaffNotice({ ok: false, text: data.error ?? 'Could not save this person.' })
+    }
     setSaving(false)
   }
 
@@ -983,6 +993,13 @@ function StaffTab() {
           </button>
         )}
       </div>
+      {staffNotice && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px',
+          background: staffNotice.ok ? '#00b89418' : '#d6303118', border: `1px solid ${staffNotice.ok ? '#00b89440' : '#d6303140'}`, color: staffNotice.ok ? '#00b894' : '#ff7675' }}>
+          <span>{staffNotice.text}</span>
+          <button type="button" onClick={() => setStaffNotice(null)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '16px' }}>×</button>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', background: 'var(--surface)', borderRadius: '10px', padding: '4px', width: 'fit-content' }}>
         {subTabs.map(t => (
@@ -2909,296 +2926,21 @@ function HelpTab() {
   )
 }
 
-// ── CHECKLISTS TAB ────────────────────────────────────────────────────────────
-function ChecklistsTab() {
-  const [checklists, setChecklists] = useState<any[]>([])
+// ── SITE TASKS TAB ────────────────────────────────────────────────────────────
+// The per-site tick list techs work through on every visit. (The lifeguard shift
+// checklist that used to share this tab is hidden — no lifeguarded sites at present.)
+function SiteTasksTab() {
   const [pools, setPools] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selected, setSelected] = useState<any>(null)
-  const [detailLoading, setDetailLoading] = useState(false)
-  const [filterPool, setFilterPool] = useState('')
-  const [filterFlags, setFilterFlags] = useState(false)
-
-  const load = useCallback(() => {
-    const q = new URLSearchParams()
-    if (filterPool)  q.set('pool_id', filterPool)
-    if (filterFlags) q.set('flags_only', 'true')
-    Promise.all([
-      fetch(`/api/admin/checklists?${q}`).then(r => r.json()),
-      fetch('/api/admin/pools').then(r => r.json()),
-    ]).then(([c, p]) => {
-      setChecklists(c.checklists ?? [])
-      setPools(p.pools ?? [])
-      setLoading(false)
-    })
-  }, [filterPool, filterFlags])
-  useEffect(() => { load() }, [load])
-
-  async function loadDetail(id: string) {
-    setDetailLoading(true)
-    const res = await fetch(`/api/admin/checklists?id=${id}`)
-    const data = await res.json()
-    setSelected(data.checklist)
-    setDetailLoading(false)
-  }
-
-  const checkIcon = (val: boolean | null | undefined) =>
-    val === true  ? <span style={{ color: '#00b894', fontWeight: '700' }}>✓</span>
-    : val === false ? <span style={{ color: '#d63031', fontWeight: '700' }}>✗</span>
-    : <span style={{ color: '#64748b' }}>—</span>
-
-  const passIcon = (val: string | null | undefined, pass: string, fail: string) =>
-    val === pass ? <span style={{ color: '#00b894', fontWeight: '700' }}>✓ {val}</span>
-    : val === fail ? <span style={{ color: '#d63031', fontWeight: '700' }}>✗ {val?.toUpperCase()}</span>
-    : <span style={{ color: '#64748b' }}>{val ?? '—'}</span>
+  useEffect(() => {
+    fetch('/api/admin/pools').then(r => r.json()).then(d => setPools(d.pools ?? []))
+  }, [])
 
   return (
     <>
       <div style={s.header}>
-        <div style={s.pageTitle}>Checklists</div>
+        <div style={s.pageTitle}>Site Tasks</div>
       </div>
-
       <SiteTasksAdmin pools={pools} />
-
-      <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', marginBottom: '12px' }}>Shift Checklists</div>
-
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        <select value={filterPool} onChange={e => setFilterPool(e.target.value)} style={{ width: '220px' }}>
-          <option value="">All Pools</option>
-          {pools.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '13px' }}>
-          <input type="checkbox" checked={filterFlags} onChange={e => setFilterFlags(e.target.checked)} />
-          Flagged only
-        </label>
-      </div>
-
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th><th>Pool</th><th>Lifeguard</th><th>Pre-Shift</th>
-              <th>AED</th><th>Safety Equip</th><th>Sessions</th><th>Flags</th><th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={9} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>Loading…</td></tr>
-            ) : checklists.length === 0 ? (
-              <tr><td colSpan={9} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No checklists submitted yet</td></tr>
-            ) : checklists.map((c: any) => (
-              <tr key={c.id}>
-                <td style={{ color: 'var(--text-muted)', fontSize: '12px', whiteSpace: 'nowrap' }}>
-                  {c.checklist_date}
-                  {c.pre_shift_time && <div style={{ color: 'var(--text-dim)' }}>{c.pre_shift_time}</div>}
-                </td>
-                <td style={{ fontWeight: '600' }}>{c.pools?.name ?? '—'}</td>
-                <td style={{ color: 'var(--text-muted)' }}>
-                  {c.staff ? `${c.staff.first_name} ${c.staff.last_name}` : '—'}
-                </td>
-                <td style={{ fontSize: '13px' }}>
-                  {c.water_clarity && (
-                    <span style={{
-                      fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '99px',
-                      background: c.water_clarity === 'great' ? '#00b89420' : c.water_clarity === 'concern' ? '#d6303120' : '#fdcb6e20',
-                      color: c.water_clarity === 'great' ? '#00b894' : c.water_clarity === 'concern' ? '#d63031' : '#fdcb6e',
-                      border: `1px solid ${c.water_clarity === 'great' ? '#00b89440' : c.water_clarity === 'concern' ? '#d6303140' : '#fdcb6e40'}`,
-                    }}>
-                      {c.water_clarity}
-                    </span>
-                  )}
-                </td>
-                <td style={{ fontSize: '13px' }}>
-                  {c.aed_self_test === 'pass' ? <span style={{ color: '#00b894', fontWeight: '700', fontSize: '11px' }}>PASS</span>
-                   : c.aed_self_test === 'fail' ? <span style={{ color: '#d63031', fontWeight: '700', fontSize: '11px' }}>FAIL ⚠</span>
-                   : <span style={{ color: 'var(--text-dim)' }}>—</span>}
-                </td>
-                <td style={{ fontSize: '13px' }}>
-                  {c.safety_equipment_check === 'ok' ? <span style={{ color: '#00b894', fontWeight: '700', fontSize: '11px' }}>OK</span>
-                   : c.safety_equipment_check === 'fail' ? <span style={{ color: '#d63031', fontWeight: '700', fontSize: '11px' }}>FAIL ⚠</span>
-                   : <span style={{ color: 'var(--text-dim)' }}>—</span>}
-                </td>
-                <td style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
-                  {c.shift_sessions?.length ?? 0}
-                </td>
-                <td>
-                  {c.has_flags ? (
-                    <span style={{ ...s.badge('#d63031'), fontSize: '11px' }}>
-                      ⚠ {c.flag_summary?.length ?? 0} flag{(c.flag_summary?.length ?? 0) !== 1 ? 's' : ''}
-                    </span>
-                  ) : (
-                    <span style={{ ...s.badge('#00b894'), fontSize: '11px' }}>Clear</span>
-                  )}
-                </td>
-                <td>
-                  <button className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '12px' }}
-                    onClick={() => loadDetail(c.id)}>
-                    View
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Detail modal */}
-      {selected && (
-        <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setSelected(null) }}>
-          <div className="modal" style={{ maxWidth: '760px', maxHeight: '88vh' }}>
-            {detailLoading ? (
-              <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>Loading…</div>
-            ) : (
-              <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                  <div>
-                    <div className="modal-title" style={{ margin: '0 0 4px' }}>Shift Checklist — {selected.pools?.name}</div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
-                      {selected.checklist_date} · {selected.staff ? `${selected.staff.first_name} ${selected.staff.last_name}` : 'Unknown'}
-                    </div>
-                  </div>
-                  {selected.has_flags && (
-                    <div style={{ background: '#d6303120', border: '1px solid #d6303140', borderRadius: '8px', padding: '10px 14px', maxWidth: '220px' }}>
-                      {selected.flag_summary?.map((f: string) => (
-                        <div key={f} style={{ fontSize: '11px', color: '#d63031', fontWeight: '600' }}>⚠ {f}</div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-                  {/* Pre-shift */}
-                  <div style={{ background: 'var(--surface-2)', borderRadius: '10px', padding: '16px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--aqua)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '12px' }}>Pre-Shift</div>
-                    {[
-                      ['Time', selected.pre_shift_time],
-                      ['Lifeguards on duty', selected.lifeguards_on_duty],
-                    ].map(([l, v]) => (
-                      <div key={l as string} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '7px', fontSize: '13px' }}>
-                        <span style={{ color: 'var(--text-muted)' }}>{l}</span>
-                        <span>{v ?? '—'}</span>
-                      </div>
-                    ))}
-                    {[
-                      ['Keys retrieved', selected.keys_retrieved],
-                      ['Patrol log signed', selected.patrol_log_signed],
-                      ['Bumbag retrieved', selected.bumbag_retrieved],
-                      ['Pool door unlocked', selected.pool_door_unlocked],
-                      ['Lights on', selected.lights_on],
-                      ['Changerooms opened', selected.changerooms_opened],
-                    ].map(([l, v]) => (
-                      <div key={l as string} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '7px', fontSize: '13px' }}>
-                        <span style={{ color: 'var(--text-muted)' }}>{l}</span>
-                        {checkIcon(v as boolean)}
-                      </div>
-                    ))}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '7px', fontSize: '13px' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>Deck perimeter walk</span>
-                      <span style={{ color: selected.deck_perimeter_walk === 'all_clear' ? '#00b894' : selected.deck_perimeter_walk === 'issue' ? '#d63031' : 'var(--text-muted)' }}>
-                        {selected.deck_perimeter_walk?.replace('_', ' ') ?? '—'}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>Water clarity</span>
-                      <span style={{ color: selected.water_clarity === 'great' ? '#00b894' : selected.water_clarity === 'concern' ? '#d63031' : 'var(--text)' }}>
-                        {selected.water_clarity ?? '—'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Equipment */}
-                  <div style={{ background: 'var(--surface-2)', borderRadius: '10px', padding: '16px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: '800', color: '#fdcb6e', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '12px' }}>Equipment</div>
-                    {[
-                      ['Safety equipment', passIcon(selected.safety_equipment_check, 'ok', 'fail')],
-                      ['Throw bags', selected.throw_bags_count ?? '—'],
-                      ['Rescue tubes', selected.rescue_tubes_count ?? '—'],
-                      ['Spine board', checkIcon(selected.spine_board_present)],
-                      ['First aid kit', checkIcon(selected.first_aid_kit_ok)],
-                      ['Oxygen equipment', passIcon(selected.oxygen_equipment_check, 'ok', 'fail')],
-                      ['AED daily check', passIcon(selected.aed_check, 'ok', 'fail')],
-                      ['AED self test', passIcon(selected.aed_self_test, 'pass', 'fail')],
-                    ].map(([l, v]) => (
-                      <div key={l as string} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '7px', fontSize: '13px' }}>
-                        <span style={{ color: 'var(--text-muted)' }}>{l as string}</span>
-                        <span>{v as React.ReactNode}</span>
-                      </div>
-                    ))}
-                    {selected.end_of_shift_time && (
-                      <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                        <span style={{ color: 'var(--text-muted)' }}>End of shift</span>
-                        <span style={{ fontWeight: '600' }}>{selected.end_of_shift_time}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Sessions */}
-                {selected.shift_sessions?.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text)', marginBottom: '12px' }}>
-                      Sessions ({selected.shift_sessions.length})
-                    </div>
-                    {selected.shift_sessions.map((sess: any) => (
-                      <div key={sess.id} style={{ background: 'var(--surface-2)', borderRadius: '10px', padding: '16px', marginBottom: '10px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                          <div style={{ fontWeight: '700', color: 'var(--aqua)' }}>
-                            Session {sess.session_number}{sess.pool_users ? ` — ${sess.pool_users}` : ''}
-                          </div>
-                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                            {sess.start_time}{sess.finish_time ? ` – ${sess.finish_time}` : ''}
-                          </div>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '12px' }}>
-                          {[
-                            [`LGs on shift`, sess.lifeguards_on_shift ?? '—'],
-                            [`Rules observed`, sess.rules_observed ? '✓ Yes' : '✗ No'],
-                            [`Reporting required`, sess.reporting_required ? '⚠ Yes' : 'No'],
-                            [`Lane ropes replaced`, sess.lane_ropes_replaced ? '✓' : sess.lane_ropes_replaced === false ? '✗' : '—'],
-                            [`Deck walk`, sess.deck_perimeter_walk ? '✓' : sess.deck_perimeter_walk === false ? '✗' : '—'],
-                            [`Changerooms closed`, sess.changerooms_closed ? '✓' : sess.changerooms_closed === false ? '✗' : '—'],
-                            [`Lights off`, sess.lights_off ? '✓' : sess.lights_off === false ? '✗' : '—'],
-                            [`Keys replaced`, sess.keys_replaced ? '✓' : sess.keys_replaced === false ? '✗' : '—'],
-                          ].map(([l, v]) => (
-                            <div key={l} style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
-                              <span>{l}</span><span style={{ color: 'var(--text)' }}>{v}</span>
-                            </div>
-                          ))}
-                        </div>
-                        {sess.lifeguard_names?.length > 0 && (
-                          <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-muted)' }}>
-                            Lifeguards: {sess.lifeguard_names.join(', ')}
-                          </div>
-                        )}
-                        {sess.external_staff_names?.length > 0 && (
-                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                            External staff: {sess.external_staff_names.join(', ')}
-                          </div>
-                        )}
-                        {sess.incident_description && (
-                          <div style={{ marginTop: '10px', background: '#e1705520', border: '1px solid #e1705540', borderRadius: '8px', padding: '10px', fontSize: '12px', color: '#e17055' }}>
-                            ⚠ {sess.incident_description}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {selected.notes && (
-                  <div style={{ marginTop: '12px', background: 'var(--surface-2)', borderRadius: '8px', padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>
-                    {selected.notes}
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-                  <button className="btn btn-secondary" onClick={() => setSelected(null)}>Close</button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </>
   )
 }
@@ -3599,7 +3341,7 @@ export default function AdminPage() {
     microbiology: 'Microbiology Testing',
     'chemistry-calc': 'Chemistry Calculator',
     staff: 'Staff & Scheduling',
-    checklists: 'Shift Checklists',
+    'site-tasks': 'Site Tasks',
     help: 'Help & Instructions',
     assets: 'Asset Register',
     compliance: 'Compliance',
@@ -3733,8 +3475,8 @@ export default function AdminPage() {
         {tab === 'microbiology'  && <MicrobiologyTab />}
         {tab === 'chemistry-calc' && <ChemistryCalculatorTab />}
         {tab === 'staff'         && <StaffTab />}
-        {tab === 'checklists'    && <ChecklistsTab />}
         {tab === 'help'          && <HelpTab />}
+        {tab === 'site-tasks'    && <SiteTasksTab />}
         {tab === 'assets'        && <AssetsTab />}
         {tab === 'compliance'    && <ComplianceTab />}
         {tab === 'chemicals'     && <ChemicalsTab />}

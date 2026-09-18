@@ -10,7 +10,14 @@ const transporter = nodemailer.createTransport({
 
 const FROM = `"AquaPro" <${process.env.EMAIL_USER}>`
 
+export function emailConfigured(): boolean {
+  return Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS)
+}
+
 export async function sendEmail(to: string, subject: string, html: string) {
+  if (!emailConfigured()) {
+    throw new Error('Email is not set up: EMAIL_USER and EMAIL_PASS (Gmail app password) are missing from the server environment')
+  }
   await transporter.sendMail({ from: FROM, to, subject, html })
 }
 

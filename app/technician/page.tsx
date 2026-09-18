@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, ClipboardList, FlaskConical, Package, HelpCircle, Camera, Plus, X, LayoutDashboard } from 'lucide-react'
+import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, FlaskConical, Package, HelpCircle, Camera, Plus, X, LayoutDashboard } from 'lucide-react'
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
-import ShiftChecklist from '@/components/ShiftChecklist'
 import PlantLog from '@/components/PlantLog'
 import SiteTaskList from '@/components/SiteTaskList'
 import SiteStockCount from '@/components/SiteStockCount'
@@ -17,7 +16,6 @@ export default function TechnicianPage() {
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<any>(null)
   const [showTestForm, setShowTestForm] = useState(false)
-  const [showChecklist, setShowChecklist] = useState(false)
   const [showPlantLog, setShowPlantLog] = useState(false)
   const [showStockCount, setShowStockCount] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
@@ -313,10 +311,6 @@ export default function TechnicianPage() {
             {selected.pool_id && <SiteTaskList poolId={selected.pool_id} />}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#0077b6' }}
-                onClick={() => setShowChecklist(true)}>
-                <ClipboardList size={16} /> Shift Checklist
-              </button>
               {selected.pool_id && (
                 <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px' }}
                   onClick={() => setShowTestForm(true)}>
@@ -498,6 +492,12 @@ export default function TechnicianPage() {
                   style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '10px 12px', fontSize: '14px', width: '100%', outline: 'none' }}
                 />
               </div>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px' }}>
+                <Camera size={18} color="#00b4d8" style={{ flexShrink: 0, marginTop: '1px' }} />
+                <div style={{ fontSize: '13px', color: '#94a3b8' }}>
+                  <span style={{ color: '#e2e8f0', fontWeight: '600' }}>Photos come next.</span> After you tap Submit you can add photos of the test strip, readings, faults or damage — they're attached to this test.
+                </div>
+              </div>
               {testError && (
                 <div style={{ color: '#d63031', fontSize: '13px', textAlign: 'center', marginBottom: '12px' }}>{testError}</div>
               )}
@@ -507,18 +507,6 @@ export default function TechnicianPage() {
             </form>
           </div>
         </div>
-      )}
-
-      {/* Shift checklist (full-screen step flow) */}
-      {showChecklist && selected && (
-        <ShiftChecklist
-          poolId={selected.pool_id ?? ''}
-          poolName={selected.pools?.name ?? 'Shift'}
-          shiftId={selected.id ?? ''}
-          staffName={user ? `${user.firstName} ${user.lastName}` : ''}
-          onClose={() => setShowChecklist(false)}
-          onSubmitted={() => { setShowChecklist(false); setSelected(null) }}
-        />
       )}
 
       {/* Help / instructions */}

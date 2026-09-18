@@ -22,7 +22,7 @@ Codebase facts you should use when diagnosing:
   12-tab single-page dashboard, app/admin/page.tsx — a large file, one function per tab e.g.
   PoolsTab, WaterTestingTab, ChecklistsTab, RiskTab, ChemicalsTab, ClosuresTab, RemoteSitesTab,
   FeedbackTab),
-  /technician (mobile-first, shift list, water test logging, shift checklist, plant room log),
+  /technician (mobile-first, shift list, water test logging, plant room log),
   /contractor (minimal, assigned jobs), /pool-manager (read-only water status + compliance).
 - Key tables: pools, staff, water_tests, water_test_targets, assets, asset_categories, shifts,
   service_routes/route_pools, iot_sensors, compliance_requirements/compliance_events, incidents,
