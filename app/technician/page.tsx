@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, ClipboardList, FlaskConical, Package } from 'lucide-react'
+import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, ClipboardList, FlaskConical, Package, HelpCircle } from 'lucide-react'
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
 import ShiftChecklist from '@/components/ShiftChecklist'
 import PlantLog from '@/components/PlantLog'
 import SiteTaskList from '@/components/SiteTaskList'
 import SiteStockCount from '@/components/SiteStockCount'
+import HelpGuide, { TECH_GUIDE } from '@/components/HelpGuide'
 import ReportIssueButton from '@/components/ReportIssueButton'
 
 export default function TechnicianPage() {
@@ -18,6 +19,7 @@ export default function TechnicianPage() {
   const [showChecklist, setShowChecklist] = useState(false)
   const [showPlantLog, setShowPlantLog] = useState(false)
   const [showStockCount, setShowStockCount] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
   const [testForm, setTestForm] = useState({
     free_chlorine: '', combined_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '',
     calcium_hardness: '', cyanuric_acid: '', salt_level: '', phosphates: '',
@@ -163,6 +165,9 @@ export default function TechnicianPage() {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <button onClick={() => setShowHelp(true)} title="How to use AquaPro" style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex' }}>
+              <HelpCircle size={19} />
+            </button>
             <ReportIssueButton />
             <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
               <LogOut size={18} />
@@ -393,6 +398,22 @@ export default function TechnicianPage() {
           onClose={() => setShowChecklist(false)}
           onSubmitted={() => { setShowChecklist(false); setSelected(null) }}
         />
+      )}
+
+      {/* Help / instructions */}
+      {showHelp && (
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 400, overflowY: 'auto' }}>
+          <div style={{ padding: '20px', maxWidth: '480px', margin: '0 auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+              <button onClick={() => setShowHelp(false)} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '8px 14px', cursor: 'pointer' }}>
+                ← Back
+              </button>
+              <div style={{ fontWeight: '700', fontSize: '16px', color: '#e2e8f0' }}>How to use AquaPro</div>
+            </div>
+            <div style={{ color: '#64748b', fontSize: '13px', marginBottom: '16px' }}>Tap a heading to open it. If you're stuck, phone the office.</div>
+            <HelpGuide sections={TECH_GUIDE} dark />
+          </div>
+        </div>
       )}
 
       {/* Site stock count */}
