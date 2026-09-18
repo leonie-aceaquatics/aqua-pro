@@ -15,12 +15,15 @@ export async function GET(req: NextRequest) {
   if (!poolId) return NextResponse.json({ error: 'pool_id required' }, { status: 400 })
   const date = todaySydney()
 
+  // All-sites tasks + tasks for this pool's type (e.g. splash_pad) + this pool's own tasks
+  const { data: pool } = await supabaseAdmin.from('pools').select('pool_type').eq('id', poolId).single()
+  const poolType = pool?.pool_type ?? ''
   const [{ data: tasks, error: tErr }, { data: done, error: dErr }] = await Promise.all([
     supabaseAdmin
       .from('site_tasks')
       .select('id, label, category, pool_id, sort_order')
       .eq('is_active', true)
-      .or(`pool_id.is.null,pool_id.eq.${poolId}`)
+      .or(`and(pool_id.is.null,pool_type.is.null),pool_id.eq.${poolId}${poolType ? `,pool_type.eq.${poolType}` : ''}`)
       .order('sort_order')
       .order('created_at'),
     supabaseAdmin

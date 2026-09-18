@@ -40,8 +40,16 @@ export const TECH_GUIDE: Section[] = [
         'Combined Chlorine = Total Chlorine − Free Chlorine. Enter Free and Total and it appears.',
         'LSI (water balance) appears once you have pH, Total Alkalinity, Calcium Hardness AND Temperature. Green = balanced. Orange = corrosive or scale-forming.',
       ] },
-      'Add any notes (e.g. "cloudy after storm", "dosed 5L acid") in the Notes box.',
-      'Tap Save. The result is checked against the ranges for that pool straight away and emailed to the office.',
+      { text: 'Chemtrol / Controller — type what the controller screen shows for pH and Free Cl.', sub: [
+        'The app shows the difference against your test. If it says "calibrate", calibrate the controller and tick Calibrated.',
+      ] },
+      { text: 'Chemicals Added — only if you dosed by hand.', sub: [
+        'Tap Add chemical, pick the product, enter how much (litres / kg). It comes off that site\'s stock automatically.',
+      ] },
+      'Faults or Breakdowns — anything broken, leaking, alarming or not working. It goes straight to the office as an incident.',
+      'Add any other notes (e.g. "cloudy after storm") in the Notes box.',
+      'Tap Submit Water Test. The result is checked against the ranges for that pool straight away and emailed to the office.',
+      'Then you can add photos of the job (readings, damage, graffiti, the fault) before tapping Done.',
       { text: 'What the colour means after you save:', sub: [
         'Green — all good.',
         'Yellow — keep an eye on it.',
@@ -93,7 +101,7 @@ export const TECH_GUIDE: Section[] = [
     steps: [
       'Red water result → close the pool, phone Tony, then log what you did.',
       'Orange result → dose to bring it into range, re-test before you leave, log both tests.',
-      'Equipment fault, leak, safety issue → take photos, tell Tony, and note it in the Plant Room Log or the water test notes.',
+      'Equipment fault, leak, safety issue → put it in the Faults or Breakdowns box on the water test, add photos, and tell Tony.',
       'Out of chemicals → put 0 in Count Stock so it goes on the order list, and tell the office if it is urgent.',
     ],
   },

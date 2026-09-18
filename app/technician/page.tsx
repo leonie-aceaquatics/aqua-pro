@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, ClipboardList, FlaskConical, Package, HelpCircle } from 'lucide-react'
+import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, ClipboardList, FlaskConical, Package, HelpCircle, Camera, Plus, X } from 'lucide-react'
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
 import ShiftChecklist from '@/components/ShiftChecklist'
 import PlantLog from '@/components/PlantLog'
 import SiteTaskList from '@/components/SiteTaskList'
 import SiteStockCount from '@/components/SiteStockCount'
 import HelpGuide, { TECH_GUIDE } from '@/components/HelpGuide'
+import AttachmentPanel from '@/components/AttachmentPanel'
 import ReportIssueButton from '@/components/ReportIssueButton'
 
 export default function TechnicianPage() {
@@ -24,7 +25,11 @@ export default function TechnicianPage() {
     free_chlorine: '', combined_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '',
     calcium_hardness: '', cyanuric_acid: '', salt_level: '', phosphates: '',
     temperature_c: '', turbidity: '', notes: '',
+    controller_ph: '', controller_fcl: '', calibrate_ph: false, calibrate_fcl: false, fault_report: '',
   })
+  const [doses, setDoses] = useState<{ chemical_id: string; quantity: string }[]>([])
+  const [chemicals, setChemicals] = useState<any[]>([])
+  const [savedTest, setSavedTest] = useState<any>(null)   // just-saved test, for the photo step
   const [saving, setSaving] = useState(false)
   const [lastTest, setLastTest] = useState<any>(null)
   const [loadError, setLoadError] = useState(false)
@@ -35,6 +40,7 @@ export default function TechnicianPage() {
     free_chlorine: '', combined_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '',
     calcium_hardness: '', cyanuric_acid: '', salt_level: '', phosphates: '',
     temperature_c: '', turbidity: '', notes: '',
+    controller_ph: '', controller_fcl: '', calibrate_ph: false, calibrate_fcl: false, fault_report: '',
   }
 
   function loadShifts() {
@@ -54,6 +60,7 @@ export default function TechnicianPage() {
   }
 
   useEffect(() => { loadShifts() }, [])
+  useEffect(() => { fetch('/api/admin/chemicals').then(r => r.json()).then(d => setChemicals(d.chemicals ?? [])).catch(() => {}) }, [])
 
   async function loadLastTest(poolId: string) {
     try {
@@ -95,8 +102,9 @@ export default function TechnicianPage() {
       ...testForm,
     }
     const numFields = ['free_chlorine','combined_chlorine','total_chlorine','ph','total_alkalinity','calcium_hardness',
-      'cyanuric_acid','salt_level','phosphates','temperature_c','turbidity']
+      'cyanuric_acid','salt_level','phosphates','temperature_c','turbidity','controller_ph','controller_fcl']
     numFields.forEach(f => { if (payload[f] === '') payload[f] = null })
+    payload.doses = doses.filter(d => d.chemical_id && Number(d.quantity) > 0)
 
     try {
       const res = await fetch('/api/admin/water-tests', {
@@ -105,9 +113,10 @@ export default function TechnicianPage() {
       })
       const data = await res.json().catch(() => ({}))
       if (res.ok) {
-        setShowTestForm(false)
         setLastTest(data.test)
+        setSavedTest(data.test)      // stay on screen for photos; form resets when they tap Done
         setTestForm(blankTestForm)
+        setDoses([])
       } else {
         setTestError(data.error ?? 'Could not save this test — try again.')
       }
@@ -322,8 +331,38 @@ export default function TechnicianPage() {
         </div>
       )}
 
+      {/* Saved — add photos, then Done */}
+      {showTestForm && selected && savedTest && (
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 300, overflowY: 'auto' }}>
+          <div style={{ padding: '20px', maxWidth: '480px', margin: '0 auto' }}>
+            <div style={{ background: '#00b89418', border: '1px solid #00b89440', borderRadius: '10px', padding: '14px 16px', marginBottom: '16px' }}>
+              <div style={{ fontWeight: '700', color: '#00b894', marginBottom: '2px' }}><CheckCircle size={16} style={{ verticalAlign: '-3px', marginRight: '6px' }} />Water test saved</div>
+              <div style={{ fontSize: '13px', color: '#94a3b8' }}>
+                {selected.pools?.name} · {RISK_LABELS[savedTest.risk_level as keyof typeof RISK_LABELS]}
+                {savedTest.incident_id ? ' · fault reported to office' : ''}
+              </div>
+            </div>
+            <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '16px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}><Camera size={13} style={{ verticalAlign: '-2px', marginRight: '4px' }} />Photos of the job</div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>Optional. Add photos of readings, faults, damage or graffiti. They're attached to this test.</div>
+              <AttachmentPanel entityType="water_test" entityId={savedTest.id} />
+              {savedTest.incident_id && (
+                <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#e17055', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Photos of the fault</div>
+                  <AttachmentPanel entityType="incident" entityId={savedTest.incident_id} />
+                </div>
+              )}
+            </div>
+            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: '15px' }}
+              onClick={() => { setSavedTest(null); setShowTestForm(false) }}>
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Water test form */}
-      {showTestForm && selected && (
+      {showTestForm && selected && !savedTest && (
         <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 300, overflowY: 'auto' }}>
           <div style={{ padding: '20px', maxWidth: '480px', margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
@@ -371,6 +410,66 @@ export default function TechnicianPage() {
                 {numInput('phosphates', 'Phosphates (ppb)', '0')}
                 {numInput('turbidity', 'Turbidity (NTU)', '0')}
               </div>
+
+              {/* Chemtrol / controller: what the screen says vs what the test says, and whether it was calibrated */}
+              <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Chemtrol / Controller</div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>What the controller screen shows right now. Calibrate if it's out from your test.</div>
+                {([['controller_ph', 'ph', 'pH on screen', '7.4', 0.2, 'calibrate_ph'], ['controller_fcl', 'free_chlorine', 'Free Cl on screen (ppm)', '2.0', 0.5, 'calibrate_fcl']] as const).map(([key, manualKey, label, ph, tol, calKey]) => {
+                  const ctrl = testForm[key], manual = testForm[manualKey]
+                  const diff = ctrl !== '' && manual !== '' ? Number(ctrl) - Number(manual) : null
+                  const out = diff !== null && Math.abs(diff) > tol
+                  return (
+                    <div key={key} style={{ marginBottom: '12px' }}>
+                      {numInput(key, label, ph)}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '-6px' }}>
+                        <span style={{ fontSize: '12px', color: out ? '#e17055' : '#64748b' }}>
+                          {diff === null ? 'Enter both to compare' : `${diff > 0 ? '+' : ''}${diff.toFixed(2)} vs your test${out ? ' — calibrate' : ' — OK'}`}
+                        </span>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#e2e8f0' }}>
+                          <input type="checkbox" checked={testForm[calKey]} onChange={e => setTestForm(f => ({ ...f, [calKey]: e.target.checked }))} style={{ width: '18px', height: '18px', accentColor: '#00b894' }} />
+                          Calibrated
+                        </label>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Chemicals added by hand at this visit — logged as usage, comes off site stock */}
+              <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Chemicals Added (manual dosing)</div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>Only what you added by hand. Leave empty if the controller did the dosing.</div>
+                {doses.map((d, i) => {
+                  const chem = chemicals.find(c => c.id === d.chemical_id)
+                  return (
+                    <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+                      <select value={d.chemical_id} onChange={e => setDoses(ds => ds.map((x, j) => j === i ? { ...x, chemical_id: e.target.value } : x))}
+                        style={{ flex: 1, minWidth: 0, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '10px', fontSize: '14px' }}>
+                        <option value="">Product…</option>
+                        {chemicals.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                      <input type="number" inputMode="decimal" step="0.1" min="0" placeholder="Qty" value={d.quantity}
+                        onChange={e => setDoses(ds => ds.map((x, j) => j === i ? { ...x, quantity: e.target.value } : x))}
+                        style={{ width: '70px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '10px 8px', fontSize: '14px', textAlign: 'center' }} />
+                      <span style={{ fontSize: '12px', color: '#64748b', width: '26px' }}>{chem?.dose_unit ?? chem?.unit ?? ''}</span>
+                      <button type="button" onClick={() => setDoses(ds => ds.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}><X size={16} /></button>
+                    </div>
+                  )
+                })}
+                <button type="button" className="btn btn-secondary" style={{ padding: '8px 12px', fontSize: '13px' }} onClick={() => setDoses(ds => [...ds, { chemical_id: '', quantity: '' }])}>
+                  <Plus size={14} /> Add chemical
+                </button>
+              </div>
+
+              {/* Faults — becomes an open incident the office sees immediately */}
+              <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px', border: `1px solid ${testForm.fault_report ? '#d6303160' : 'transparent'}` }}>
+                <div style={{ fontSize: '11px', fontWeight: '700', color: '#e17055', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Faults or Breakdowns</div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>Anything broken, leaking, alarming or not working. This goes straight to the office as an incident.</div>
+                <textarea rows={2} value={testForm.fault_report} onChange={e => setTestForm(f => ({ ...f, fault_report: e.target.value }))} placeholder="e.g. Circulation pump 1 tripping, no flow on feature 3"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '10px 12px', fontSize: '14px', width: '100%', resize: 'vertical' }} />
+              </div>
+
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Notes</label>
                 <textarea rows={3} value={testForm.notes} onChange={e => setTestForm(f => ({ ...f, notes: e.target.value }))}

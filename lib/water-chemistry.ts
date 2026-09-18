@@ -1,6 +1,6 @@
 // Water chemistry calculations and risk classification for AquaPro
 
-export type PoolType = 'indoor' | 'outdoor' | 'spa' | 'wading' | 'hydrotherapy' | 'leisure'
+export type PoolType = 'indoor' | 'outdoor' | 'spa' | 'wading' | 'hydrotherapy' | 'leisure' | 'splash_pad'
 export type SanitiserType = 'chlorine' | 'bromine' | 'saltwater' | 'uv_chlorine' | 'ozone_chlorine' | 'baquacil'
 export type RiskLevel = 'green' | 'yellow' | 'orange' | 'red'
 

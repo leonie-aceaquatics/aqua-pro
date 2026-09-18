@@ -31,8 +31,9 @@ export async function GET(req: NextRequest) {
     .eq('is_active', true)
     .order('sort_order')
     .order('created_at')
-  // 'all' = only the global tasks; a pool id = that pool's own tasks; nothing = everything
-  if (poolId === 'all') query = query.is('pool_id', null)
+  // 'all' = only the global tasks; 'type:splash_pad' = that pool type's tasks; a pool id = that pool's own; nothing = everything
+  if (poolId === 'all') query = query.is('pool_id', null).is('pool_type', null)
+  else if (poolId?.startsWith('type:')) query = query.eq('pool_type', poolId.slice(5))
   else if (poolId) query = query.eq('pool_id', poolId)
 
   const { data, error } = await query
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await supabaseAdmin
     .from('site_tasks')
-    .insert({ label, category: String(body.category ?? '').trim() || null, pool_id: body.pool_id || null, sort_order: body.sort_order ?? 0, created_by: user.id })
+    .insert({ label, category: String(body.category ?? '').trim() || null, pool_id: body.pool_id || null, pool_type: body.pool_type || null, sort_order: body.sort_order ?? 0, created_by: user.id })
     .select('*, pools(name)')
     .single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

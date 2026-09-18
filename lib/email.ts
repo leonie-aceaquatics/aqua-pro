@@ -246,6 +246,24 @@ export function buildWaterTestResultsEmail(test: Record<string, any>, poolName: 
         <td style="padding:8px 12px;text-align:right;font-weight:700;color:${Math.abs(Number(lsi)) <= 0.3 ? '#00b894' : '#e17055'}">${Number(lsi) > 0 ? '+' : ''}${Number(lsi).toFixed(2)} · ${Number(lsi) < -0.3 ? 'corrosive' : Number(lsi) > 0.3 ? 'scale-forming' : 'balanced'}</td>
       </tr>` : ''
 
+  const ctrl = (label: string, manual: any, controller: any, calibrated: any) => {
+    if (controller === null || controller === undefined) return ''
+    const diff = manual !== null && manual !== undefined ? Number(controller) - Number(manual) : null
+    return `<tr>
+        <td style="padding:8px 12px;color:#94a3b8;border-bottom:1px solid #1a2d45">Chemtrol ${label}</td>
+        <td style="padding:8px 12px;text-align:right;color:#e2e8f0;border-bottom:1px solid #1a2d45">${Number(controller)}${diff !== null ? ` <span style="color:${Math.abs(diff) > (label === 'pH' ? 0.2 : 0.5) ? '#e17055' : '#64748b'}">(${diff > 0 ? '+' : ''}${diff.toFixed(2)} vs test)</span>` : ''}${calibrated ? ' · <span style="color:#00b894">calibrated</span>' : ''}</td>
+      </tr>`
+  }
+  const controllerRows = ctrl('pH', test.ph, test.controller_ph, test.calibrate_ph) + ctrl('Free Cl', test.free_chlorine, test.controller_fcl, test.calibrate_fcl)
+  const doses: any[] = test.doses ?? []
+  const dosesBlock = doses.length ? `<div style="background:#1a2d45;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:14px">
+      <span style="color:#64748b;font-size:12px;display:block;margin-bottom:6px">Chemicals added</span>
+      ${doses.map(d => `<div style="color:#e2e8f0">${Number(d.quantity)} ${d.chemicals?.dose_unit ?? d.chemicals?.unit ?? ''} ${d.chemicals?.name ?? ''}</div>`).join('')}
+    </div>` : ''
+  const faultBlock = test.fault_report ? `<div style="background:#d6303122;border:1px solid #d63031;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:14px;color:#e2e8f0">
+      <span style="color:#d63031;font-weight:700;font-size:12px;display:block;margin-bottom:4px">FAULT / BREAKDOWN REPORTED</span>${String(test.fault_report).replace(/</g, '&lt;')}
+    </div>` : ''
+
   return base(`
     <h2 style="margin:0 0 4px;color:#ffffff">Water Test — ${poolName}</h2>
     <div style="color:#64748b;font-size:13px;margin-bottom:20px">${when} · tested by ${testedBy}</div>
@@ -254,8 +272,9 @@ export function buildWaterTestResultsEmail(test: Record<string, any>, poolName: 
       ${flags.length ? `<div style="color:#cbd5e1;font-size:13px;margin-top:4px">${flags.join(' · ')}</div>` : ''}
     </div>
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a1628;border-radius:8px;margin-bottom:20px;font-size:14px">
-      ${rows}${lsiRow}
+      ${rows}${controllerRows}${lsiRow}
     </table>
+    ${faultBlock}${dosesBlock}
     ${test.notes ? `<div style="background:#1a2d45;border-radius:8px;padding:12px 16px;margin-bottom:20px;color:#e2e8f0;font-size:14px"><span style="color:#64748b;font-size:12px;display:block;margin-bottom:4px">Notes</span>${String(test.notes).replace(/</g, '&lt;')}</div>` : ''}
     <a href="${testUrl}" style="display:inline-block;background:#00b4d8;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600">
       Open in AquaPro
@@ -265,7 +284,7 @@ export function buildWaterTestResultsEmail(test: Record<string, any>, poolName: 
 
 export async function sendWaterTestResultsEmail(test: Record<string, any>, poolName: string, testedBy: string, testUrl: string) {
   const risk = test.risk_level as string
-  const prefix = risk === 'red' ? '🚨 ' : risk === 'orange' ? '⚠️ ' : ''
+  const prefix = (risk === 'red' ? '🚨 ' : risk === 'orange' ? '⚠️ ' : '') + (test.fault_report ? '🔧 ' : '')
   try {
     await sendEmail(RESULTS_EMAIL, `${prefix}Water test: ${poolName}`, buildWaterTestResultsEmail(test, poolName, testedBy, testUrl))
   } catch (e) {

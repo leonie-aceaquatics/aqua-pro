@@ -338,8 +338,8 @@ function PoolsTab() {
                 <div style={s.formGroup}>
                   <label>Pool Type *</label>
                   <select required value={form.pool_type} onChange={e => setForm(f => ({ ...f, pool_type: e.target.value }))}>
-                    {['outdoor','indoor','spa','wading','hydrotherapy','leisure'].map(t => (
-                      <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                    {['outdoor','indoor','spa','wading','hydrotherapy','leisure','splash_pad'].map(t => (
+                      <option key={t} value={t}>{t === 'splash_pad' ? 'Splash Pad' : t.charAt(0).toUpperCase() + t.slice(1)}</option>
                     ))}
                   </select>
                 </div>
@@ -714,6 +714,36 @@ function WaterTestingTab() {
                   </div>
                 )
               })}
+            </div>
+
+            {/* Chemtrol vs test, fault, photos — from the technician form */}
+            {(selectedTest.controller_ph != null || selectedTest.controller_fcl != null) && (
+              <div style={{ background: 'var(--surface-2)', borderRadius: '8px', padding: '12px 14px', marginBottom: '16px', fontSize: '13px' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>Chemtrol / controller at time of test</div>
+                {([['pH', selectedTest.controller_ph, selectedTest.ph, selectedTest.calibrate_ph, 0.2], ['Free Cl', selectedTest.controller_fcl, selectedTest.free_chlorine, selectedTest.calibrate_fcl, 0.5]] as const)
+                  .filter(([, c]) => c != null).map(([label, c, m, cal, tol]) => {
+                    const diff = m != null ? Number(c) - Number(m) : null
+                    return (
+                      <div key={label} style={{ display: 'flex', gap: '12px', color: 'var(--text)' }}>
+                        <span style={{ width: '60px', color: 'var(--text-muted)' }}>{label}</span>
+                        <span>screen {Number(c)}</span>
+                        {diff !== null && <span style={{ color: Math.abs(diff) > tol ? 'var(--orange)' : 'var(--text-muted)' }}>({diff > 0 ? '+' : ''}{diff.toFixed(2)} vs test)</span>}
+                        {cal && <span style={{ color: 'var(--green)' }}>calibrated ✓</span>}
+                      </div>
+                    )
+                  })}
+              </div>
+            )}
+            {selectedTest.fault_report && (
+              <div style={{ background: '#d6303115', border: '1px solid #d6303150', borderRadius: '8px', padding: '12px 14px', marginBottom: '16px', fontSize: '13px', color: 'var(--text)' }}>
+                <div style={{ fontSize: '11px', color: 'var(--red)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>Fault / breakdown reported</div>
+                {selectedTest.fault_report}
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>Logged as an open incident — see Overview → Open Incidents.</div>
+              </div>
+            )}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>Photos</div>
+              <AttachmentPanel entityType="water_test" entityId={selectedTest.id} />
             </div>
 
             {/* AI Advice */}

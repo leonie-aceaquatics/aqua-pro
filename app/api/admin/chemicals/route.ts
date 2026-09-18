@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
-import { queueIfLowStock, queueIfLowStockAtSite } from '@/lib/chemical-orders'
+import { queueIfLowStock } from '@/lib/chemical-orders'
+import { logChemicalUsage } from '@/lib/chemical-usage'
 
 export async function GET(req: NextRequest) {
   const user = await getSession()
@@ -37,45 +38,15 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
 
   if (body.action === 'log_usage') {
-    const { data: usage, error: ue } = await supabaseAdmin
-      .from('chemical_usage_log')
-      .insert({
-        pool_id: body.pool_id,
-        chemical_id: body.chemical_id,
-        water_test_id: body.water_test_id || null,
-        applied_by: user.id,
-        applied_at: body.applied_at || new Date().toISOString(),
-        quantity: body.quantity,
-        notes: body.notes || null,
+    try {
+      const usage = await logChemicalUsage({
+        pool_id: body.pool_id, chemical_id: body.chemical_id, quantity: Number(body.quantity), applied_by: user.id,
+        applied_at: body.applied_at || undefined, water_test_id: body.water_test_id || null, notes: body.notes || null,
       })
-      .select('*, chemicals(name, unit, dose_unit), pools(name)')
-      .single()
-    if (ue) return NextResponse.json({ error: ue.message }, { status: 500 })
-
-    // Decrement stock. Quantity is in dose units (L/kg); stock is in containers (drum/bag),
-    // so convert via container_size. No container_size = 1:1 (dose unit is the stock unit).
-    // Comes off the site's own stock when the site holds this chemical, otherwise the depot.
-    const [{ data: chem }, { data: siteRow }] = await Promise.all([
-      supabaseAdmin.from('chemicals').select('current_stock, container_size').eq('id', body.chemical_id).single(),
-      supabaseAdmin.from('site_chemical_stock').select('id, quantity').match({ pool_id: body.pool_id, chemical_id: body.chemical_id }).maybeSingle(),
-    ])
-    const perContainer = Number(chem?.container_size) > 0 ? Number(chem!.container_size) : 1
-    const used = Number(body.quantity) / perContainer
-    const minus = (stock: number) => Math.max(0, Math.round((stock - used) * 100) / 100)
-    if (siteRow) {
-      await supabaseAdmin
-        .from('site_chemical_stock')
-        .update({ quantity: minus(Number(siteRow.quantity)), updated_at: new Date().toISOString() })
-        .eq('id', siteRow.id)
-      await queueIfLowStockAtSite(body.pool_id, body.chemical_id)
-    } else if (chem && chem.current_stock !== null) {
-      await supabaseAdmin
-        .from('chemicals')
-        .update({ current_stock: minus(Number(chem.current_stock)) })
-        .eq('id', body.chemical_id)
-      await queueIfLowStock(body.chemical_id)
+      return NextResponse.json({ usage })
+    } catch (e: any) {
+      return NextResponse.json({ error: e.message }, { status: 500 })
     }
-    return NextResponse.json({ usage })
   }
 
   if (body.action === 'update_stock') {

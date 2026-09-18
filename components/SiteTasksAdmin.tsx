@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { ListChecks, Plus, Trash2, ClipboardCheck } from 'lucide-react'
 import { groupByCategory } from '@/lib/site-tasks'
 
+const POOL_TYPES: [string, string][] = [['splash_pad', 'Splash pads'], ['outdoor', 'Outdoor pools'], ['indoor', 'Indoor pools'], ['spa', 'Spas'], ['wading', 'Wading pools'], ['hydrotherapy', 'Hydrotherapy pools'], ['leisure', 'Leisure pools']]
 const CATEGORIES = ['Arrival', 'Water quality', 'Equipment', 'Chemical dosing', 'Cleaning', 'Filtration', 'Safety', 'Compliance', 'Departure']
 
 // Admin side of the per-site task list: edit the tasks, and see who ticked what on a day.
@@ -34,7 +35,12 @@ function TaskEditor({ pools }: { pools: any[] }) {
     setSaving(true); setError('')
     const res = await fetch('/api/admin/site-tasks', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ label: label.trim(), category, pool_id: scope === 'all' ? null : scope, sort_order: (tasks.at(-1)?.sort_order ?? 0) + 10 }),
+      body: JSON.stringify({
+        label: label.trim(), category,
+        pool_id: scope === 'all' || scope.startsWith('type:') ? null : scope,
+        pool_type: scope.startsWith('type:') ? scope.slice(5) : null,
+        sort_order: (tasks.at(-1)?.sort_order ?? 0) + 10,
+      }),
     })
     const d = await res.json()
     if (!res.ok) setError(d.error ?? 'Could not add task')
@@ -56,11 +62,16 @@ function TaskEditor({ pools }: { pools: any[] }) {
         </div>
         <select value={scope} onChange={e => setScope(e.target.value)} style={{ width: '200px' }}>
           <option value="all">All sites</option>
-          {pools.map(p => <option key={p.id} value={p.id}>{p.name} only</option>)}
+          <optgroup label="By site type">
+            {POOL_TYPES.map(([v, l]) => <option key={v} value={`type:${v}`}>All {l.toLowerCase()}</option>)}
+          </optgroup>
+          <optgroup label="One site only">
+            {pools.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </optgroup>
         </select>
       </div>
       <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
-        What technicians tick off on each visit. "All sites" tasks show at every pool; pick a pool to add tasks just for it.
+        What technicians tick off on each visit. "All sites" tasks show everywhere; a site type (e.g. splash pads) adds tasks to every site of that type; or pick one site.
       </div>
 
       {tasks.length === 0 ? (
