@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, FlaskConical, Package, HelpCircle, Camera, Plus, X, LayoutDashboard } from 'lucide-react'
+import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, FlaskConical, Package, HelpCircle, Camera, Plus, X, LayoutDashboard, Calculator } from 'lucide-react'
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
 import PlantLog from '@/components/PlantLog'
+import ChemistryCalculatorTab from '@/components/ChemistryCalculatorTab'
 import SiteTaskList from '@/components/SiteTaskList'
 import SiteStockCount from '@/components/SiteStockCount'
 import HelpGuide, { TECH_GUIDE } from '@/components/HelpGuide'
@@ -18,6 +19,7 @@ export default function TechnicianPage() {
   const [showTestForm, setShowTestForm] = useState(false)
   const [showPlantLog, setShowPlantLog] = useState(false)
   const [showStockCount, setShowStockCount] = useState(false)
+  const [showCalc, setShowCalc] = useState<{ poolId: string; poolName: string } | null>(null)   // dose calculator overlay
   const [showHelp, setShowHelp] = useState(false)
   const [testForm, setTestForm] = useState({
     free_chlorine: '', combined_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '',
@@ -180,6 +182,9 @@ export default function TechnicianPage() {
             {isOffice && (
               <a href="/admin" title="Office dashboard" style={{ color: '#00b4d8', display: 'flex' }}><LayoutDashboard size={19} /></a>
             )}
+            <button onClick={() => setShowCalc({ poolId: '', poolName: '' })} title="Dose calculator" style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex' }}>
+              <Calculator size={19} />
+            </button>
             <button onClick={() => setShowHelp(true)} title="How to use AquaPro" style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex' }}>
               <HelpCircle size={19} />
             </button>
@@ -321,6 +326,12 @@ export default function TechnicianPage() {
                 <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#0d6e4e' }}
                   onClick={() => setShowPlantLog(true)}>
                   <FlaskConical size={16} /> Plant Room Log
+                </button>
+              )}
+              {selected.pool_id && (
+                <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#b8860b' }}
+                  onClick={() => setShowCalc({ poolId: selected.pool_id, poolName: selected.pools?.name ?? '' })}>
+                  <Calculator size={16} /> Dose Calculator
                 </button>
               )}
               {selected.pool_id && (
@@ -521,6 +532,24 @@ export default function TechnicianPage() {
             </div>
             <div style={{ color: '#64748b', fontSize: '13px', marginBottom: '16px' }}>Tap a heading to open it. If you're stuck, phone the office.</div>
             <HelpGuide sections={TECH_GUIDE} dark />
+          </div>
+        </div>
+      )}
+
+      {/* Dose calculator — scratch calculation, nothing is saved */}
+      {showCalc && (
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 400, overflowY: 'auto' }}>
+          <div style={{ padding: '20px', maxWidth: '480px', margin: '0 auto', paddingBottom: '40px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <button onClick={() => setShowCalc(null)} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '8px 14px', cursor: 'pointer' }}>
+                ← Back
+              </button>
+              <div>
+                <div style={{ fontWeight: '700', fontSize: '16px', color: '#e2e8f0' }}>Dose Calculator</div>
+                {showCalc.poolName && <div style={{ fontSize: '12px', color: '#64748b' }}>{showCalc.poolName}</div>}
+              </div>
+            </div>
+            <ChemistryCalculatorTab compact initialPoolId={showCalc.poolId} />
           </div>
         </div>
       )}

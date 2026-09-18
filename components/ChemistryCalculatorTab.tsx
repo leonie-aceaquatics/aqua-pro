@@ -5,9 +5,10 @@ import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from
 
 const BLANK = { free_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '', calcium_hardness: '', cyanuric_acid: '', salt_level: '', temperature_c: '' }
 
-export default function ChemistryCalculatorTab() {
+// Shared by the admin Chemistry Calculator tab and the technician app (single column, pool preselected).
+export default function ChemistryCalculatorTab({ initialPoolId = '', compact = false }: { initialPoolId?: string; compact?: boolean } = {}) {
   const [pools, setPools] = useState<any[]>([])
-  const [poolId, setPoolId] = useState('')
+  const [poolId, setPoolId] = useState(initialPoolId)
   const [values, setValues] = useState(BLANK)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState('')
@@ -57,11 +58,11 @@ export default function ChemistryCalculatorTab() {
 
   return (
     <>
-      <div style={{ fontSize: '13px', color: 'var(--text-muted)', maxWidth: '600px', marginBottom: '24px' }}>
+      <div style={{ fontSize: '13px', color: 'var(--text-muted)', maxWidth: '600px', marginBottom: compact ? '16px' : '24px' }}>
         Enter a set of readings for any pool and get an instant dose recommendation and LSI — without logging a full water test. Useful mid-visit, before you've finished a whole reading set.
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'flex-start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : '1fr 1fr', gap: compact ? '14px' : '24px', alignItems: 'flex-start' }}>
         <div className="card">
           <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px', color: 'var(--text)' }}>
             <Calculator size={16} style={{ verticalAlign: '-3px', marginRight: '6px' }} />Readings

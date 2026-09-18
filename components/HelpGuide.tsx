@@ -27,6 +27,7 @@ export const TECH_GUIDE: Section[] = [
       ] },
       { text: '2. Log Water Test — enter your readings.', sub: [] },
       { text: '3. Count Stock — count what chemicals are on the shelf.', sub: [] },
+      { text: 'Dose Calculator (calculator icon at the top, or the button on the site panel) — type in readings to get LSI and what to add, without saving anything.', sub: [] },
       { text: '4. Plant Room Log — if the site has a plant room (see below).', sub: [] },
       { text: '5. Mark Complete — when you are leaving the site.', sub: [] },
     ],
