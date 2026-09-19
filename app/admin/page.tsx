@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
 import { toLocalInput, localInputToISO } from '@/lib/local-time'
+import { fmtTime, fmtActual, hoursBetween } from '@/lib/shift-time'
 import ReportIssueButton from '@/components/ReportIssueButton'
 import PoolContacts from '@/components/PoolContacts'
 import AttachmentPanel from '@/components/AttachmentPanel'
@@ -887,7 +888,7 @@ function StaffTab() {
         ...(editingShift ? { id: editingShift.id } : {}),
         ...form,
         scheduled_start: localInputToISO(form.scheduled_start),
-        scheduled_end: localInputToISO(form.scheduled_end),
+        scheduled_end: form.scheduled_end ? localInputToISO(form.scheduled_end) : null,
       }),
     })
     if (res.ok) { setShowAddShift(false); load() }
@@ -1012,17 +1013,28 @@ function StaffTab() {
         ))}
       </div>
 
+      {tab === 'shifts' && !loading && shifts.some((sh: any) => sh.actual_end) && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 18px', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+          <span style={{ fontWeight: '700', color: 'var(--text)' }}>Hours on site (finished shifts in this list):</span>
+          {Object.entries(shifts.reduce((acc: Record<string, number>, sh: any) => {
+            if (!sh.actual_end) return acc
+            const name = sh.staff ? `${sh.staff.first_name} ${sh.staff.last_name}` : 'Unknown'
+            acc[name] = (acc[name] ?? 0) + hoursBetween(sh.actual_start, sh.actual_end)
+            return acc
+          }, {} as Record<string, number>)).map(([name, hrs]) => <span key={name}>{name}: <strong style={{ color: 'var(--aqua)' }}>{hrs.toFixed(1)} h</strong></span>)}
+        </div>
+      )}
       {tab === 'shifts' && (
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>Technician</th><th>Pool / Location</th><th>Type</th><th>Date</th><th>Time</th><th>Status</th></tr>
+              <tr><th>Technician</th><th>Pool / Location</th><th>Type</th><th>Date</th><th>Rostered</th><th>Actual (on site)</th><th>Status</th></tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>Loading…</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>Loading…</td></tr>
               ) : shifts.length === 0 ? (
-                <tr><td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No shifts scheduled</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No shifts scheduled</td></tr>
               ) : shifts.map((sh: any) => (
                 <tr key={sh.id} style={{ cursor: 'pointer' }} onClick={() => openEditShift(sh)}>
                   <td style={{ fontWeight: '600' }}>
@@ -1038,9 +1050,10 @@ function StaffTab() {
                     {new Date(sh.scheduled_start).toLocaleDateString('en-AU', { timeZone: 'Australia/Sydney' })}
                   </td>
                   <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                    {new Date(sh.scheduled_start).toLocaleTimeString('en-AU', { timeZone: 'Australia/Sydney', hour: '2-digit', minute: '2-digit' })}
-                    {' – '}
-                    {new Date(sh.scheduled_end).toLocaleTimeString('en-AU', { timeZone: 'Australia/Sydney', hour: '2-digit', minute: '2-digit' })}
+                    {fmtTime(sh.scheduled_start)}{sh.scheduled_end ? ` – ${fmtTime(sh.scheduled_end)}` : ''}
+                  </td>
+                  <td style={{ fontSize: '12px', color: sh.actual_end ? 'var(--text)' : sh.actual_start ? 'var(--aqua)' : 'var(--text-dim)', whiteSpace: 'nowrap' }}>
+                    {fmtActual(sh) || '—'}
                   </td>
                   <td>
                     <span style={s.badge(sh.status === 'completed' ? '#00b894' : sh.status === 'cancelled' ? '#d63031' : '#00b4d8')}>
@@ -1446,9 +1459,10 @@ function StaffTab() {
                     onChange={e => setForm(f => ({ ...f, scheduled_start: e.target.value }))} />
                 </div>
                 <div style={s.formGroup}>
-                  <label>End *</label>
-                  <input type="datetime-local" required value={form.scheduled_end}
+                  <label>Expected end (optional)</label>
+                  <input type="datetime-local" value={form.scheduled_end}
                     onChange={e => setForm(f => ({ ...f, scheduled_end: e.target.value }))} />
+                  <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>A guide only — the technician taps Start and Finish on site, and that is what hours are counted from.</div>
                 </div>
               </div>
               {editingShift && (

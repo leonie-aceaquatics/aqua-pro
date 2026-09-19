@@ -16,12 +16,14 @@ export const TECH_GUIDE: Section[] = [
       "You'll land on Today's Jobs. Every site you're rostered at today is listed, with its address and start time.",
       'Not rostered, or at a different site? Scroll down to "Visit any site" and pick it from the list — everything works the same.',
       'Tap a site to open it. Everything you do at that site happens from the panel that slides up.',
+      'Tap "Start shift" the moment you arrive and "Finish shift" as you leave. That is how your hours are recorded — the rostered time is only a guide, traffic happens.',
       'Change your password the first time you log in: tap ? at the top, scroll to the bottom and use Change my password.',
     ],
   },
   {
     title: 'At each site — the order to do things', colour: '#00b894',
     steps: [
+      { text: '0. Start shift — tap it as you arrive (rostered jobs only).', sub: [] },
       { text: '1. Site Tasks — work through the tick list.', sub: [
         'It runs in the order of a visit: Arrival → Water quality → Equipment → Chemical dosing → Cleaning → Filtration → Safety → Compliance → Departure.',
         'Tick each one as you do it. The counter at the top shows how many are left, and the box goes green when everything is done.',
@@ -31,7 +33,7 @@ export const TECH_GUIDE: Section[] = [
       { text: '2. Log Water Test — enter your readings.', sub: [] },
       { text: '3. Count Stock — count what chemicals are on the shelf.', sub: [] },
       { text: '4. Plant Room Log — if the site has a plant room (see below).', sub: [] },
-      { text: '5. Mark Complete — when you are leaving the site.', sub: [] },
+      { text: '5. Finish shift — as you leave the site. Your hours are the time between Start and Finish.', sub: [] },
     ],
   },
   {
@@ -93,9 +95,10 @@ export const TECH_GUIDE: Section[] = [
     ],
   },
   {
-    title: 'Mark Complete', colour: '#00b894',
+    title: 'Start and Finish shift', colour: '#00b894',
     steps: [
-      'Once your Site Tasks are ticked, the water test is saved and stock is counted, tap Mark Complete on the site panel.',
+      'Tap Start shift as soon as you arrive. The office sees you are on site and the clock starts.',
+      'Once your Site Tasks are ticked, the water test is saved and stock is counted, tap Finish shift on the site panel.',
       'The site turns grey with a tick on Today\'s Jobs. Move on to the next one.',
       'If you cannot finish (locked out, fault, ran out of time), do not mark it complete — add a note in the water test or report an issue so the office knows.',
     ],
@@ -141,7 +144,7 @@ export const ADMIN_GUIDE: Section[] = [
     title: 'Setting things up', colour: '#00b894',
     steps: [
       'Staff — add technicians (they get a welcome email with their login). Set their role: technician for field staff. After you save, a green bar confirms the email went; a red bar means it did not and says why.',
-      'Shifts — schedule who goes where. A technician only sees sites they are rostered at today.',
+      'Shifts — schedule who goes where. Only the start time is needed; the expected end is optional. Technicians tap Start/Finish on site and the Actual column and the hours line show what was really worked.',
       'Pools — pool type, sanitiser and volume drive the target ranges and dosing calculator, so keep them accurate. Without a volume the Dose Calculator cannot work out doses for that site.',
       'Chemistry Calculator — the same dose calculator technicians have, for any pool, without logging a test.',
       'Site Tasks — the tick list technicians see on every visit. "All sites" tasks show everywhere; pick a pool to add tasks just for it. Set "N photos" on a task to make the tech attach photos to it; Tasks Done shows the photos. (There is no lifeguard shift checklist — none of our sites are lifeguarded.)',

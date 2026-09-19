@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       route_id: body.route_id || null,
       shift_type: body.shift_type,
       scheduled_start: body.scheduled_start,
-      scheduled_end: body.scheduled_end,
+      scheduled_end: body.scheduled_end || null,   // optional guide — techs log the real finish
       notes: body.notes || null,
     })
     .select('*, staff(first_name, last_name), pools(name)')

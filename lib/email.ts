@@ -113,13 +113,13 @@ export function buildWelcomeEmail(firstName: string, email: string, password: st
   ])
 
   const onSite = isTech ? h('At each site') + li([
-    `Tap the site to open it.`,
+    `Tap the site to open it, then tap ${strong('Start shift')} as you arrive — that starts your hours.`,
     `${strong('Site Tasks')} — work through the tick list in order (Arrival → Water quality → Equipment → Cleaning → Safety → Departure). Tick each one as you do it.`,
     `${strong('Log Water Test')} — type in your readings. Combined chlorine and LSI fill in themselves. Add what the system screen shows, any chemicals you added by hand, and any faults. Then add photos and tap Done.`,
     `${strong('Dose Calculator')} — not sure what to add? Type in your readings and it tells you which chemical and how much for that pool. Nothing is saved, so use it before you dose.`,
     `${strong('Count Stock')} — how many drums / bags of each chemical are on site. Anything low goes on the order list automatically.`,
     `${strong('Plant Room Log')} — at sites with a plant room: backwash, baskets, controller and alarms, pumps, filters, dosing pumps, then photos of gauges or leaks.`,
-    `${strong('Mark Complete')} when you're leaving.`,
+    `${strong('Finish shift')} as you leave. Your hours are the time between Start and Finish, so don't forget either one.`,
   ]) + p(`${strong('Red result = close the pool and phone Tony.')} Orange = adjust and re-test before you leave.`) : ''
   const contacts = h('Who to call') + li([
     `${strong('Anything about a pool or site')} — out-of-range results, faults, closures, chemicals: ${strong('Tony 0422 470 214')}.`,

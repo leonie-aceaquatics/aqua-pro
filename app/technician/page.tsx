@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, FlaskConical, Package, HelpCircle, Camera, Plus, X, LayoutDashboard, Calculator } from 'lucide-react'
+import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, FlaskConical, Package, HelpCircle, Camera, Plus, X, LayoutDashboard, Calculator, Play } from 'lucide-react'
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
 import PlantLog from '@/components/PlantLog'
 import ChemistryCalculatorTab from '@/components/ChemistryCalculatorTab'
 import ChangePassword from '@/components/ChangePassword'
+import { fmtTime, fmtActual } from '@/lib/shift-time'
 import SiteTaskList from '@/components/SiteTaskList'
 import SiteStockCount from '@/components/SiteStockCount'
 import HelpGuide, { TECH_GUIDE } from '@/components/HelpGuide'
@@ -84,18 +85,36 @@ export default function TechnicianPage() {
     if (shift.pool_id) loadLastTest(shift.pool_id)
   }
 
-  async function handleCompleteShift(shiftId: string) {
+  // Start / Finish on site: actual_start and actual_end are what hours are counted from
+  async function handleStartShift(shiftId: string) {
     setCompleteError(null)
+    const actual_start = new Date().toISOString()
     try {
       const res = await fetch(`/api/technician/shift/${shiftId}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'completed', actual_end: new Date().toISOString() }),
+        body: JSON.stringify({ status: 'in_progress', actual_start }),
       })
-      if (!res.ok) { setCompleteError('Could not mark this shift complete — try again.'); return }
-      setShifts(prev => prev.map(s => s.id === shiftId ? { ...s, status: 'completed' } : s))
+      if (!res.ok) { setCompleteError('Could not start this shift — try again.'); return }
+      setShifts(prev => prev.map(s => s.id === shiftId ? { ...s, status: 'in_progress', actual_start } : s))
+      setSelected((sel: any) => sel && sel.id === shiftId ? { ...sel, status: 'in_progress', actual_start } : sel)
+    } catch {
+      setCompleteError('No connection — could not start this shift. Try again when back online.')
+    }
+  }
+
+  async function handleCompleteShift(shiftId: string) {
+    setCompleteError(null)
+    const actual_end = new Date().toISOString()
+    try {
+      const res = await fetch(`/api/technician/shift/${shiftId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'completed', actual_end }),
+      })
+      if (!res.ok) { setCompleteError('Could not finish this shift — try again.'); return }
+      setShifts(prev => prev.map(s => s.id === shiftId ? { ...s, status: 'completed', actual_end } : s))
       setSelected(null)
     } catch {
-      setCompleteError('No connection — could not mark this shift complete. Try again when back online.')
+      setCompleteError('No connection — could not finish this shift. Try again when back online.')
     }
   }
 
@@ -245,10 +264,11 @@ export default function TechnicianPage() {
                     {(shift.shift_type ?? '').replace('_', ' ') || '—'}
                   </span>
                   <span style={{ fontSize: '11px', color: '#64748b' }}>
-                    {new Date(shift.scheduled_start).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', timeZone: 'Australia/Sydney' })}
-                    {' – '}
-                    {new Date(shift.scheduled_end).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', timeZone: 'Australia/Sydney' })}
+                    {fmtTime(shift.scheduled_start)}{shift.scheduled_end ? ` – ${fmtTime(shift.scheduled_end)}` : ''}
                   </span>
+                  {shift.actual_start && (
+                    <span style={{ fontSize: '11px', color: shift.actual_end ? '#94a3b8' : '#00b894', fontWeight: '600' }}>{fmtActual(shift)}</span>
+                  )}
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -346,11 +366,23 @@ export default function TechnicianPage() {
                   <Package size={16} /> Count Stock
                 </button>
               )}
-              {selected.id && selected.status !== 'completed' && (
-                <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', padding: '14px' }}
-                  onClick={() => handleCompleteShift(selected.id)}>
-                  <CheckCircle size={16} /> Mark Complete
+              {selected.id && selected.status !== 'completed' && !selected.actual_start && (
+                <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#00b894' }}
+                  onClick={() => handleStartShift(selected.id)}>
+                  <Play size={16} /> Start shift — I&apos;m on site
                 </button>
+              )}
+              {selected.id && selected.status !== 'completed' && selected.actual_start && (
+                <>
+                  <div style={{ fontSize: '12px', color: '#00b894', textAlign: 'center', fontWeight: '600' }}>{fmtActual(selected)}</div>
+                  <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', padding: '14px' }}
+                    onClick={() => handleCompleteShift(selected.id)}>
+                    <CheckCircle size={16} /> Finish shift — leaving site
+                  </button>
+                </>
+              )}
+              {selected.id && selected.status === 'completed' && selected.actual_start && (
+                <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>Done · {fmtActual(selected)}</div>
               )}
               {completeError && (
                 <div style={{ color: '#d63031', fontSize: '12px', textAlign: 'center' }}>{completeError}</div>
