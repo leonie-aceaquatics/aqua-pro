@@ -7,7 +7,7 @@ import {
   Activity, Shield, MapPin, Bell, FlaskConical,
   XCircle, Wrench, CalendarX, Check, Trash2, Bug,
   ChevronUp, ChevronDown, Pencil, Power,
-  TestTube, Calculator, ListChecks, FileText, HelpCircle,
+  TestTube, Calculator, ListChecks, FileText, HelpCircle, Menu, X,
 } from 'lucide-react'
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
 import { toLocalInput, localInputToISO } from '@/lib/local-time'
@@ -3308,6 +3308,7 @@ function FeedbackTab() {
 // ── ROOT ADMIN PAGE ───────────────────────────────────────────────────────────
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('overview')
+  const [navOpen, setNavOpen] = useState(false)   // phone: the tab list lives behind a Menu button
   const [user, setUser] = useState<any>(null)
   const [notifications, setNotifications] = useState<any[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -3366,11 +3367,17 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <nav style={s.nav} className="admin-nav">
+        {/* Phone only (CSS hides it on desktop): shows where you are and opens the full tab list */}
+        <button type="button" className="admin-menu-btn" onClick={() => setNavOpen(o => !o)} aria-expanded={navOpen}>
+          {navOpen ? <X size={18} /> : <Menu size={18} />}
+          <span>{navOpen ? 'Close' : (NAV.find(n => n.id === tab)?.label ?? 'Menu')}</span>
+        </button>
+
+        <nav style={s.nav} className={`admin-nav${navOpen ? ' open' : ''}`}>
           {NAV.map(item => {
             const Icon = item.icon
             return (
-              <button key={item.id} style={s.navBtn(tab === item.id)} onClick={() => setTab(item.id)}>
+              <button key={item.id} style={s.navBtn(tab === item.id)} onClick={() => { setTab(item.id); setNavOpen(false) }}>
                 <Icon size={15} />
                 {item.label}
               </button>

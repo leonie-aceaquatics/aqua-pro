@@ -137,26 +137,43 @@ label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bott
 
 /* Admin dashboard — responsive shell for iPad/iPhone. Inline styles set the desktop
    sidebar layout; !important is needed here to win over them at narrow widths. */
+.admin-menu-btn { display: none; }
 @media (max-width: 900px) {
   .admin-shell { flex-direction: column !important; }
   .admin-sidebar {
     position: sticky !important; top: 0; z-index: 100;
-    width: 100% !important; height: auto !important;
+    width: 100% !important; height: auto !important; overflow: visible !important;
     flex-direction: row !important; align-items: center;
     border-right: none !important; border-bottom: 1px solid var(--border);
   }
   .admin-logo { border-bottom: none !important; padding: 10px 12px !important; flex-shrink: 0; }
   .admin-logo > div:last-child { display: none; }
-  .admin-nav {
-    flex: 1 !important; display: flex !important; flex-direction: row !important;
-    overflow-x: auto; -webkit-overflow-scrolling: touch;
-    padding: 8px 6px !important; gap: 4px;
+  /* The 16 tabs used to be a sideways-scrolling strip that looked like one or two buttons.
+     Now: a Menu button showing the current tab, which drops the full list down over the page. */
+  .admin-menu-btn {
+    display: flex; align-items: center; gap: 8px; flex: 1;
+    background: none; border: none; color: var(--aqua); cursor: pointer;
+    font-size: 15px; font-weight: 700; padding: 12px 8px; text-align: left;
   }
-  .admin-nav button { flex: 0 0 auto; white-space: nowrap; margin-bottom: 0 !important; }
-  .admin-sidebar-footer { border-top: none !important; border-left: 1px solid var(--border); flex-shrink: 0; }
+  .admin-nav { display: none !important; }
+  .admin-nav.open {
+    display: flex !important; flex-direction: column !important;
+    position: absolute; top: 100%; left: 0; right: 0;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.45);
+    max-height: 75vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 8px !important;
+  }
+  .admin-nav.open button { font-size: 15px !important; padding: 13px 14px !important; }
+  .admin-sidebar-footer { border-top: none !important; border-left: 1px solid var(--border); flex-shrink: 0; padding: 8px 12px !important; }
+  .admin-sidebar-footer > div:first-child { display: none; }   /* name/role — no room on a phone */
   .admin-main { padding: 16px !important; }
 }
 @media (max-width: 480px) {
   .admin-main { padding: 12px !important; }
   .admin-header { flex-wrap: wrap; row-gap: 10px; }
+  /* Fixed multi-column form grids inside dialogs don't fit a phone: one column */
+  .modal [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+  .modal { padding: 18px !important; }
+  .modal-backdrop { padding: 10px !important; align-items: flex-start !important; }
 }
