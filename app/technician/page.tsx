@@ -6,6 +6,7 @@ import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from
 import PlantLog from '@/components/PlantLog'
 import ChemistryCalculatorTab from '@/components/ChemistryCalculatorTab'
 import ChangePassword from '@/components/ChangePassword'
+import InstantAlerts from '@/components/InstantAlerts'
 import { fmtTime, fmtActual } from '@/lib/shift-time'
 import SiteTaskList from '@/components/SiteTaskList'
 import SiteStockCount from '@/components/SiteStockCount'
@@ -471,6 +472,7 @@ export default function TechnicianPage() {
                 {numInput('ph', 'pH', '7.4')}
                 {numInput('total_alkalinity', 'Total Alkalinity (ppm)', '100')}
                 {numInput('calcium_hardness', 'Calcium Hardness (ppm)', '300')}
+                <InstantAlerts ta={testForm.total_alkalinity} ch={testForm.calcium_hardness} volumeLitres={selected.pools?.volume_litres} />
                 <div style={{ padding: '10px 12px', background: 'var(--bg)', borderRadius: '8px', border: `1px solid ${lsiStatus && lsiStatus !== 'balanced' ? '#e1705540' : 'var(--border)'}` }}>
                   <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>LSI · auto</div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>

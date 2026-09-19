@@ -45,6 +45,9 @@ export const TECH_GUIDE: Section[] = [
         'Combined Chlorine = Total Chlorine − Free Chlorine. Enter Free and Total and it appears.',
         'LSI (water balance) appears once you have pH, Total Alkalinity, Calcium Hardness AND Temperature. Green = balanced. Orange = corrosive or scale-forming.',
       ] },
+      { text: 'Red alarm boxes: Total Alkalinity 80 or below → add sodium bicarbonate now. Calcium Hardness below 90 → add calcium chloride now.', sub: [
+        'They pop up the moment you type the number, with roughly how many kg for that pool. Dose, then re-test before you leave and log the second test too.',
+      ] },
       { text: 'System Screen Values — type what the dosing system / controller screen (Chemtrol, Dulcomarin, etc.) shows for pH and Free Cl.', sub: [
         'The app shows the difference against your test. If it says "calibrate", calibrate the system and tick Calibrated.',
       ] },

@@ -12,6 +12,7 @@ import {
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
 import { toLocalInput, localInputToISO } from '@/lib/local-time'
 import { fmtTime, fmtActual, hoursBetween } from '@/lib/shift-time'
+import InstantAlerts from '@/components/InstantAlerts'
 import ReportIssueButton from '@/components/ReportIssueButton'
 import PoolContacts from '@/components/PoolContacts'
 import AttachmentPanel from '@/components/AttachmentPanel'
@@ -633,6 +634,7 @@ function WaterTestingTab() {
                   {numField('total_alkalinity', 'Total Alkalinity (ppm)', '100')}
                   {numField('calcium_hardness', 'Calcium Hardness (ppm)', '300')}
                 </div>
+                <InstantAlerts ta={form.total_alkalinity} ch={form.calcium_hardness} volumeLitres={pools.find((p: any) => p.id === form.pool_id)?.volume_litres} />
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '12px', padding: '10px 12px', background: 'var(--surface)', borderRadius: '8px', border: `1px solid ${lsiStatus && lsiStatus !== 'balanced' ? '#e1705540' : 'var(--border)'}` }}>
                   <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>LSI · auto</span>
                   <span style={{ fontSize: '18px', fontWeight: '700', color: lsiColour }}>{lsi !== null ? (lsi > 0 ? `+${lsi.toFixed(2)}` : lsi.toFixed(2)) : '—'}</span>

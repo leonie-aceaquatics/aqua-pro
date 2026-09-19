@@ -208,6 +208,35 @@ export const LSI_LABELS: Record<LSIStatus, string> = {
   scaling:   'Scale-forming — calcium will deposit on surfaces and heaters',
 }
 
+// ── Instant alarms while typing a test ────────────────────────────────────────
+// Tony's rule for every site: alkalinity at or below 80 → add sodium bicarbonate now;
+// calcium hardness below 90 → add calcium chloride now. Shown the moment the number is typed.
+export interface InstantAlert { parameter: string; headline: string; action: string; dose?: string }
+
+export function instantBalanceAlerts(ta?: number | null, ch?: number | null, volumeLitres?: number | null): InstantAlert[] {
+  const alerts: InstantAlert[] = []
+  const volKL = volumeLitres ? volumeLitres / 1000 : 0
+  // Same rule of thumb as calculateDoses: ~1.5 kg per 10 ppm per 100 kL
+  const kgFor = (deficitPpm: number) => volKL > 0 ? `about ${((deficitPpm / 10) * (volKL / 100) * 1.5).toFixed(1)} kg` : undefined
+  if (ta != null && !isNaN(ta) && ta <= 80) {
+    alerts.push({
+      parameter: 'Total Alkalinity',
+      headline: `LOW ALKALINITY — ${ta} ppm`,
+      action: 'Add sodium bicarbonate now to bring it to 100 ppm, then re-test.',
+      dose: kgFor(100 - ta),
+    })
+  }
+  if (ch != null && !isNaN(ch) && ch < 90) {
+    alerts.push({
+      parameter: 'Calcium Hardness',
+      headline: `LOW CALCIUM HARDNESS — ${ch} ppm`,
+      action: 'Add calcium chloride now to bring it to 200 ppm (pre-dissolve in a bucket), then re-test.',
+      dose: kgFor(200 - ch),
+    })
+  }
+  return alerts
+}
+
 // ── Chemical dose calculator ───────────────────────────────────────────────────
 // Returns: how much chemical to add (and what chemical) to hit target
 
