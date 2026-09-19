@@ -1,9 +1,10 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { ListChecks, Plus, Trash2, ClipboardCheck } from 'lucide-react'
+import { ListChecks, Plus, Trash2, ClipboardCheck, Camera } from 'lucide-react'
 import { groupByCategory } from '@/lib/site-tasks'
+import AttachmentPanel from './AttachmentPanel'
 
-const POOL_TYPES: [string, string][] = [['splash_pad', 'Splash pads'], ['outdoor', 'Outdoor pools'], ['indoor', 'Indoor pools'], ['spa', 'Spas'], ['wading', 'Wading pools'], ['hydrotherapy', 'Hydrotherapy pools'], ['leisure', 'Leisure pools']]
+const POOL_TYPES: [string, string][] = [['facility', 'Facilities (gyms etc.)'], ['splash_pad', 'Splash pads'], ['outdoor', 'Outdoor pools'], ['indoor', 'Indoor pools'], ['spa', 'Spas'], ['wading', 'Wading pools'], ['hydrotherapy', 'Hydrotherapy pools'], ['leisure', 'Leisure pools']]
 const CATEGORIES = ['Arrival', 'Water quality', 'Equipment', 'Chemical dosing', 'Cleaning', 'Filtration', 'Safety', 'Compliance', 'Departure']
 
 // Admin side of the per-site task list: edit the tasks, and see who ticked what on a day.
@@ -21,6 +22,7 @@ function TaskEditor({ pools }: { pools: any[] }) {
   const [tasks, setTasks] = useState<any[]>([])
   const [label, setLabel] = useState('')
   const [category, setCategory] = useState('')
+  const [photos, setPhotos] = useState('0')   // photos the tech must attach to this task
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -40,11 +42,12 @@ function TaskEditor({ pools }: { pools: any[] }) {
         pool_id: scope === 'all' || scope.startsWith('type:') ? null : scope,
         pool_type: scope.startsWith('type:') ? scope.slice(5) : null,
         sort_order: (tasks.at(-1)?.sort_order ?? 0) + 10,
+        photos_required: Number(photos) || 0,
       }),
     })
     const d = await res.json()
     if (!res.ok) setError(d.error ?? 'Could not add task')
-    else { setLabel(''); load() }
+    else { setLabel(''); setPhotos('0'); load() }
     setSaving(false)
   }
 
@@ -84,6 +87,11 @@ function TaskEditor({ pools }: { pools: any[] }) {
               {g.tasks.map(t => (
                 <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 12px', background: 'var(--surface-2)', borderRadius: '8px', marginBottom: '4px' }}>
                   <span style={{ flex: 1, fontSize: '13px', color: 'var(--text)' }}>{t.label}</span>
+                  {t.photos_required > 0 && (
+                    <span title={`${t.photos_required} photo(s) required`} style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', color: 'var(--aqua)', flexShrink: 0 }}>
+                      <Camera size={12} />{t.photos_required}
+                    </span>
+                  )}
                   <button type="button" onClick={() => remove(t.id)} title="Remove"
                     style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}>
                     <Trash2 size={14} />
@@ -101,6 +109,10 @@ function TaskEditor({ pools }: { pools: any[] }) {
           <option value="">Category…</option>
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
+        <select value={photos} onChange={e => setPhotos(e.target.value)} title="Photos the technician must attach" style={{ width: '120px' }}>
+          <option value="0">No photos</option>
+          {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n} photo{n > 1 ? 's' : ''}</option>)}
+        </select>
         <button type="submit" className="btn btn-primary" disabled={saving || !label.trim()}>
           <Plus size={14} /> Add
         </button>
@@ -115,6 +127,7 @@ function CompletionsView({ pools }: { pools: any[] }) {
   const [date, setDate] = useState(today)
   const [poolId, setPoolId] = useState('all')
   const [rows, setRows] = useState<any[] | null>(null)
+  const [photosOpen, setPhotosOpen] = useState<string | null>(null)   // completion id whose photos are shown
 
   useEffect(() => {
     setRows(null)
@@ -164,13 +177,27 @@ function CompletionsView({ pools }: { pools: any[] }) {
                   <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text)' }}>{site.name}</span>
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{site.rows.length} done · {techs.join(', ')}</span>
                 </div>
-                {site.rows.map(r => (
-                  <div key={r.id} style={{ display: 'flex', gap: '10px', alignItems: 'baseline', padding: '5px 0', fontSize: '12px', borderBottom: '1px solid var(--border)' }}>
-                    <span style={{ color: '#00b894', fontWeight: '700' }}>✓</span>
-                    <span style={{ flex: 1, color: 'var(--text)' }}>{r.site_tasks?.label ?? '(task removed)'}</span>
-                    <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{who(r)} · {fmtTime(r.completed_at)}</span>
-                  </div>
-                ))}
+                {site.rows.map(r => {
+                  const required = r.site_tasks?.photos_required ?? 0
+                  const hasPhotos = (r.photo_count ?? 0) > 0 || required > 0
+                  const short = required > 0 && (r.photo_count ?? 0) < required
+                  return (
+                    <div key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'baseline', padding: '5px 0', fontSize: '12px' }}>
+                        <span style={{ color: '#00b894', fontWeight: '700' }}>✓</span>
+                        <span style={{ flex: 1, color: 'var(--text)' }}>{r.site_tasks?.label ?? '(task removed)'}</span>
+                        {hasPhotos && (
+                          <button type="button" onClick={() => setPhotosOpen(o => o === r.id ? null : r.id)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: '700', color: short ? 'var(--orange)' : 'var(--aqua)' }}>
+                            <Camera size={12} />{r.photo_count ?? 0}{required > 0 ? `/${required}` : ''}
+                          </button>
+                        )}
+                        <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{who(r)} · {fmtTime(r.completed_at)}</span>
+                      </div>
+                      {photosOpen === r.id && <div style={{ paddingBottom: '8px' }}><AttachmentPanel entityType="site_task_completion" entityId={r.id} /></div>}
+                    </div>
+                  )
+                })}
               </div>
             )
           })}

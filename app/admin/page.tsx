@@ -338,7 +338,7 @@ function PoolsTab() {
                 <div style={s.formGroup}>
                   <label>Pool Type *</label>
                   <select required value={form.pool_type} onChange={e => setForm(f => ({ ...f, pool_type: e.target.value }))}>
-                    {['outdoor','indoor','spa','wading','hydrotherapy','leisure','splash_pad'].map(t => (
+                    {['outdoor','indoor','spa','wading','hydrotherapy','leisure','splash_pad','facility'].map(t => (
                       <option key={t} value={t}>{t === 'splash_pad' ? 'Splash Pad' : t.charAt(0).toUpperCase() + t.slice(1)}</option>
                     ))}
                   </select>

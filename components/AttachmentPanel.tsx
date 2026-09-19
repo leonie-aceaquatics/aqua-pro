@@ -14,7 +14,7 @@ interface Attachment {
 // Reusable image/file attachment panel — pass any entityType/entityId this app cares about.
 // Currently wired into Incidents and Asset Service Log (the two clearest use cases); adding it
 // elsewhere needs no schema or API change, just a new <AttachmentPanel /> call.
-export default function AttachmentPanel({ entityType, entityId }: { entityType: string; entityId: string }) {
+export default function AttachmentPanel({ entityType, entityId, onChange }: { entityType: string; entityId: string; onChange?: () => void }) {
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
@@ -45,7 +45,7 @@ export default function AttachmentPanel({ entityType, entityId }: { entityType: 
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entity_type: entityType, entity_id: entityId, file_url: publicUrl, file_name: file.name }),
       })
-      load()
+      load(); onChange?.()
     } catch (err: any) {
       setError(err.message ?? 'Upload failed')
     }
@@ -56,6 +56,7 @@ export default function AttachmentPanel({ entityType, entityId }: { entityType: 
   async function handleDelete(id: string) {
     setAttachments(prev => prev.filter(a => a.id !== id))
     await fetch(`/api/admin/attachments?id=${id}`, { method: 'DELETE' })
+    onChange?.()
   }
 
   return (

@@ -33,6 +33,7 @@ export default function TechnicianPage() {
   const [savedTest, setSavedTest] = useState<any>(null)   // just-saved test, for the photo step
   const [allPools, setAllPools] = useState<any[]>([])      // everyone: visit any site, rostered or not
   const isOffice = user && ['admin', 'manager'].includes(user.role)
+  const isFacility = selected?.pools?.pool_type === 'facility'   // gym etc: no water screens
   const [saving, setSaving] = useState(false)
   const [lastTest, setLastTest] = useState<any>(null)
   const [loadError, setLoadError] = useState(false)
@@ -315,28 +316,31 @@ export default function TechnicianPage() {
               </div>
             )}
 
+            {isFacility && (
+              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>No water here — just the tasks below. Photos attach to the task they belong to.</div>
+            )}
             {selected.pool_id && <SiteTaskList poolId={selected.pool_id} />}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {selected.pool_id && (
+              {selected.pool_id && !isFacility && (
                 <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px' }}
                   onClick={() => setShowTestForm(true)}>
                   <Droplets size={16} /> Log Water Test
                 </button>
               )}
-              {selected.pool_id && (
+              {selected.pool_id && !isFacility && (
                 <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#0d6e4e' }}
                   onClick={() => setShowPlantLog(true)}>
                   <FlaskConical size={16} /> Plant Room Log
                 </button>
               )}
-              {selected.pool_id && (
+              {selected.pool_id && !isFacility && (
                 <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#b8860b' }}
                   onClick={() => setShowCalc({ poolId: selected.pool_id, poolName: selected.pools?.name ?? '' })}>
                   <Calculator size={16} /> Dose Calculator
                 </button>
               )}
-              {selected.pool_id && (
+              {selected.pool_id && !isFacility && (
                 <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#6c5ce7' }}
                   onClick={() => setShowStockCount(true)}>
                   <Package size={16} /> Count Stock
