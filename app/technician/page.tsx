@@ -86,8 +86,24 @@ export default function TechnicianPage() {
   }
 
   // Start / Finish on site: actual_start and actual_end are what hours are counted from
-  async function handleStartShift(shiftId: string) {
+  async function handleStartShift(shiftId: string | null) {
     setCompleteError(null)
+    // Unrostered visit: create the shift now, already started, so it clocks hours like any other
+    if (!shiftId) {
+      try {
+        const res = await fetch('/api/technician/shift', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pool_id: selected?.pool_id }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok || !data.shift) { setCompleteError(data.error ?? 'Could not start this visit — try again.'); return }
+        setShifts(prev => [...prev, data.shift])
+        setSelected(data.shift)
+      } catch {
+        setCompleteError('No connection — could not start this visit. Try again when back online.')
+      }
+      return
+    }
     const actual_start = new Date().toISOString()
     try {
       const res = await fetch(`/api/technician/shift/${shiftId}`, {
@@ -366,9 +382,9 @@ export default function TechnicianPage() {
                   <Package size={16} /> Count Stock
                 </button>
               )}
-              {selected.id && selected.status !== 'completed' && !selected.actual_start && (
+              {selected.status !== 'completed' && !selected.actual_start && (
                 <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#00b894' }}
-                  onClick={() => handleStartShift(selected.id)}>
+                  onClick={() => handleStartShift(selected.id ?? null)}>
                   <Play size={16} /> Start shift — I&apos;m on site
                 </button>
               )}

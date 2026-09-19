@@ -14,7 +14,7 @@ export const TECH_GUIDE: Section[] = [
       'Open the AquaPro link on your phone and log in with the email and password you were given.',
       'Add it to your home screen so it opens like an app: Safari → Share → "Add to Home Screen".',
       "You'll land on Today's Jobs. Every site you're rostered at today is listed, with its address and start time.",
-      'Not rostered, or at a different site? Scroll down to "Visit any site" and pick it from the list — everything works the same.',
+      'Not rostered, or at a different site? Scroll down to "Visit any site" and pick it from the list — everything works the same, and tapping Start shift there clocks your hours too.',
       'Tap a site to open it. Everything you do at that site happens from the panel that slides up.',
       'Tap "Start shift" the moment you arrive and "Finish shift" as you leave. That is how your hours are recorded — the rostered time is only a guide, traffic happens.',
       'Change your password the first time you log in: tap ? at the top, scroll to the bottom and use Change my password.',
