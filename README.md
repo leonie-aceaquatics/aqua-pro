@@ -29,6 +29,7 @@ add-staff-last-login-migration.sql     ← staff.last_login_at tracking
 add-chemical-dose-units-migration.sql  ← chemicals.dose_unit + container_size (count stock in drums, log doses in litres)
 add-plant-log-attachments-migration.sql ← lets techs attach photos to plant room logs
 set-estimated-pool-volumes.sql          ← placeholder volumes for pools with none, so dosing works (marked ESTIMATED in notes)
+add-aami-park-site-tasks.sql            ← Tony's AAMI Park task list (gym clean photos, UV, MechMate, CO2, bisulphate, filter pressures)
 add-site-tasks-migration.sql           ← simple per-site visit task list (admin defines, technicians tick off daily)
 add-site-tasks-seed.sql                ← site_tasks.category + the standard 36-item per-visit list for all sites
 add-site-stock-migration.sql           ← per-site chemical stock (site_chemical_stock), chemical_orders.pool_id, stock-count site task
