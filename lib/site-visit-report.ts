@@ -16,6 +16,7 @@ const PLANT_FIELDS: [string, string, (v: any) => string | null][] = [
   ['water_clarity', 'Water clarity', nice],
   ['pool_floor_checked', 'Pool floor checked', yesNo],
   ['backwash_done', 'Backwash', yesNo],
+  ['backwash_minutes', 'Backwash ran for', v => v == null ? null : `${v} min`],
   ['lint_baskets_done', 'Lint baskets', yesNo],
   ['sample_line_filter_done', 'Sample line filter', yesNo],
   ['auto_vac_done', 'Auto-vac', yesNo],

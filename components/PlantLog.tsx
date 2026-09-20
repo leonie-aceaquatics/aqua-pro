@@ -100,6 +100,7 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
 
   // Maintenance
   const [backwash, setBackwash] = useState(false)
+  const [backwashMinutes, setBackwashMinutes] = useState('')   // Tony: how long each backwash ran
   const [lintBaskets, setLintBaskets] = useState(false)
   const [sampleLineFilter, setSampleLineFilter] = useState(false)
   const [autoVac, setAutoVac] = useState(false)
@@ -167,6 +168,7 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
       water_clarity: waterClarity || null,
       pool_floor_checked: poolFloorChecked,
       backwash_done: backwash,
+      backwash_minutes: backwash && backwashMinutes !== '' ? Number(backwashMinutes) : null,
       lint_baskets_done: lintBaskets,
       sample_line_filter_done: sampleLineFilter,
       auto_vac_done: autoVac,
@@ -290,6 +292,11 @@ export default function PlantLog({ poolId, poolName, shiftId, onClose, onSubmitt
           <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
             {sectionTitle('Maintenance Tasks Completed')}
             <CheckRow label="Backwash" checked={backwash} onChange={setBackwash} />
+            {backwash && (
+              <div style={{ margin: '4px 0 10px 28px' }}>
+                <NumRow label="How many minutes did you backwash for?" placeholder="3" value={backwashMinutes} onChange={setBackwashMinutes} />
+              </div>
+            )}
             <CheckRow label="Lint Baskets" checked={lintBaskets} onChange={setLintBaskets} />
             <CheckRow label="Sample Line Filter" checked={sampleLineFilter} onChange={setSampleLineFilter} />
             <CheckRow label="Auto-Vac" checked={autoVac} onChange={setAutoVac} />

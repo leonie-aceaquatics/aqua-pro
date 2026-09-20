@@ -94,6 +94,7 @@ export const TECH_GUIDE: Section[] = [
     steps: [
       'For sites with a plant room. Tap Plant Room Log on the site panel.',
       'Work down the sections: Pool Condition, Maintenance Tasks (backwash, lint baskets, sample line filter, auto-vac, dosing), Controller & Alarms, Pumps, Heat Pump & Filters, Dosing Pumps.',
+      'If you tick Backwash, a box appears asking how many minutes you backwashed for — fill it in, Tony wants the duration on every backwash.',
       'Water readings go in Log Water Test, not here. If the controller screen is more than about 0.2 pH or 0.5 ppm chlorine away from your test, tick "Photometric Calibration Required".',
       'Tap Submit Plant Log at the bottom when done, then add photos of gauges, the controller screen or any leaks on the next screen.',
     ],

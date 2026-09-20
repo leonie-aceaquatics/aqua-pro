@@ -32,6 +32,7 @@ set-estimated-pool-volumes.sql          ← placeholder volumes for pools with n
 add-facility-sites-and-task-photos-migration.sql ← 'facility' site type (no water) + photos_required on site tasks
 add-shift-actual-hours-migration.sql    ← rostered end time optional; techs log actual start/finish for hours
 add-uv-readings-migration.sql           ← water_tests.uv_output_pct + uv_run_hours
+add-backwash-minutes-and-task-tweaks.sql ← plant_logs.backwash_minutes; strainer/injector/backwash tasks reworded, injectors task added
 add-seville-splash-park-site-tasks.sql  ← Tony's Seville list (bisulphate, UV output/hours, 4 feature pumps, operating times; 100 kPa on the splash-pad filter task)
 add-aami-park-site-tasks.sql            ← Tony's AAMI Park task list: gym as its own site with before/after photos, UV, MechMate, CO2, bisulphate, filter pressures
 add-site-tasks-migration.sql           ← simple per-site visit task list (admin defines, technicians tick off daily)
