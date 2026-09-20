@@ -732,7 +732,7 @@ function WaterTestingTab() {
                 ['Total Cl', selectedTest.total_chlorine, 'ppm', 0, 4.0],
                 ['pH', selectedTest.ph, '', 7.2, 7.6],
                 ['Total Alkalinity', selectedTest.total_alkalinity, 'ppm', 80, 120],
-                ['Calcium Hardness', selectedTest.calcium_hardness, 'ppm', 200, 400],
+                ['Calcium Hardness', selectedTest.calcium_hardness, 'ppm', 100, 300],
                 ['CYA', selectedTest.cyanuric_acid, 'ppm', 30, 50],
                 ['Salt', selectedTest.salt_level, 'ppm', 2700, 3400],
                 ['TDS', selectedTest.total_dissolved_solids, 'ppm', 0, 3000],

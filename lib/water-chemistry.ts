@@ -35,8 +35,8 @@ const RANGES: Record<string, Record<string, ParameterRange>> = {
     freeChlorine:       { min: 1.0, max: 3.0,  ideal: 2.0,  unit: 'ppm', priority: 'critical', label: 'Free Chlorine' },
     combinedChlorine:   { min: 0,   max: 0.2,  ideal: 0.0,  unit: 'ppm', priority: 'high',     label: 'Combined Chlorine' },
     ph:                 { min: 7.2, max: 7.6,  ideal: 7.4,  unit: 'pH',  priority: 'critical', label: 'pH' },
-    totalAlkalinity:    { min: 80,  max: 120,  ideal: 100,  unit: 'ppm', priority: 'high',     label: 'Total Alkalinity' },
-    calciumHardness:    { min: 200, max: 400,  ideal: 300,  unit: 'ppm', priority: 'normal',   label: 'Calcium Hardness' },
+    totalAlkalinity:    { min: 80,  max: 150,  ideal: 100,  unit: 'ppm', priority: 'high',     label: 'Total Alkalinity' },
+    calciumHardness:    { min: 100, max: 300,  ideal: 200,  unit: 'ppm', priority: 'normal',   label: 'Calcium Hardness' },
     cyanuricAcid:       { min: 30,  max: 50,   ideal: 40,   unit: 'ppm', priority: 'high',     label: 'Cyanuric Acid' },
     totalDissolvedSolids: { min: 0, max: 3000, ideal: 1500, unit: 'ppm', priority: 'normal',   label: 'Total Dissolved Solids' },
     phosphates:         { min: 0,   max: 100,  ideal: 0,    unit: 'ppb', priority: 'normal',   label: 'Phosphates' },
@@ -45,8 +45,8 @@ const RANGES: Record<string, Record<string, ParameterRange>> = {
     freeChlorine:       { min: 1.0, max: 3.0,  ideal: 2.0,  unit: 'ppm', priority: 'critical', label: 'Free Chlorine' },
     combinedChlorine:   { min: 0,   max: 0.2,  ideal: 0.0,  unit: 'ppm', priority: 'high',     label: 'Combined Chlorine' },
     ph:                 { min: 7.2, max: 7.6,  ideal: 7.4,  unit: 'pH',  priority: 'critical', label: 'pH' },
-    totalAlkalinity:    { min: 80,  max: 120,  ideal: 100,  unit: 'ppm', priority: 'high',     label: 'Total Alkalinity' },
-    calciumHardness:    { min: 200, max: 400,  ideal: 300,  unit: 'ppm', priority: 'normal',   label: 'Calcium Hardness' },
+    totalAlkalinity:    { min: 80,  max: 150,  ideal: 100,  unit: 'ppm', priority: 'high',     label: 'Total Alkalinity' },
+    calciumHardness:    { min: 100, max: 300,  ideal: 200,  unit: 'ppm', priority: 'normal',   label: 'Calcium Hardness' },
     cyanuricAcid:       { min: 30,  max: 50,   ideal: 40,   unit: 'ppm', priority: 'high',     label: 'Cyanuric Acid' },
     saltLevel:          { min: 2700, max: 3400, ideal: 3000, unit: 'ppm', priority: 'high',    label: 'Salt Level' },
     phosphates:         { min: 0,   max: 100,  ideal: 0,    unit: 'ppb', priority: 'normal',   label: 'Phosphates' },
@@ -55,21 +55,21 @@ const RANGES: Record<string, Record<string, ParameterRange>> = {
     freeChlorine:       { min: 1.0, max: 3.0,  ideal: 2.0,  unit: 'ppm', priority: 'critical', label: 'Free Chlorine' },
     combinedChlorine:   { min: 0,   max: 0.2,  ideal: 0.0,  unit: 'ppm', priority: 'critical', label: 'Combined Chlorine' },
     ph:                 { min: 7.2, max: 7.6,  ideal: 7.4,  unit: 'pH',  priority: 'critical', label: 'pH' },
-    totalAlkalinity:    { min: 80,  max: 120,  ideal: 100,  unit: 'ppm', priority: 'high',     label: 'Total Alkalinity' },
-    calciumHardness:    { min: 200, max: 400,  ideal: 300,  unit: 'ppm', priority: 'normal',   label: 'Calcium Hardness' },
+    totalAlkalinity:    { min: 80,  max: 150,  ideal: 100,  unit: 'ppm', priority: 'high',     label: 'Total Alkalinity' },
+    calciumHardness:    { min: 100, max: 300,  ideal: 200,  unit: 'ppm', priority: 'normal',   label: 'Calcium Hardness' },
     phosphates:         { min: 0,   max: 100,  ideal: 0,    unit: 'ppb', priority: 'normal',   label: 'Phosphates' },
   },
   spa_chlorine: {
     freeChlorine:       { min: 3.0, max: 5.0,  ideal: 4.0,  unit: 'ppm', priority: 'critical', label: 'Free Chlorine' },
     combinedChlorine:   { min: 0,   max: 0.2,  ideal: 0.0,  unit: 'ppm', priority: 'critical', label: 'Combined Chlorine' },
     ph:                 { min: 7.2, max: 7.8,  ideal: 7.5,  unit: 'pH',  priority: 'critical', label: 'pH' },
-    totalAlkalinity:    { min: 80,  max: 120,  ideal: 100,  unit: 'ppm', priority: 'high',     label: 'Total Alkalinity' },
+    totalAlkalinity:    { min: 80,  max: 150,  ideal: 100,  unit: 'ppm', priority: 'high',     label: 'Total Alkalinity' },
     calciumHardness:    { min: 150, max: 250,  ideal: 200,  unit: 'ppm', priority: 'normal',   label: 'Calcium Hardness' },
   },
   spa_bromine: {
     bromine:            { min: 3.0, max: 5.0,  ideal: 4.0,  unit: 'ppm', priority: 'critical', label: 'Bromine' },
     ph:                 { min: 7.2, max: 7.8,  ideal: 7.5,  unit: 'pH',  priority: 'critical', label: 'pH' },
-    totalAlkalinity:    { min: 80,  max: 120,  ideal: 100,  unit: 'ppm', priority: 'high',     label: 'Total Alkalinity' },
+    totalAlkalinity:    { min: 80,  max: 150,  ideal: 100,  unit: 'ppm', priority: 'high',     label: 'Total Alkalinity' },
     calciumHardness:    { min: 150, max: 250,  ideal: 200,  unit: 'ppm', priority: 'normal',   label: 'Calcium Hardness' },
   },
   // Sourced from a real WQRMP (Better Health Network hydrotherapy pool, Aug 2026, Section 5.1) —
@@ -230,7 +230,7 @@ export function instantBalanceAlerts(ta?: number | null, ch?: number | null, vol
     alerts.push({
       parameter: 'Calcium Hardness',
       headline: `LOW CALCIUM HARDNESS — ${ch} ppm`,
-      action: 'Add calcium chloride now to bring it to 200 ppm (pre-dissolve in a bucket), then re-test.',
+      action: 'Add calcium chloride now to bring it to 200 ppm (pre-dissolve in a bucket) — in stages if it is a big pool — then re-test.',
       dose: kgFor(200 - ch),
     })
   }
@@ -251,6 +251,19 @@ export interface DoseRecommendation {
 }
 
 export type PhCorrectionMethod = 'acid' | 'co2'
+
+// Big corrections are done in stages, not one hit: a 500 kL pool that needs 100 kg of calcium
+// chloride gets it over several visits. `dose` is the whole correction; `stage` is what to add today.
+function staged(totalAmount: number, totalPpm: number, maxPpmPerStage: number, unit: string, decimals = 1) {
+  const fmt = (n: number) => `${n.toFixed(decimals)} ${unit}`
+  if (totalPpm <= maxPpmPerStage) return { dose: fmt(totalAmount), notes: '' }
+  const stages = Math.ceil(totalPpm / maxPpmPerStage)
+  const perStage = totalAmount / stages
+  return {
+    dose: `${fmt(totalAmount)} in total`,
+    notes: `Too much for one go — do it in ${stages} stages: add ${fmt(perStage)} now, re-test after a full turnover, repeat until in range.`,
+  }
+}
 
 export function calculateDoses(
   values: WaterTestValues,
@@ -321,6 +334,18 @@ export function calculateDoses(
           direction: 'decrease',
           notes: 'Confirm CO2 injection rate at the controller — this is an approximate daily consumption target, not a single manual dose. Re-test after the controller has run a full cycle (check controller log, typically 2-4 hours).',
         })
+      } else if (values.totalAlkalinity !== undefined && ranges.totalAlkalinity && values.totalAlkalinity > ranges.totalAlkalinity.max) {
+        // Alkalinity is high too — the acid dosed for alkalinity (below) brings pH down with it.
+        // Recommending acid twice would double-dose.
+        recs.push({
+          parameter: 'pH',
+          currentValue: values.ph,
+          targetValue: r.ideal,
+          chemical: 'Covered by the alkalinity acid dose below',
+          dose: 'No separate dose',
+          direction: 'decrease',
+          notes: 'Re-test pH after the alkalinity correction has circulated. Only dose pH on its own if it is still high then.',
+        })
       } else {
         const L = ((excess / 0.1) * (volKL / 100) * 0.12).toFixed(1)
         recs.push({
@@ -341,27 +366,28 @@ export function calculateDoses(
     const r = ranges.totalAlkalinity
     if (values.totalAlkalinity < r.min) {
       const deficit = r.ideal - values.totalAlkalinity
-      const kg = ((deficit / 10) * (volKL / 100) * 1.5).toFixed(2)
+      const st = staged((deficit / 10) * (volKL / 100) * 1.5, deficit, 40, 'kg')
       recs.push({
         parameter: 'Total Alkalinity',
         currentValue: values.totalAlkalinity,
         targetValue: r.ideal,
         chemical: 'Alkalinity Up (Sodium Bicarbonate)',
-        dose: `${kg} kg`,
+        dose: st.dose,
         direction: 'increase',
-        notes: 'Broadcast across pool surface with pump running. Re-test after 6 hours.',
+        notes: `Broadcast across pool surface with pump running. Re-test after 6 hours. ${st.notes}`.trim(),
       })
     } else if (values.totalAlkalinity > r.max) {
       const excess = values.totalAlkalinity - r.ideal
-      const L = ((excess / 10) * (volKL / 100) * 1.0).toFixed(1)
+      // ~2 L of 31% hydrochloric acid lowers alkalinity 10 ppm per 100 kL
+      const st = staged((excess / 10) * (volKL / 100) * 2.0, excess, 30, 'L')
       recs.push({
         parameter: 'Total Alkalinity',
         currentValue: values.totalAlkalinity,
         targetValue: r.ideal,
-        chemical: 'pH Down (Muriatic Acid)',
-        dose: `${L} L`,
+        chemical: 'pH Down (Muriatic / Hydrochloric Acid)',
+        dose: st.dose,
         direction: 'decrease',
-        notes: 'Add to deep end with pump off. Allow to disperse before turning pump on.',
+        notes: `Add to deep end with pump off, let it sit, then circulate. This also lowers pH — re-test both. ${st.notes}`.trim(),
       })
     }
   }
@@ -371,15 +397,15 @@ export function calculateDoses(
     const r = ranges.calciumHardness
     if (values.calciumHardness < r.min) {
       const deficit = r.ideal - values.calciumHardness
-      const kg = ((deficit / 10) * (volKL / 100) * 1.5).toFixed(2)
+      const st = staged((deficit / 10) * (volKL / 100) * 1.5, deficit, 60, 'kg')
       recs.push({
         parameter: 'Calcium Hardness',
         currentValue: values.calciumHardness,
         targetValue: r.ideal,
         chemical: 'Calcium Chloride (Hardness Up)',
-        dose: `${kg} kg`,
+        dose: st.dose,
         direction: 'increase',
-        notes: 'Pre-dissolve in bucket of water. Add with pump running. Changes gradually — re-test next day.',
+        notes: `Pre-dissolve in a bucket. Add with pump running. Changes gradually — re-test next visit. ${st.notes}`.trim(),
       })
     } else if (values.calciumHardness > r.max) {
       recs.push({
