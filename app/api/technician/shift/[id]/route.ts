@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { sendSiteVisitReport } from '@/lib/site-visit-report'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getSession()
@@ -18,5 +19,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Finish shift → the office gets the full visit report (tasks, tests, stock, plant log, hours)
+  if (body.status === 'completed') {
+    after(() => sendSiteVisitReport(id).catch(e => console.error('Site visit report failed:', e)))
+  }
   return NextResponse.json({ shift: data })
 }

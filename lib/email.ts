@@ -21,6 +21,8 @@ export async function sendEmail(to: string, subject: string, html: string) {
   await transporter.sendMail({ from: FROM, to, subject, html })
 }
 
+export function emailBase(content: string) { return base(content) }
+
 function base(content: string) {
   return `
   <!DOCTYPE html><html><body style="margin:0;padding:0;background:#0a1628;font-family:Arial,sans-serif">
