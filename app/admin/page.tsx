@@ -859,7 +859,7 @@ function StaffTab() {
   const [editingStaffMember, setEditingStaffMember] = useState<any>(null)
   const [form, setForm] = useState({
     staff_id: '', pool_id: '', shift_type: 'service_visit',
-    scheduled_start: '', scheduled_end: '', notes: '', status: 'scheduled',
+    scheduled_start: '', scheduled_end: '', actual_start: '', actual_end: '', notes: '', status: 'scheduled',
   })
   const [routeForm, setRouteForm] = useState({ name: '', assigned_technician_id: '', notes: '' })
   const [routePoolForm, setRoutePoolForm] = useState({ pool_id: '', service_frequency: 'weekly' })
@@ -890,7 +890,7 @@ function StaffTab() {
 
   function openAddShift() {
     setEditingShift(null)
-    setForm({ staff_id: '', pool_id: '', shift_type: 'service_visit', scheduled_start: '', scheduled_end: '', notes: '', status: 'scheduled' })
+    setForm({ staff_id: '', pool_id: '', shift_type: 'service_visit', scheduled_start: '', scheduled_end: '', actual_start: '', actual_end: '', notes: '', status: 'scheduled' })
     setShowAddShift(true)
   }
 
@@ -898,7 +898,8 @@ function StaffTab() {
     setEditingShift(sh)
     setForm({
       staff_id: sh.staff_id ?? '', pool_id: sh.pool_id ?? '', shift_type: sh.shift_type ?? 'service_visit',
-      scheduled_start: toLocalInput(sh.scheduled_start), scheduled_end: toLocalInput(sh.scheduled_end),
+      scheduled_start: toLocalInput(sh.scheduled_start), scheduled_end: sh.scheduled_end ? toLocalInput(sh.scheduled_end) : '',
+      actual_start: sh.actual_start ? toLocalInput(sh.actual_start) : '', actual_end: sh.actual_end ? toLocalInput(sh.actual_end) : '',
       notes: sh.notes ?? '', status: sh.status ?? 'scheduled',
     })
     setShowAddShift(true)
@@ -915,10 +916,23 @@ function StaffTab() {
         ...form,
         scheduled_start: localInputToISO(form.scheduled_start),
         scheduled_end: form.scheduled_end ? localInputToISO(form.scheduled_end) : null,
+        actual_start: form.actual_start ? localInputToISO(form.actual_start) : null,
+        actual_end: form.actual_end ? localInputToISO(form.actual_end) : null,
       }),
     })
     if (res.ok) { setShowAddShift(false); load() }
     setSaving(false)
+  }
+
+  async function handleDeleteShift() {
+    if (!editingShift) return
+    const who = editingShift.staff ? `${editingShift.staff.first_name} ${editingShift.staff.last_name}` : 'this technician'
+    if (!confirm(`Delete this shift for ${who} at ${editingShift.pools?.name ?? 'Office / Admin'}? This cannot be undone.`)) return
+    setSaving(true)
+    const res = await fetch(`/api/admin/shifts?id=${editingShift.id}`, { method: 'DELETE' })
+    setSaving(false)
+    if (res.ok) { setShowAddShift(false); setEditingShift(null); load() }
+    else { const d = await res.json().catch(() => ({})); alert(d.error ?? 'Could not delete this shift.') }
   }
 
   function openAddStaff() {
@@ -1492,22 +1506,44 @@ function StaffTab() {
                 </div>
               </div>
               {editingShift && (
-                <div style={s.formGroup}>
-                  <label>Status</label>
-                  <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
-                    {['scheduled','in_progress','completed','cancelled'].map(st => (
-                      <option key={st} value={st}>{st.replace('_', ' ')}</option>
-                    ))}
-                  </select>
-                </div>
+                <>
+                  <div style={s.formGrid}>
+                    <div style={s.formGroup}>
+                      <label>Actual start (on site)</label>
+                      <input type="datetime-local" value={form.actual_start}
+                        onChange={e => setForm(f => ({ ...f, actual_start: e.target.value }))} />
+                    </div>
+                    <div style={s.formGroup}>
+                      <label>Actual finish</label>
+                      <input type="datetime-local" value={form.actual_end}
+                        onChange={e => setForm(f => ({ ...f, actual_end: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '-8px', marginBottom: '14px' }}>Normally set by the technician tapping Start / Finish. Fill in or fix here if they forgot — hours come from these two.</div>
+                  <div style={s.formGroup}>
+                    <label>Status</label>
+                    <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
+                      {['scheduled','in_progress','completed','cancelled'].map(st => (
+                        <option key={st} value={st}>{st.replace('_', ' ')}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
               )}
               <div style={s.formGroup}>
                 <label>Notes</label>
                 <textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
               </div>
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowAddShift(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : editingShift ? 'Save Changes' : 'Add Shift'}</button>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+                {editingShift ? (
+                  <button type="button" className="btn btn-secondary" style={{ color: 'var(--red)' }} disabled={saving} onClick={handleDeleteShift}>
+                    <Trash2 size={14} /> Delete shift
+                  </button>
+                ) : <span />}
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowAddShift(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : editingShift ? 'Save Changes' : 'Add Shift'}</button>
+                </div>
               </div>
             </form>
           </div>
