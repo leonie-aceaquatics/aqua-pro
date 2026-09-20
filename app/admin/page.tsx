@@ -730,7 +730,7 @@ function WaterTestingTab() {
                 ['Free Chlorine', selectedTest.free_chlorine, 'ppm', 1.0, 3.0],
                 ['Combined Cl', selectedTest.combined_chlorine, 'ppm', 0, 0.2],
                 ['Total Cl', selectedTest.total_chlorine, 'ppm', 0, 4.0],
-                ['pH', selectedTest.ph, '', 7.2, 7.6],
+                ['pH', selectedTest.ph, '', 7.2, 7.8],
                 ['Total Alkalinity', selectedTest.total_alkalinity, 'ppm', 80, 120],
                 ['Calcium Hardness', selectedTest.calcium_hardness, 'ppm', 100, 300],
                 ['CYA', selectedTest.cyanuric_acid, 'ppm', 30, 50],

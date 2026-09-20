@@ -23,7 +23,7 @@ export const POOL_GUIDE: GuideSection[] = [
   {
     title: 'pH', colour: '#0077b6',
     steps: [
-      'Range 7.2 – 7.8. Aim for 7.4 – 7.6. Above 7.8 the water is turning alkaline (basic) and chlorine works poorly; below 7.2 it is acidic and corrosive.',
+      'Range 7.2 – 7.8 — anything in there is in range and the app will not flag it. Aim for 7.4 – 7.6. Above 7.8 the water is turning alkaline (basic) and chlorine works poorly; below 7.2 it is acidic and corrosive.',
       'pH out of range also throws the LSI out.',
       { text: 'pH is held down by a controller reading a pH probe. Three systems on our sites:', sub: [
         'CO₂ (carbon dioxide gas) — the preferred one. Lowers pH without dropping alkalinity.',

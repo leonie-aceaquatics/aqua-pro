@@ -48,6 +48,7 @@ export const TECH_GUIDE: Section[] = [
       ] },
       { text: 'Red alarm boxes: Total Alkalinity 80 or below → add sodium bicarbonate now. Calcium Hardness below 90 → add calcium chloride now.', sub: [
         'They pop up the moment you type the number, with roughly how many kg for that pool. Dose, then re-test before you leave and log the second test too.',
+        'Well below range (alkalinity 60 or under, calcium under 60) → the whole screen goes red and the phone buzzes. Read it, tap "I understand", then fix it before you leave. It comes back if the number gets worse.',
       ] },
       { text: 'System Screen Values — type what the dosing system / controller screen (Chemtrol, Dulcomarin, etc.) shows for pH and Free Cl.', sub: [
         'The app shows the difference against your test. If it says "calibrate", calibrate the system and tick Calibrated.',

@@ -34,7 +34,7 @@ const RANGES: Record<string, Record<string, ParameterRange>> = {
   outdoor_chlorine: {
     freeChlorine:       { min: 1.0, max: 3.0,  ideal: 2.0,  unit: 'ppm', priority: 'critical', label: 'Free Chlorine' },
     combinedChlorine:   { min: 0,   max: 0.2,  ideal: 0.0,  unit: 'ppm', priority: 'high',     label: 'Combined Chlorine' },
-    ph:                 { min: 7.2, max: 7.6,  ideal: 7.4,  unit: 'pH',  priority: 'critical', label: 'pH' },
+    ph:                 { min: 7.2, max: 7.8,  ideal: 7.5,  unit: 'pH',  priority: 'critical', label: 'pH' },
     totalAlkalinity:    { min: 80,  max: 150,  ideal: 100,  unit: 'ppm', priority: 'high',     label: 'Total Alkalinity' },
     calciumHardness:    { min: 100, max: 300,  ideal: 200,  unit: 'ppm', priority: 'normal',   label: 'Calcium Hardness' },
     cyanuricAcid:       { min: 30,  max: 50,   ideal: 40,   unit: 'ppm', priority: 'high',     label: 'Cyanuric Acid' },
@@ -44,7 +44,7 @@ const RANGES: Record<string, Record<string, ParameterRange>> = {
   outdoor_saltwater: {
     freeChlorine:       { min: 1.0, max: 3.0,  ideal: 2.0,  unit: 'ppm', priority: 'critical', label: 'Free Chlorine' },
     combinedChlorine:   { min: 0,   max: 0.2,  ideal: 0.0,  unit: 'ppm', priority: 'high',     label: 'Combined Chlorine' },
-    ph:                 { min: 7.2, max: 7.6,  ideal: 7.4,  unit: 'pH',  priority: 'critical', label: 'pH' },
+    ph:                 { min: 7.2, max: 7.8,  ideal: 7.5,  unit: 'pH',  priority: 'critical', label: 'pH' },
     totalAlkalinity:    { min: 80,  max: 150,  ideal: 100,  unit: 'ppm', priority: 'high',     label: 'Total Alkalinity' },
     calciumHardness:    { min: 100, max: 300,  ideal: 200,  unit: 'ppm', priority: 'normal',   label: 'Calcium Hardness' },
     cyanuricAcid:       { min: 30,  max: 50,   ideal: 40,   unit: 'ppm', priority: 'high',     label: 'Cyanuric Acid' },
@@ -54,7 +54,7 @@ const RANGES: Record<string, Record<string, ParameterRange>> = {
   indoor_chlorine: {
     freeChlorine:       { min: 1.0, max: 3.0,  ideal: 2.0,  unit: 'ppm', priority: 'critical', label: 'Free Chlorine' },
     combinedChlorine:   { min: 0,   max: 0.2,  ideal: 0.0,  unit: 'ppm', priority: 'critical', label: 'Combined Chlorine' },
-    ph:                 { min: 7.2, max: 7.6,  ideal: 7.4,  unit: 'pH',  priority: 'critical', label: 'pH' },
+    ph:                 { min: 7.2, max: 7.8,  ideal: 7.5,  unit: 'pH',  priority: 'critical', label: 'pH' },
     totalAlkalinity:    { min: 80,  max: 150,  ideal: 100,  unit: 'ppm', priority: 'high',     label: 'Total Alkalinity' },
     calciumHardness:    { min: 100, max: 300,  ideal: 200,  unit: 'ppm', priority: 'normal',   label: 'Calcium Hardness' },
     phosphates:         { min: 0,   max: 100,  ideal: 0,    unit: 'ppb', priority: 'normal',   label: 'Phosphates' },
@@ -79,7 +79,7 @@ const RANGES: Record<string, Record<string, ParameterRange>> = {
     freeChlorine:       { min: 2.5, max: 3.5,  ideal: 2.75, unit: 'ppm', priority: 'critical', label: 'Free Chlorine' },
     combinedChlorine:   { min: 0,   max: 0.5,  ideal: 0.0,  unit: 'ppm', priority: 'critical', label: 'Combined Chlorine' },
     totalChlorine:      { min: 0,   max: 4.0,  ideal: 2.5,  unit: 'ppm', priority: 'high',     label: 'Total Chlorine' },
-    ph:                 { min: 7.4, max: 7.6,  ideal: 7.55, unit: 'pH',  priority: 'critical', label: 'pH' },
+    ph:                 { min: 7.2, max: 7.8,  ideal: 7.5,  unit: 'pH',  priority: 'critical', label: 'pH' },   // Tony: 7.2–7.8 everywhere (WQRMP had 7.4–7.6)
     totalAlkalinity:    { min: 100, max: 140,  ideal: 120,  unit: 'ppm', priority: 'high',     label: 'Total Alkalinity' },
     calciumHardness:    { min: 100, max: 250,  ideal: 175,  unit: 'ppm', priority: 'normal',   label: 'Calcium Hardness' },
     turbidity:          { min: 0,   max: 0.5,  ideal: 0.2,  unit: 'NTU', priority: 'high',     label: 'Turbidity' },
@@ -211,7 +211,11 @@ export const LSI_LABELS: Record<LSIStatus, string> = {
 // ── Instant alarms while typing a test ────────────────────────────────────────
 // Tony's rule for every site: alkalinity at or below 80 → add sodium bicarbonate now;
 // calcium hardness below 90 → add calcium chloride now. Shown the moment the number is typed.
-export interface InstantAlert { parameter: string; headline: string; action: string; dose?: string }
+export interface InstantAlert { parameter: string; headline: string; action: string; dose?: string; severe: boolean }
+
+// "Well below" — the full-screen alarm, not just a red box
+export const SEVERE_TA = 60
+export const SEVERE_CH = 60
 
 export function instantBalanceAlerts(ta?: number | null, ch?: number | null, volumeLitres?: number | null): InstantAlert[] {
   const alerts: InstantAlert[] = []
@@ -221,17 +225,19 @@ export function instantBalanceAlerts(ta?: number | null, ch?: number | null, vol
   if (ta != null && !isNaN(ta) && ta <= 80) {
     alerts.push({
       parameter: 'Total Alkalinity',
-      headline: `LOW ALKALINITY — ${ta} ppm`,
+      headline: `${ta <= SEVERE_TA ? 'VERY ' : ''}LOW ALKALINITY — ${ta} ppm`,
       action: 'Add sodium bicarbonate now to bring it to 100 ppm, then re-test.',
       dose: kgFor(100 - ta),
+      severe: ta <= SEVERE_TA,
     })
   }
   if (ch != null && !isNaN(ch) && ch < 90) {
     alerts.push({
       parameter: 'Calcium Hardness',
-      headline: `LOW CALCIUM HARDNESS — ${ch} ppm`,
+      headline: `${ch < SEVERE_CH ? 'VERY ' : ''}LOW CALCIUM HARDNESS — ${ch} ppm`,
       action: 'Add calcium chloride now to bring it to 200 ppm (pre-dissolve in a bucket) — in stages if it is a big pool — then re-test.',
       dose: kgFor(200 - ch),
+      severe: ch < SEVERE_CH,
     })
   }
   return alerts
