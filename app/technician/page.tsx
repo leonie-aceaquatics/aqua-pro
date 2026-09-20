@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, FlaskConical, Package, HelpCircle, Camera, Plus, X, LayoutDashboard, Calculator, Play } from 'lucide-react'
+import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, FlaskConical, Package, HelpCircle, Camera, Plus, X, LayoutDashboard, Calculator, Play, CalendarDays } from 'lucide-react'
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
 import PlantLog from '@/components/PlantLog'
 import ChemistryCalculatorTab from '@/components/ChemistryCalculatorTab'
@@ -34,6 +34,8 @@ export default function TechnicianPage() {
   const [chemicals, setChemicals] = useState<any[]>([])
   const [savedTest, setSavedTest] = useState<any>(null)   // just-saved test, for the photo step
   const [allPools, setAllPools] = useState<any[]>([])      // everyone: visit any site, rostered or not
+  const [week, setWeek] = useState<any[]>([])              // the 7 days after today, read-only
+  const [showWeek, setShowWeek] = useState(false)
   const isOffice = user && ['admin', 'manager'].includes(user.role)
   const isFacility = selected?.pools?.pool_type === 'facility'   // gym etc: no water screens
   const [saving, setSaving] = useState(false)
@@ -61,6 +63,7 @@ export default function TechnicianPage() {
       setLoading(false)
       if (u.user) {
         fetch('/api/admin/pools').then(r => r.json()).then(d => setAllPools(d.pools ?? [])).catch(() => {})
+        fetch('/api/technician/week').then(r => r.json()).then(d => setWeek(d.shifts ?? [])).catch(() => {})
       }
     }).catch(() => {
       setLoadError(true)
@@ -299,6 +302,44 @@ export default function TechnicianPage() {
           </div>
         ))}
       </div>
+
+      {/* The week ahead — read only, grouped by day */}
+      {week.length > 0 && (
+        <div style={{ padding: '0 20px 8px' }}>
+          <button type="button" onClick={() => setShowWeek(v => !v)}
+            style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '14px 16px', color: '#e2e8f0', cursor: 'pointer', fontSize: '14px', fontWeight: '700' }}>
+            <span><CalendarDays size={15} style={{ verticalAlign: '-2px', marginRight: '8px', color: '#00b4d8' }} />Week ahead · {week.length} job{week.length === 1 ? '' : 's'}</span>
+            <ChevronRight size={18} color="#64748b" style={{ transform: showWeek ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }} />
+          </button>
+          {showWeek && (
+            <div style={{ marginTop: '8px' }}>
+              {Object.entries(week.reduce((acc: Record<string, any[]>, sh: any) => {
+                const k = new Date(sh.scheduled_start).toLocaleDateString('en-CA', { timeZone: 'Australia/Melbourne' })
+                ;(acc[k] = acc[k] ?? []).push(sh); return acc
+              }, {} as Record<string, any[]>)).map(([day, list]) => (
+                <div key={day} style={{ marginBottom: '12px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '4px 0' }}>
+                    {new Date(day + 'T12:00:00').toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'short' })}
+                  </div>
+                  {list.map((sh: any) => (
+                    <div key={sh.id} style={{ display: 'flex', gap: '10px', alignItems: 'baseline', padding: '8px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', minWidth: '42px' }}>{fmtTime(sh.scheduled_start)}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '14px', color: '#e2e8f0' }}>{sh.pools?.name ?? 'Office / Admin'}</div>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>
+                          {sh.shift_type !== 'service_visit' && <span style={{ color: shiftTypeColour[sh.shift_type] ?? '#64748b', fontWeight: '700', marginRight: '8px' }}>{(sh.shift_type ?? '').replace('_', ' ')}</span>}
+                          {sh.notes && <span style={{ fontStyle: 'italic' }}>{sh.notes}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <div style={{ fontSize: '11px', color: '#64748b', padding: '0 4px' }}>Times are the rostered order — tap Start shift on the day for your hours.</div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Open any site without a rostered shift — techs are often at sites the roster hasn't caught up with */}
       {allPools.length > 0 && (
