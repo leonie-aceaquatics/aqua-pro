@@ -6,6 +6,7 @@ import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from
 import PlantLog from '@/components/PlantLog'
 import ChemistryCalculatorTab from '@/components/ChemistryCalculatorTab'
 import ChangePassword from '@/components/ChangePassword'
+import { POOL_GUIDE } from '@/lib/pool-guide'
 import InstantAlerts from '@/components/InstantAlerts'
 import { fmtTime, fmtActual } from '@/lib/shift-time'
 import SiteTaskList from '@/components/SiteTaskList'
@@ -24,6 +25,7 @@ export default function TechnicianPage() {
   const [showStockCount, setShowStockCount] = useState(false)
   const [showCalc, setShowCalc] = useState<{ poolId: string; poolName: string } | null>(null)   // dose calculator overlay
   const [showHelp, setShowHelp] = useState(false)
+  const [helpTab, setHelpTab] = useState<'app' | 'pool'>('app')   // ? screen: how to use the app / pool chemistry guide
   const [testForm, setTestForm] = useState({
     free_chlorine: '', combined_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '',
     calcium_hardness: '', cyanuric_acid: '', salt_level: '', phosphates: '',
@@ -633,9 +635,15 @@ export default function TechnicianPage() {
               </button>
               <div style={{ fontWeight: '700', fontSize: '16px', color: '#e2e8f0' }}>How to use AquaPro</div>
             </div>
-            <div style={{ color: '#64748b', fontSize: '13px', marginBottom: '16px' }}>Tap a heading to open it. If you're stuck, phone the office.</div>
-            <HelpGuide sections={TECH_GUIDE} dark />
-            <ChangePassword />
+            <div style={{ color: '#64748b', fontSize: '13px', marginBottom: '12px' }}>Tap a heading to open it. If you're stuck, phone the office.</div>
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
+              {([['app', 'Using the app'], ['pool', 'Pool chemistry & troubleshooting']] as const).map(([id, label]) => (
+                <button key={id} type="button" onClick={() => setHelpTab(id)}
+                  style={{ flex: 1, padding: '10px 8px', borderRadius: '8px', border: '1px solid var(--border)', cursor: 'pointer', fontSize: '13px', fontWeight: '700',
+                    background: helpTab === id ? 'var(--aqua)' : 'var(--surface)', color: helpTab === id ? '#fff' : '#94a3b8' }}>{label}</button>
+              ))}
+            </div>
+            {helpTab === 'app' ? <><HelpGuide sections={TECH_GUIDE} dark /><ChangePassword /></> : <HelpGuide sections={POOL_GUIDE} dark />}
           </div>
         </div>
       )}
@@ -653,7 +661,7 @@ export default function TechnicianPage() {
                 {showCalc.poolName && <div style={{ fontSize: '12px', color: '#64748b' }}>{showCalc.poolName}</div>}
               </div>
             </div>
-            <ChemistryCalculatorTab compact initialPoolId={showCalc.poolId} />
+            <ChemistryCalculatorTab compact initialPoolId={showCalc.poolId} onOpenGuide={() => { setShowCalc(null); setHelpTab('pool'); setShowHelp(true) }} />
           </div>
         </div>
       )}

@@ -5,7 +5,7 @@ import { ChevronDown } from 'lucide-react'
 // Plain-English "how do I…" guide. Content lives here so the technician Help screen and
 // the admin Help tab show the same thing. Keep steps matched to what's actually on screen.
 
-type Section = { title: string; colour?: string; steps: (string | { text: string; sub: string[] })[] }
+import type { GuideSection as Section } from '@/lib/pool-guide'
 
 export const TECH_GUIDE: Section[] = [
   {
@@ -76,6 +76,7 @@ export const TECH_GUIDE: Section[] = [
       'Type in the readings you have. Combined Chlorine and LSI fill in by themselves, same as the water test.',
       'Tap Calculate. It shows the risk level and exactly what to add — which chemical and how many litres or kg — worked out from that pool\'s volume, and whether the site corrects pH with acid or CO₂.',
       'Nothing is saved. It is for working out a dose before you add it. Once you have dosed and re-tested, log the real result in Log Water Test.',
+      'Under each recommendation are yellow tips on what to check first (dosing, product, probe, filters). For the full rundown tap the ? button → Pool chemistry & troubleshooting.',
       'If it says the pool has no volume set, the office needs to add the litres under Pools before it can work out doses for that site.',
     ],
   },
@@ -153,7 +154,7 @@ export const ADMIN_GUIDE: Section[] = [
       'Staff — add technicians (they get a welcome email with their login). Set their role: technician for field staff. After you save, a green bar confirms the email went; a red bar means it did not and says why.',
       'Shifts — one block per day: "Who\'s going where" in time order, and "Site coverage" with every site green (someone rostered, with their name) or grey (nobody today), so gaps are obvious. Use Prev/Next week to move around. Only the start time is needed when adding a shift; techs tap Start/Finish on site and the hours line at the top shows what was really worked. Click a shift to edit it — fix a forgotten Start/Finish there, or Delete shift if it was entered wrongly.',
       'Pools — pool type, sanitiser and volume drive the target ranges and dosing calculator, so keep them accurate. Without a volume the Dose Calculator cannot work out doses for that site.',
-      'Chemistry Calculator — the same dose calculator technicians have, for any pool, without logging a test.',
+      'Chemistry Calculator — the same dose calculator technicians have, for any pool, without logging a test. Pool Chemistry Guide — Tony\'s training notes (ranges, pH systems, LSI, chlorine troubleshooting, thiosulphate procedure); technicians have the same guide under their ? button.',
       'Site Tasks — the tick list technicians see on every visit. "All sites" tasks show everywhere; pick a pool to add tasks just for it. Set "N photos" on a task to make the tech attach photos to it; Tasks Done shows the photos. (There is no lifeguard shift checklist — none of our sites are lifeguarded.)',
       'A site with no water (e.g. AAMI Park – Gym) is type "facility": it gets only its own tasks and no water-test or plant-room screens.',
       'Chemicals → Depot Inventory — the chemical list, units and reorder points. The reorder point applies at every site.',

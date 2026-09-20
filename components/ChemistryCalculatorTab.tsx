@@ -2,11 +2,12 @@
 import { useState, useEffect } from 'react'
 import { Calculator } from 'lucide-react'
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
+import { CALCULATOR_TIPS, LSI_TIPS } from '@/lib/pool-guide'
 
 const BLANK = { free_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '', calcium_hardness: '', cyanuric_acid: '', salt_level: '', temperature_c: '' }
 
 // Shared by the admin Chemistry Calculator tab and the technician app (single column, pool preselected).
-export default function ChemistryCalculatorTab({ initialPoolId = '', compact = false }: { initialPoolId?: string; compact?: boolean } = {}) {
+export default function ChemistryCalculatorTab({ initialPoolId = '', compact = false, onOpenGuide }: { initialPoolId?: string; compact?: boolean; onOpenGuide?: () => void } = {}) {
   const [pools, setPools] = useState<any[]>([])
   const [poolId, setPoolId] = useState(initialPoolId)
   const [values, setValues] = useState(BLANK)
@@ -60,6 +61,7 @@ export default function ChemistryCalculatorTab({ initialPoolId = '', compact = f
     <>
       <div style={{ fontSize: '13px', color: 'var(--text-muted)', maxWidth: '600px', marginBottom: compact ? '16px' : '24px' }}>
         Enter a set of readings for any pool and get an instant dose recommendation and LSI — without logging a full water test. Useful mid-visit, before you've finished a whole reading set.
+        {onOpenGuide && <> Stuck? <button type="button" onClick={onOpenGuide} style={{ background: 'none', border: 'none', color: 'var(--aqua)', cursor: 'pointer', padding: 0, fontSize: '13px', textDecoration: 'underline' }}>Open the Pool Chemistry Guide</button>.</>}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : '1fr 1fr', gap: compact ? '14px' : '24px', alignItems: 'flex-start' }}>
@@ -96,6 +98,9 @@ export default function ChemistryCalculatorTab({ initialPoolId = '', compact = f
                   {lsiStatus ? LSI_LABELS[lsiStatus] : 'Enter pH, TA, CH and temperature'}
                 </span>
               </div>
+              {lsiStatus && lsiStatus !== 'balanced' && (
+                <div style={{ fontSize: '12px', color: '#fdcb6e', marginTop: '6px', lineHeight: 1.5 }}>{LSI_TIPS[lsiStatus]}</div>
+              )}
             </div>
             {error && <div style={{ color: 'var(--red)', fontSize: '12px', marginBottom: '12px' }}>{error}</div>}
             <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>{loading ? 'Calculating…' : 'Calculate'}</button>
@@ -135,6 +140,11 @@ export default function ChemistryCalculatorTab({ initialPoolId = '', compact = f
                         </div>
                         <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{d.chemical}</div>
                         {d.notes && <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>{d.notes}</div>}
+                        {CALCULATOR_TIPS[d.parameter] && (
+                          <ul style={{ margin: '6px 0 0', paddingLeft: '16px', fontSize: '12px', color: '#fdcb6e', lineHeight: 1.5 }}>
+                            {CALCULATOR_TIPS[d.parameter].map((tip, j) => <li key={j}>{tip}</li>)}
+                          </ul>
+                        )}
                       </div>
                     ))}
                   </div>

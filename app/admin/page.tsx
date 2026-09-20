@@ -7,7 +7,7 @@ import {
   Activity, Shield, MapPin, Bell, FlaskConical,
   XCircle, Wrench, CalendarX, Check, Trash2, Bug,
   ChevronUp, ChevronDown, Pencil, Power,
-  TestTube, Calculator, ListChecks, FileText, HelpCircle, Menu, X,
+  TestTube, Calculator, ListChecks, FileText, HelpCircle, Menu, X, BookOpen,
 } from 'lucide-react'
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
 import { toLocalInput, localInputToISO } from '@/lib/local-time'
@@ -22,9 +22,10 @@ import ChemistryCalculatorTab from '@/components/ChemistryCalculatorTab'
 import SiteTasksAdmin from '@/components/SiteTasksAdmin'
 import SiteStockTab from '@/components/SiteStockTab'
 import HelpGuide, { TECH_GUIDE, ADMIN_GUIDE } from '@/components/HelpGuide'
+import { POOL_GUIDE } from '@/lib/pool-guide'
 import WqrmpTab from '@/components/WqrmpTab'
 
-type Tab = 'overview' | 'pools' | 'water-testing' | 'microbiology' | 'chemistry-calc' | 'staff' | 'site-tasks' | 'assets' | 'compliance' | 'risk' | 'risk-register' | 'remote-sites' | 'chemicals' | 'closures' | 'wqrmp' | 'errors' | 'help'
+type Tab = 'overview' | 'pools' | 'water-testing' | 'microbiology' | 'chemistry-calc' | 'staff' | 'site-tasks' | 'assets' | 'compliance' | 'risk' | 'risk-register' | 'remote-sites' | 'chemicals' | 'closures' | 'wqrmp' | 'errors' | 'help' | 'pool-guide'
 
 const NAV: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'overview',      label: 'Overview',       icon: BarChart2 },
@@ -44,6 +45,7 @@ const NAV: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'wqrmp',         label: 'WQRMP Reports',  icon: FileText },
   { id: 'errors',        label: 'Error Log',      icon: Bug },
   { id: 'help',          label: 'Help',           icon: HelpCircle },
+  { id: 'pool-guide',    label: 'Pool Chemistry Guide', icon: BookOpen },
 ]
 
 // ── Shared style objects ───────────────────────────────────────────────────────
@@ -2952,6 +2954,21 @@ function HelpTab() {
   )
 }
 
+// ── POOL CHEMISTRY GUIDE TAB ──────────────────────────────────────────────────
+function PoolGuideTab() {
+  return (
+    <>
+      <div style={s.header}>
+        <div style={s.pageTitle}>Pool Chemistry Guide</div>
+      </div>
+      <div style={{ fontSize: '13px', color: 'var(--text-muted)', maxWidth: '640px', marginBottom: '16px' }}>
+        Tony's training notes, checked against the Victorian water quality guidelines for public aquatic facilities. Technicians see the same guide from the ? button in their app and as tips under the Dose Calculator.
+      </div>
+      <div style={{ maxWidth: '760px' }}><HelpGuide sections={POOL_GUIDE} /></div>
+    </>
+  )
+}
+
 // ── SITE TASKS TAB ────────────────────────────────────────────────────────────
 // The per-site tick list techs work through on every visit. (The lifeguard shift
 // checklist that used to share this tab is hidden — no lifeguarded sites at present.)
@@ -3370,6 +3387,7 @@ export default function AdminPage() {
     staff: 'Staff & Scheduling',
     'site-tasks': 'Site Tasks',
     help: 'Help & Instructions',
+    'pool-guide': 'Pool Chemistry Guide',
     assets: 'Asset Register',
     compliance: 'Compliance',
     chemicals: 'Chemical Inventory',
@@ -3509,6 +3527,7 @@ export default function AdminPage() {
         {tab === 'chemistry-calc' && <ChemistryCalculatorTab />}
         {tab === 'staff'         && <StaffTab />}
         {tab === 'help'          && <HelpTab />}
+        {tab === 'pool-guide'    && <PoolGuideTab />}
         {tab === 'site-tasks'    && <SiteTasksTab />}
         {tab === 'assets'        && <AssetsTab />}
         {tab === 'compliance'    && <ComplianceTab />}
