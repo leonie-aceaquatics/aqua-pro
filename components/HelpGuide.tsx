@@ -148,7 +148,7 @@ export const ADMIN_GUIDE: Section[] = [
     title: 'Setting things up', colour: '#00b894',
     steps: [
       'Staff — add technicians (they get a welcome email with their login). Set their role: technician for field staff. After you save, a green bar confirms the email went; a red bar means it did not and says why.',
-      'Shifts — schedule who goes where. Only the start time is needed; the expected end is optional. Technicians tap Start/Finish on site and the Actual column and the hours line show what was really worked. Click a shift to edit it — fix a forgotten Start/Finish there, or Delete shift if it was entered wrongly.',
+      'Shifts — one block per day: "Who\'s going where" in time order, and "Site coverage" with every site green (someone rostered, with their name) or grey (nobody today), so gaps are obvious. Use Prev/Next week to move around. Only the start time is needed when adding a shift; techs tap Start/Finish on site and the hours line at the top shows what was really worked. Click a shift to edit it — fix a forgotten Start/Finish there, or Delete shift if it was entered wrongly.',
       'Pools — pool type, sanitiser and volume drive the target ranges and dosing calculator, so keep them accurate. Without a volume the Dose Calculator cannot work out doses for that site.',
       'Chemistry Calculator — the same dose calculator technicians have, for any pool, without logging a test.',
       'Site Tasks — the tick list technicians see on every visit. "All sites" tasks show everywhere; pick a pool to add tasks just for it. Set "N photos" on a task to make the tech attach photos to it; Tasks Done shows the photos. (There is no lifeguard shift checklist — none of our sites are lifeguarded.)',
