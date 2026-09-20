@@ -25,7 +25,7 @@ export const TECH_GUIDE: Section[] = [
     title: 'At each site — the order to do things', colour: '#00b894',
     steps: [
       { text: '0. Start shift — tap it as you arrive (rostered jobs only).', sub: [] },
-      { text: '1. Site Tasks — work through the tick list.', sub: [
+      { text: '1. Site Tasks — tap the blue Site Tasks button and work through the tick list.', sub: [
         'It runs in the order of a visit: Arrival → Water quality → Equipment → Chemical dosing → Cleaning → Filtration → Safety → Compliance → Departure.',
         'Tick each one as you do it. The counter at the top shows how many are left, and the box goes green when everything is done.',
         'Your name goes against every tick, so only tick what you actually did.',

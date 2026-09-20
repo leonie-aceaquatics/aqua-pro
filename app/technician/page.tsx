@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, FlaskConical, Package, HelpCircle, Camera, Plus, X, LayoutDashboard, Calculator, Play, CalendarDays } from 'lucide-react'
+import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, FlaskConical, Package, HelpCircle, Camera, Plus, X, LayoutDashboard, Calculator, Play, CalendarDays, ClipboardList } from 'lucide-react'
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
 import PlantLog from '@/components/PlantLog'
 import ChemistryCalculatorTab from '@/components/ChemistryCalculatorTab'
@@ -23,6 +23,7 @@ export default function TechnicianPage() {
   const [showTestForm, setShowTestForm] = useState(false)
   const [showPlantLog, setShowPlantLog] = useState(false)
   const [showStockCount, setShowStockCount] = useState(false)
+  const [showTasks, setShowTasks] = useState(false)          // full-screen Site Tasks tick list
   const [showCalc, setShowCalc] = useState<{ poolId: string; poolName: string } | null>(null)   // dose calculator overlay
   const [showHelp, setShowHelp] = useState(false)
   const [helpTab, setHelpTab] = useState<'app' | 'pool'>('app')   // ? screen: how to use the app / pool chemistry guide
@@ -397,11 +398,16 @@ export default function TechnicianPage() {
             )}
 
             {isFacility && (
-              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>No water here — just the tasks below. Photos attach to the task they belong to.</div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>No water here — just the tasks. Photos attach to the task they belong to.</div>
             )}
-            {selected.pool_id && <SiteTaskList poolId={selected.pool_id} />}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {selected.pool_id && (
+                <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#0077b6' }}
+                  onClick={() => setShowTasks(true)}>
+                  <ClipboardList size={16} /> Site Tasks — tick list
+                </button>
+              )}
               {selected.pool_id && !isFacility && (
                 <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px' }}
                   onClick={() => setShowTestForm(true)}>
@@ -644,6 +650,27 @@ export default function TechnicianPage() {
               ))}
             </div>
             {helpTab === 'app' ? <><HelpGuide sections={TECH_GUIDE} dark /><ChangePassword /></> : <HelpGuide sections={POOL_GUIDE} dark />}
+          </div>
+        </div>
+      )}
+
+      {/* Site Tasks — full screen so the whole list is visible and scrolls properly on a phone */}
+      {showTasks && selected?.pool_id && (
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 400, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <div style={{ padding: '20px', maxWidth: '480px', margin: '0 auto', paddingBottom: '40px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', position: 'sticky', top: 0, background: 'var(--bg)', padding: '4px 0 10px', zIndex: 1 }}>
+              <button onClick={() => setShowTasks(false)} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '8px 14px', cursor: 'pointer' }}>
+                ← Back
+              </button>
+              <div>
+                <div style={{ fontWeight: '700', fontSize: '16px', color: '#e2e8f0' }}>Site Tasks</div>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>{selected.pools?.name}</div>
+              </div>
+            </div>
+            <SiteTaskList poolId={selected.pool_id} fullScreen />
+            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: '15px' }} onClick={() => setShowTasks(false)}>
+              Done — back to site
+            </button>
           </div>
         </div>
       )}

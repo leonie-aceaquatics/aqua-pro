@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   const [{ data: tasks, error: tErr }, { data: done, error: dErr }] = await Promise.all([
     supabaseAdmin
       .from('site_tasks')
-      .select('id, label, category, pool_id, sort_order, photos_required')
+      .select('*')   // '*' so the list still loads if the photos_required migration hasn't been run yet
       .eq('is_active', true)
       .or(scope)
       .order('sort_order')
@@ -39,13 +39,15 @@ export async function GET(req: NextRequest) {
   if (tErr) return NextResponse.json({ error: tErr.message }, { status: 500 })
   if (dErr) return NextResponse.json({ error: dErr.message }, { status: 500 })
 
-  // Photo counts for today's ticks, so the list can show "2 of 3 photos"
+  // Photo counts for today's ticks, so the list can show "2 of 3 photos" (best effort)
   const completionIds = (done ?? []).map((d: any) => d.id)
   const photoCount = new Map<string, number>()
   if (completionIds.length) {
-    const { data: photos } = await supabaseAdmin
-      .from('attachments').select('entity_id').eq('entity_type', 'site_task_completion').in('entity_id', completionIds)
-    for (const a of photos ?? []) photoCount.set(a.entity_id, (photoCount.get(a.entity_id) ?? 0) + 1)
+    try {
+      const { data: photos } = await supabaseAdmin
+        .from('attachments').select('entity_id').eq('entity_type', 'site_task_completion').in('entity_id', completionIds)
+      for (const a of photos ?? []) photoCount.set(a.entity_id, (photoCount.get(a.entity_id) ?? 0) + 1)
+    } catch { /* photos are optional */ }
   }
 
   const doneById = new Map((done ?? []).map((d: any) => [d.task_id, d]))
@@ -54,7 +56,8 @@ export async function GET(req: NextRequest) {
     tasks: (tasks ?? []).map(t => {
       const c = doneById.get(t.id)
       return {
-        ...t, done: !!c, completion_id: c?.id ?? null, completed_at: c?.completed_at ?? null,
+        ...t, photos_required: t.photos_required ?? 0,
+        done: !!c, completion_id: c?.id ?? null, completed_at: c?.completed_at ?? null,
         completed_by: c?.staff?.first_name ?? null, photo_count: c ? (photoCount.get(c.id) ?? 0) : 0,
       }
     }),

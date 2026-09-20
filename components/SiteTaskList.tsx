@@ -5,16 +5,18 @@ import { groupByCategory } from '@/lib/site-tasks'
 import AttachmentPanel from './AttachmentPanel'
 
 // Technician tick list for one site — the admin-defined tasks, ticked per site per day.
-export default function SiteTaskList({ poolId }: { poolId: string }) {
+export default function SiteTaskList({ poolId, fullScreen = false }: { poolId: string; fullScreen?: boolean }) {
   const [tasks, setTasks] = useState<any[] | null>(null)
   const [error, setError] = useState('')
   const [photosOpen, setPhotosOpen] = useState<string | null>(null)   // task id whose photo panel is expanded
 
+  const [loadError, setLoadError] = useState('')
   const load = useCallback(() => {
+    setLoadError('')
     fetch(`/api/technician/site-tasks?pool_id=${poolId}`)
-      .then(r => r.json())
+      .then(async r => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error ?? `Error ${r.status}`); return d })
       .then(d => setTasks(d.tasks ?? []))
-      .catch(() => setTasks([]))
+      .catch(e => { setTasks([]); setLoadError(e.message ?? 'Could not load the task list') })
   }, [poolId])
   useEffect(() => { load() }, [load])
 
@@ -35,7 +37,14 @@ export default function SiteTaskList({ poolId }: { poolId: string }) {
     }
   }
 
-  if (tasks === null || tasks.length === 0) return null
+  if (tasks === null) return <div style={{ color: '#64748b', fontSize: '13px', padding: '12px 4px' }}>Loading task list…</div>
+  if (loadError) return (
+    <div style={{ background: '#d6303118', border: '1px solid #d6303140', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px', fontSize: '13px', color: '#ff7675' }}>
+      Task list didn&apos;t load: {loadError}
+      <button type="button" onClick={load} style={{ marginLeft: '10px', background: 'none', border: '1px solid #ff7675', borderRadius: '6px', color: '#ff7675', padding: '4px 10px', cursor: 'pointer' }}>Retry</button>
+    </div>
+  )
+  if (tasks.length === 0) return <div style={{ color: '#64748b', fontSize: '13px', padding: '12px 4px' }}>No tasks set up for this site yet — ring the office.</div>
 
   const doneCount = tasks.filter(t => t.done).length
   const allDone = doneCount === tasks.length
@@ -45,7 +54,7 @@ export default function SiteTaskList({ poolId }: { poolId: string }) {
         <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Site Tasks · today</div>
         <div style={{ fontSize: '12px', fontWeight: '700', color: allDone ? '#00b894' : '#94a3b8' }}>{doneCount}/{tasks.length}</div>
       </div>
-      <div style={{ maxHeight: '45vh', overflowY: 'auto' }}>
+      <div style={fullScreen ? undefined : { maxHeight: '45vh', overflowY: 'auto' }}>
         {groupByCategory(tasks).map(g => (
           <div key={g.category} style={{ marginTop: '10px' }}>
             <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '4px 0' }}>{g.category}</div>
