@@ -164,3 +164,17 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ test: data })
 }
+
+// Admin only. Removes the test and any photos attached to it (the incident it may have raised stays).
+export async function DELETE(req: NextRequest) {
+  const user = await getSession()
+  if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const id = new URL(req.url).searchParams.get('id')
+  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+
+  await supabaseAdmin.from('attachments').delete().eq('entity_type', 'water_test').eq('entity_id', id)
+  const { error } = await supabaseAdmin.from('water_tests').delete().eq('id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
+}

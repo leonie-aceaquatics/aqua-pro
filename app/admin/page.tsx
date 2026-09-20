@@ -452,6 +452,7 @@ function WaterTestingTab() {
     temperature_c: '', turbidity: '', uv_output_pct: '', uv_run_hours: '', notes: '',
     controller_ph: '', controller_fcl: '', calibrate_ph: false, calibrate_fcl: false,
   })
+  const [deleting, setDeleting] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(() => {
@@ -817,7 +818,18 @@ function WaterTestingTab() {
               )}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginTop: '20px' }}>
+              <button className="btn btn-secondary" style={{ color: 'var(--red)' }} disabled={deleting}
+                onClick={async () => {
+                  if (!confirm(`Delete this water test for ${selectedTest.pools?.name ?? 'this pool'}? This cannot be undone.`)) return
+                  setDeleting(true)
+                  const res = await fetch(`/api/admin/water-tests?id=${selectedTest.id}`, { method: 'DELETE' })
+                  setDeleting(false)
+                  if (res.ok) { setSelectedTest(null); load() }
+                  else { const d = await res.json().catch(() => ({})); alert(d.error ?? 'Could not delete this test.') }
+                }}>
+                <Trash2 size={14} /> {deleting ? 'Deleting…' : 'Delete test'}
+              </button>
               <button className="btn btn-secondary" onClick={() => setSelectedTest(null)}>Close</button>
             </div>
           </div>
