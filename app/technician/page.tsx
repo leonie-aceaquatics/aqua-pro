@@ -27,7 +27,7 @@ export default function TechnicianPage() {
   const [testForm, setTestForm] = useState({
     free_chlorine: '', combined_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '',
     calcium_hardness: '', cyanuric_acid: '', salt_level: '', phosphates: '',
-    temperature_c: '', turbidity: '', notes: '',
+    temperature_c: '', turbidity: '', uv_output_pct: '', uv_run_hours: '', notes: '',
     controller_ph: '', controller_fcl: '', calibrate_ph: false, calibrate_fcl: false, fault_report: '',
   })
   const [doses, setDoses] = useState<{ chemical_id: string; quantity: string }[]>([])
@@ -45,7 +45,7 @@ export default function TechnicianPage() {
   const blankTestForm = {
     free_chlorine: '', combined_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '',
     calcium_hardness: '', cyanuric_acid: '', salt_level: '', phosphates: '',
-    temperature_c: '', turbidity: '', notes: '',
+    temperature_c: '', turbidity: '', uv_output_pct: '', uv_run_hours: '', notes: '',
     controller_ph: '', controller_fcl: '', calibrate_ph: false, calibrate_fcl: false, fault_report: '',
   }
 
@@ -145,7 +145,7 @@ export default function TechnicianPage() {
       ...testForm,
     }
     const numFields = ['free_chlorine','combined_chlorine','total_chlorine','ph','total_alkalinity','calcium_hardness',
-      'cyanuric_acid','salt_level','phosphates','temperature_c','turbidity','controller_ph','controller_fcl']
+      'cyanuric_acid','salt_level','phosphates','temperature_c','turbidity','uv_output_pct','uv_run_hours','controller_ph','controller_fcl']
     numFields.forEach(f => { if (payload[f] === '') payload[f] = null })
     payload.doses = doses.filter(d => d.chemical_id && Number(d.quantity) > 0)
 
@@ -492,6 +492,12 @@ export default function TechnicianPage() {
                 {numInput('temperature_c', 'Temperature (°C)', '28')}
                 {numInput('phosphates', 'Phosphates (ppb)', '0')}
                 {numInput('turbidity', 'Turbidity (NTU)', '0')}
+              </div>
+              <div style={{ background: '#0d1829', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>UV system</div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>Sites with a UV unit only — read them off the UV controller.</div>
+                {numInput('uv_output_pct', 'UV output (%)', '85')}
+                {numInput('uv_run_hours', 'UV lamp run hours', '4200')}
               </div>
 
               {/* System screen (Chemtrol, Dulcomarin, etc.): what it says vs what the test says, and whether it was calibrated */}

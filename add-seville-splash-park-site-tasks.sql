@@ -18,7 +18,7 @@ select v.label, v.category, v.ord, p.id
 from (select id from pools where name ilike '%Seville%' limit 1) p
 cross join (values
   ('Check sodium bisulphate tank level and top up if low',                                     'Chemical dosing', 152),
-  ('Check UV system: record % output and run hours in the water test notes',                   'Equipment',       128),
+  ('Check UV system: record % output and lamp run hours in the water test (UV System boxes)',  'Equipment',       128),
   ('Check all 4 water feature pumps for alarms',                                               'Equipment',       130),
   ('Set the splash park operating times on the controller for the season / day',              'Equipment',       18)
 ) as v(label, category, ord)
