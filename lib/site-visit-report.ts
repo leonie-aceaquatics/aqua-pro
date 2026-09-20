@@ -136,10 +136,11 @@ export async function sendSiteVisitReport(shiftId: string) {
   const dosesBlock = (dosesToday ?? []).length === 0 ? muted('No chemicals added by hand.') :
     box((dosesToday ?? []).map((d: any) => `<div>${Number(d.quantity)} ${esc(d.chemicals?.dose_unit ?? d.chemicals?.unit ?? '')} ${esc(d.chemicals?.name ?? '')} <span style="color:#64748b">${fmtTime(d.applied_at)}</span></div>`).join(''))
 
-  const stockBlock = (stock ?? []).length === 0 ? muted('No stock count today.') :
-    box(`<table cellpadding="0" cellspacing="0" style="font-size:13px;color:#e2e8f0">${(stock ?? []).map((r: any) =>
+  const stockRows: any[] = stock ?? []
+  const stockBlock = stockRows.length === 0 ? muted('No stock count today.') :
+    box(`<table cellpadding="0" cellspacing="0" style="font-size:13px;color:#e2e8f0">${stockRows.map((r: any) =>
       `<tr><td style="padding:3px 16px 3px 0">${esc(r.chemicals?.name ?? '')}</td><td style="padding:3px 0;text-align:right"><strong>${Number(r.quantity)}</strong> ${esc(r.chemicals?.unit ?? '')}</td></tr>`).join('')}</table>
-      ${muted(`Counted by ${esc((stock ?? [])[0]?.staff?.first_name ?? '')} ${fmtTime((stock ?? [])[0]?.last_counted_at)}`)}`)
+      ${muted(`Counted by ${esc(stockRows[0]?.staff?.first_name ?? '')} ${fmtTime(stockRows[0]?.last_counted_at)}`)}`)
 
   const plantBlock = (plantLogs ?? []).length === 0 ? muted('No plant room log today.') : (plantLogs ?? []).map((l: any) => box(`
     <div style="margin-bottom:6px"><strong>${fmtTime(l.logged_at)} · ${esc(l.staff?.first_name ?? '')}</strong></div>
