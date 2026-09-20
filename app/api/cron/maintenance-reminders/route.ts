@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { localDayRange } from '@/lib/local-time'
 import { supabaseAdmin } from '@/lib/supabase'
 import { sendEmail, buildShiftReminderEmail } from '@/lib/email'
 
@@ -13,8 +14,7 @@ export async function GET(req: NextRequest) {
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
   const tomorrowDate = tomorrow.toLocaleDateString('en-CA', { timeZone: tz })
-  const start = `${tomorrowDate}T00:00:00`
-  const end = `${tomorrowDate}T23:59:59`
+  const { start, end } = localDayRange(tomorrowDate)
 
   const { data: shifts } = await supabaseAdmin
     .from('shifts')

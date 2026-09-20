@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { todayLocal, localDayRange } from '@/lib/local-time'
 
 export async function GET() {
   const user = await getSession()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const tz = 'Australia/Sydney'
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: tz })
-  const start = `${today}T00:00:00`
-  const end = `${today}T23:59:59`
+  const today = todayLocal()
+  const { start, end } = localDayRange(today)
 
   const { data, error } = await supabaseAdmin
     .from('shifts')

@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase'
 import { sendEmail, RESULTS_EMAIL, emailBase } from '@/lib/email'
 import { fmtTime, fmtDuration } from '@/lib/shift-time'
+import { localDayRange } from '@/lib/local-time'
 
 // One email per finished shift: everything the technician did at that site today —
 // hours on site, every task ticked (and not ticked) with photo counts, water tests,
@@ -64,8 +65,7 @@ export async function sendSiteVisitReport(shiftId: string) {
   const pool = shift.pools
   const tech = shift.staff ? `${shift.staff.first_name} ${shift.staff.last_name}` : 'Unknown'
   const day = dayOf(shift.actual_end ?? shift.actual_start ?? shift.scheduled_start)
-  const dayStart = new Date(`${day}T00:00:00+10:00`).toISOString()
-  const dayEnd = new Date(`${day}T23:59:59+10:00`).toISOString()
+  const { start: dayStart, end: dayEnd } = localDayRange(day)
 
   // Task list for this site (same scope rule as the technician app) + today's ticks + photo counts
   const scope = pool.pool_type === 'facility'

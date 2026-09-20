@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { localDayRange } from '@/lib/local-time'
 
 export async function GET(req: NextRequest) {
   const user = await getSession()
@@ -17,8 +18,7 @@ export async function GET(req: NextRequest) {
 
   if (staffId) query = query.eq('staff_id', staffId)
   if (date) {
-    const start = `${date}T00:00:00`
-    const end = `${date}T23:59:59`
+    const { start, end } = localDayRange(date)
     query = query.gte('scheduled_start', start).lte('scheduled_start', end)
   }
 

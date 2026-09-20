@@ -44,3 +44,16 @@ export function localInputToISO(value: string): string {
   ts = asUTC - tzOffsetMs(ts)
   return new Date(ts).toISOString()
 }
+
+// Today's date in Melbourne as "YYYY-MM-DD"
+export function todayLocal(): string {
+  const p = zonedParts(new Date())
+  return `${p.y}-${pad(p.mo)}-${pad(p.d)}`
+}
+
+// The UTC instants that bound a Melbourne calendar day, for timestamptz range queries.
+// Never build these as "YYYY-MM-DDT00:00:00" — Postgres reads that as UTC, which is 10–11
+// hours out and puts a 4:30 am Monday shift on Sunday's list.
+export function localDayRange(day: string): { start: string; end: string } {
+  return { start: localInputToISO(`${day}T00:00`), end: localInputToISO(`${day}T23:59`).replace(':00.000Z', ':59.999Z') }
+}

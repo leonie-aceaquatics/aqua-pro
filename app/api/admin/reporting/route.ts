@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { todayLocal, localDayRange } from '@/lib/local-time'
 
 export async function GET(req: NextRequest) {
   const user = await getSession()
@@ -20,9 +21,8 @@ export async function GET(req: NextRequest) {
   }
 
   // Overview stats
-  const today = new Date().toISOString().slice(0, 10)
-  const todayStart = `${today}T00:00:00`
-  const todayEnd = `${today}T23:59:59`
+  const today = todayLocal()
+  const { start: todayStart, end: todayEnd } = localDayRange(today)
 
   const [
     poolsRes,
