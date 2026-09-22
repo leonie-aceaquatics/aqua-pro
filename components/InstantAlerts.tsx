@@ -6,8 +6,24 @@ import { instantBalanceAlerts } from '@/lib/water-chemistry'
 // Red boxes that appear the moment a low alkalinity / calcium number is typed into a water test.
 // When a reading is WELL below range the box is not enough: a full-screen alarm takes over the
 // phone until the technician acknowledges it. It comes back if the value gets worse again.
+// Wait until the technician has stopped typing before judging the number — "1" on the way to
+// "120" must not set off the alarm. A value has to sit unchanged for this long first.
+const SETTLE_MS = 1500
+
+function useSettled(value: string): string {
+  const [settled, setSettled] = useState(value)
+  useEffect(() => {
+    if (value === '') { setSettled(''); return }        // cleared → clear the alert straight away
+    const t = setTimeout(() => setSettled(value), SETTLE_MS)
+    return () => clearTimeout(t)
+  }, [value])
+  return settled
+}
+
 export default function InstantAlerts({ ta, ch, volumeLitres }: { ta: string; ch: string; volumeLitres?: number | null }) {
-  const alerts = instantBalanceAlerts(ta === '' ? null : Number(ta), ch === '' ? null : Number(ch), volumeLitres)
+  const taSettled = useSettled(ta)
+  const chSettled = useSettled(ch)
+  const alerts = instantBalanceAlerts(taSettled === '' ? null : Number(taSettled), chSettled === '' ? null : Number(chSettled), volumeLitres)
   const severe = alerts.filter(a => a.severe)
   const severeKey = severe.map(a => a.parameter).join('|')
   const [acked, setAcked] = useState('')        // which severe combination has been acknowledged
