@@ -196,7 +196,7 @@ const BLANK_POOL_FORM = {
   pool_type: 'outdoor', sanitiser_type: 'chlorine', volume_litres: '',
   surface_area_m2: '', max_bather_load: '', owner_name: '', owner_email: '',
   owner_phone: '', is_commercial: false, health_licence_number: '',
-  licence_expiry: '', notes: '',
+  licence_expiry: '', notes: '', access_notes: '',
   ph_correction_method: 'acid', close_threshold_free_chlorine: '', close_threshold_ph_low: '', close_threshold_ph_high: '',
 }
 
@@ -232,7 +232,7 @@ function PoolsTab() {
       max_bather_load: pool.max_bather_load ?? '', owner_name: pool.owner_name ?? '',
       owner_email: pool.owner_email ?? '', owner_phone: pool.owner_phone ?? '',
       is_commercial: pool.is_commercial ?? false, health_licence_number: pool.health_licence_number ?? '',
-      licence_expiry: pool.licence_expiry ?? '', notes: pool.notes ?? '',
+      licence_expiry: pool.licence_expiry ?? '', notes: pool.notes ?? '', access_notes: pool.access_notes ?? '',
       ph_correction_method: pool.ph_correction_method ?? 'acid',
       close_threshold_free_chlorine: pool.close_threshold_free_chlorine ?? '',
       close_threshold_ph_low: pool.close_threshold_ph_low ?? '',
@@ -390,6 +390,12 @@ function PoolsTab() {
               <div style={s.formGroup}>
                 <label>Notes</label>
                 <textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+              </div>
+              <div style={s.formGroup}>
+                <label>Access &amp; entry — keys, codes, parking, where the plant room is</label>
+                <textarea rows={4} value={form.access_notes} placeholder={'e.g. Gate code 1234#. Key in lockbox on the pump shed, code 5678. Park in the loading bay off Smith St. Plant room is downstairs, second door on the left.'}
+                  onChange={e => setForm(f => ({ ...f, access_notes: e.target.value }))} />
+                <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>Technicians see this on the site panel and under the key icon in their app. Only logged-in staff can see it.</div>
               </div>
 
               <div style={{ ...s.sectionTitle, fontSize: '13px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>

@@ -15,6 +15,7 @@ export const TECH_GUIDE: Section[] = [
       'Add it to your home screen so it opens like an app: Safari → Share → "Add to Home Screen".',
       "You'll land on Today's Jobs. Every site you're rostered at today is listed, with its address and start time.",
       'Under today\'s list, "Week ahead" shows the next 7 days of your roster, day by day, with any job notes — so you can plan the drive.',
+      'Gate codes, keys, parking and where the plant room is: on the site panel under "Access & entry", or the key icon at the top for every site. Keep it in the app — don\'t screenshot it.',
       'Not rostered, or at a different site? Scroll down to "Visit any site" and pick it from the list — everything works the same, and tapping Start shift there clocks your hours too.',
       'Tap a site to open it. Everything you do at that site happens from the panel that slides up.',
       'When you open a site the app asks "Start your shift here?" — tap Yes as you arrive. Each time you close a screen it asks "Finished at this site?" — tap No to keep going, Yes as you leave. That is how your hours are recorded; the rostered time is only a guide.',
@@ -155,7 +156,7 @@ export const ADMIN_GUIDE: Section[] = [
     steps: [
       'Staff — add technicians (they get a welcome email with their login). Set their role: technician for field staff. After you save, a green bar confirms the email went; a red bar means it did not and says why.',
       'Shifts — one block per day: "Who\'s going where" in time order, and "Site coverage" with every site green (someone rostered, with their name) or grey (nobody today), so gaps are obvious. Use Prev/Next week to move around. Only the start time is needed when adding a shift; techs tap Start/Finish on site and the hours line at the top shows what was really worked. Click a shift to edit it — fix a forgotten Start/Finish there, or Delete shift if it was entered wrongly.',
-      'Pools — pool type, sanitiser and volume drive the target ranges and dosing calculator, so keep them accurate. Without a volume the Dose Calculator cannot work out doses for that site.',
+      'Pools — the "Access & entry" box holds gate codes, keys, parking and plant room directions; technicians see it on the site panel and under the key icon. Pool type, sanitiser and volume drive the target ranges and dosing calculator, so keep them accurate. Without a volume the Dose Calculator cannot work out doses for that site.',
       'Chemistry Calculator — the same dose calculator technicians have, for any pool, without logging a test. Pool Chemistry Guide — Tony\'s training notes (ranges, pH systems, LSI, chlorine troubleshooting, thiosulphate procedure); technicians have the same guide under their ? button.',
       'Site Tasks — the tick list technicians see on every visit. "All sites" tasks show everywhere; pick a pool to add tasks just for it. Set "N photos" on a task to make the tech attach photos to it; Tasks Done shows the photos. (There is no lifeguard shift checklist — none of our sites are lifeguarded.)',
       'A site with no water (e.g. AAMI Park – Gym) is type "facility": it gets only its own tasks and no water-test or plant-room screens.',
