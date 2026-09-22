@@ -2679,7 +2679,7 @@ function ChemicalsTab() {
                 <div style={s.formGroup}>
                   <label>Stock Counted In</label>
                   <select value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}>
-                    {['drum','bucket','bag','box','each','L','kg','tablet','g','mL'].map(u => <option key={u}>{u}</option>)}
+                    {['drum','bucket','tub','bag','box','each','L','kg','tablet','g','mL'].map(u => <option key={u}>{u}</option>)}
                   </select>
                 </div>
                 <div style={s.formGroup}>
