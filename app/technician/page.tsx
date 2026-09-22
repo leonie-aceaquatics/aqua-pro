@@ -30,7 +30,7 @@ export default function TechnicianPage() {
   const [testForm, setTestForm] = useState({
     free_chlorine: '', combined_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '',
     calcium_hardness: '', cyanuric_acid: '', salt_level: '', phosphates: '',
-    temperature_c: '', turbidity: '', uv_output_pct: '', uv_run_hours: '', notes: '',
+    temperature_c: '', turbidity: '', uv_output_pct: '', uv_run_hours: '', balance_tank_pct: '', notes: '',
     controller_ph: '', controller_fcl: '', calibrate_ph: false, calibrate_fcl: false, fault_report: '',
   })
   const [doses, setDoses] = useState<{ chemical_id: string; quantity: string }[]>([])
@@ -50,7 +50,7 @@ export default function TechnicianPage() {
   const blankTestForm = {
     free_chlorine: '', combined_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '',
     calcium_hardness: '', cyanuric_acid: '', salt_level: '', phosphates: '',
-    temperature_c: '', turbidity: '', uv_output_pct: '', uv_run_hours: '', notes: '',
+    temperature_c: '', turbidity: '', uv_output_pct: '', uv_run_hours: '', balance_tank_pct: '', notes: '',
     controller_ph: '', controller_fcl: '', calibrate_ph: false, calibrate_fcl: false, fault_report: '',
   }
 
@@ -151,7 +151,7 @@ export default function TechnicianPage() {
       ...testForm,
     }
     const numFields = ['free_chlorine','combined_chlorine','total_chlorine','ph','total_alkalinity','calcium_hardness',
-      'cyanuric_acid','salt_level','phosphates','temperature_c','turbidity','uv_output_pct','uv_run_hours','controller_ph','controller_fcl']
+      'cyanuric_acid','salt_level','phosphates','temperature_c','turbidity','uv_output_pct','uv_run_hours','balance_tank_pct','controller_ph','controller_fcl']
     numFields.forEach(f => { if (payload[f] === '') payload[f] = null })
     payload.doses = doses.filter(d => d.chemical_id && Number(d.quantity) > 0)
 
@@ -542,6 +542,20 @@ export default function TechnicianPage() {
                 {numInput('phosphates', 'Phosphates (ppb)', '0')}
                 {numInput('turbidity', 'Turbidity (NTU)', '0')}
               </div>
+              {selected.pools?.pool_type === 'splash_pad' && (
+                <div style={{ background: '#0d1829', borderRadius: '10px', padding: '16px', marginBottom: '12px', border: '1px solid #00b4d840' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Balance tank</div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>
+                    How full is the balance tank? {selected.pools?.volume_litres ? `Full = ${Number(selected.pools.volume_litres).toLocaleString()} L.` : ''}
+                  </div>
+                  {numInput('balance_tank_pct', 'Balance tank level (% full)', '80')}
+                  {testForm.balance_tank_pct !== '' && selected.pools?.volume_litres && (
+                    <div style={{ fontSize: '13px', color: Number(testForm.balance_tank_pct) < 50 ? '#e17055' : '#00b894', fontWeight: '700', marginTop: '-4px' }}>
+                      ≈ {Math.round(Number(selected.pools.volume_litres) * Number(testForm.balance_tank_pct) / 100).toLocaleString()} L in the tank{Number(testForm.balance_tank_pct) < 50 ? ' — low, check the make-up water' : ''}
+                    </div>
+                  )}
+                </div>
+              )}
               <div style={{ background: '#0d1829', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
                 <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>UV system</div>
                 <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>Sites with a UV unit only — read them off the UV controller.</div>

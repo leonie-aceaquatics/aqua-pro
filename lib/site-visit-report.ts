@@ -48,7 +48,7 @@ const TEST_FIELDS: [string, string, string][] = [
   ['free_chlorine', 'Free Cl', 'ppm'], ['total_chlorine', 'Total Cl', 'ppm'], ['combined_chlorine', 'Combined Cl', 'ppm'],
   ['ph', 'pH', ''], ['total_alkalinity', 'TA', 'ppm'], ['calcium_hardness', 'CH', 'ppm'], ['cyanuric_acid', 'CYA', 'ppm'],
   ['salt_level', 'Salt', 'ppm'], ['temperature_c', 'Temp', '°C'], ['turbidity', 'Turbidity', 'NTU'],
-  ['langelier_saturation_index', 'LSI', ''], ['uv_output_pct', 'UV output', '%'], ['uv_run_hours', 'UV hours', 'h'],
+  ['langelier_saturation_index', 'LSI', ''], ['uv_output_pct', 'UV output', '%'], ['uv_run_hours', 'UV hours', 'h'], ['balance_tank_pct', 'Balance tank', '% full'],
 ]
 
 const h = (t: string) => `<h3 style="margin:24px 0 8px;color:#00b4d8;font-size:14px;text-transform:uppercase;letter-spacing:0.5px">${t}</h3>`

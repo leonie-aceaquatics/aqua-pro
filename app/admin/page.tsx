@@ -451,7 +451,7 @@ function WaterTestingTab() {
     free_chlorine: '', combined_chlorine: '', total_chlorine: '', ph: '',
     total_alkalinity: '', calcium_hardness: '', cyanuric_acid: '',
     total_dissolved_solids: '', salt_level: '', phosphates: '',
-    temperature_c: '', turbidity: '', uv_output_pct: '', uv_run_hours: '', notes: '',
+    temperature_c: '', turbidity: '', uv_output_pct: '', uv_run_hours: '', balance_tank_pct: '', notes: '',
     controller_ph: '', controller_fcl: '', calibrate_ph: false, calibrate_fcl: false,
   })
   const [deleting, setDeleting] = useState(false)
@@ -478,7 +478,7 @@ function WaterTestingTab() {
     const payload: Record<string, any> = { ...form, tested_at: localInputToISO(form.tested_at) }
     // Convert empty strings to null for numeric fields
     const numFields = ['free_chlorine','combined_chlorine','total_chlorine','ph','total_alkalinity','calcium_hardness',
-      'cyanuric_acid','total_dissolved_solids','salt_level','phosphates','temperature_c','turbidity','uv_output_pct','uv_run_hours','controller_ph','controller_fcl']
+      'cyanuric_acid','total_dissolved_solids','salt_level','phosphates','temperature_c','turbidity','uv_output_pct','uv_run_hours','balance_tank_pct','controller_ph','controller_fcl']
     numFields.forEach(f => { if (payload[f] === '') payload[f] = null })
     const res = await fetch('/api/admin/water-tests', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -685,6 +685,17 @@ function WaterTestingTab() {
                   {numField('turbidity', 'Turbidity (NTU)', '0')}
                 </div>
               </div>
+              {pools.find((p: any) => p.id === form.pool_id)?.pool_type === 'splash_pad' && (
+                <div style={{ background: '#121f35', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Balance Tank
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-dim)', marginBottom: '12px' }}>Splash parks — how full the balance tank is. Full = {Number(pools.find((p: any) => p.id === form.pool_id)?.volume_litres ?? 0).toLocaleString()} L.</div>
+                  <div style={{ ...s.formGrid, gridTemplateColumns: 'repeat(3,1fr)' }}>
+                    {numField('balance_tank_pct', 'Balance tank level (% full)', '80')}
+                  </div>
+                </div>
+              )}
               <div style={{ background: '#121f35', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
                 <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   UV System
@@ -741,6 +752,7 @@ function WaterTestingTab() {
                 ['Turbidity', selectedTest.turbidity, 'NTU', 0, 0.5],
                 ['LSI', selectedTest.langelier_saturation_index, '', -0.3, 0.3],
                 ['UV output', selectedTest.uv_output_pct, '%', null, null],
+                ['Balance tank', selectedTest.balance_tank_pct, '% full', 50, 100],
                 ['UV run hours', selectedTest.uv_run_hours, ' h', null, null],
               ].filter(([,v]) => v !== null && v !== undefined).map(([label, val, unit, min, max]) => {
                 const isOut = min !== null && max !== null && (Number(val) < Number(min) || Number(val) > Number(max))

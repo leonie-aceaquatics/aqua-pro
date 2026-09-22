@@ -54,6 +54,7 @@ export const TECH_GUIDE: Section[] = [
         'The app shows the difference against your test. If it says "calibrate", calibrate the system and tick Calibrated.',
       ] },
       'UV System — at sites with a UV unit, type the % output and lamp run hours off the UV controller. Leave blank elsewhere.',
+      'Balance tank (splash parks only — Warburton, Seville) — type how full the balance tank is as a percentage. The app shows the litres and warns you if it is under half.',
       { text: 'Chemicals Added — only if you dosed by hand.', sub: [
         'Tap Add chemical, pick the product, enter how much (litres / kg). It comes off that site\'s stock automatically.',
       ] },

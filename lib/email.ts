@@ -279,6 +279,9 @@ const RESULT_FIELDS: [key: string, label: string, unit: string][] = [
   ['phosphates', 'Phosphates', 'ppb'],
   ['temperature_c', 'Temperature', '°C'],
   ['turbidity', 'Turbidity', 'NTU'],
+  ['uv_output_pct', 'UV output', '%'],
+  ['uv_run_hours', 'UV lamp hours', 'h'],
+  ['balance_tank_pct', 'Balance tank', '% full'],
 ]
 
 export function buildWaterTestResultsEmail(test: Record<string, any>, poolName: string, testedBy: string, testUrl: string) {

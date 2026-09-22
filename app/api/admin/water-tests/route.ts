@@ -101,6 +101,7 @@ export async function POST(req: NextRequest) {
       temperature_c: body.temperature_c ?? null,
       turbidity: body.turbidity ?? null,
       uv_output_pct: body.uv_output_pct ?? null,
+      balance_tank_pct: body.balance_tank_pct ?? null,
       uv_run_hours: body.uv_run_hours ?? null,
       langelier_saturation_index: lsi,
       risk_level: riskLevel,
