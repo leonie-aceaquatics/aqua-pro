@@ -7,6 +7,7 @@ import PlantLog from '@/components/PlantLog'
 import ChemistryCalculatorTab from '@/components/ChemistryCalculatorTab'
 import ChangePassword from '@/components/ChangePassword'
 import { POOL_GUIDE } from '@/lib/pool-guide'
+import SiteAccessDocs from '@/components/SiteAccessDocs'
 import InstantAlerts from '@/components/InstantAlerts'
 import { fmtTime, fmtActual } from '@/lib/shift-time'
 import SiteTaskList from '@/components/SiteTaskList'
@@ -392,6 +393,7 @@ export default function TechnicianPage() {
                   <KeyRound size={12} style={{ verticalAlign: '-2px', marginRight: '5px' }} />Access &amp; entry
                 </div>
                 <div style={{ fontSize: '14px', color: '#e2e8f0', whiteSpace: 'pre-wrap', lineHeight: 1.45 }}>{selected.pools.access_notes}</div>
+                <SiteAccessDocs poolId={selected.pool_id} />
               </div>
             )}
 
@@ -709,6 +711,7 @@ export default function TechnicianPage() {
                 <div style={{ fontWeight: '700', fontSize: '15px', color: '#e2e8f0' }}>{p.name}</div>
                 {p.address && <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '6px' }}>{p.address}{p.suburb ? `, ${p.suburb}` : ''}</div>}
                 <div style={{ fontSize: '14px', color: '#e2e8f0', whiteSpace: 'pre-wrap', lineHeight: 1.45 }}>{p.access_notes}</div>
+                <SiteAccessDocs poolId={p.id} />
               </div>
             ))}
             {allPools.filter(p => p.access_notes).length === 0 && (

@@ -88,7 +88,7 @@ export default function AttachmentPanel({ entityType, entityId, onChange }: { en
 
       <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--aqua)', cursor: 'pointer' }}>
         <Upload size={12} /> {uploading ? 'Uploading…' : 'Add photo / file'}
-        <input ref={fileInputRef} type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={handleFile} disabled={uploading} />
+        <input ref={fileInputRef} type="file" accept="image/*,video/*,.pdf,.mp4,.mov" style={{ display: 'none' }} onChange={handleFile} disabled={uploading} />
       </label>
       {error && <div style={{ fontSize: '11px', color: 'var(--red)', marginTop: '4px' }}>{error}</div>}
     </div>

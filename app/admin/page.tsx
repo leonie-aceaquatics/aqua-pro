@@ -396,6 +396,15 @@ function PoolsTab() {
                 <textarea rows={4} value={form.access_notes} placeholder={'e.g. Gate code 1234#. Key in lockbox on the pump shed, code 5678. Park in the loading bay off Smith St. Plant room is downstairs, second door on the left.'}
                   onChange={e => setForm(f => ({ ...f, access_notes: e.target.value }))} />
                 <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>Technicians see this on the site panel and under the key icon in their app. Only logged-in staff can see it.</div>
+                {editingPool ? (
+                  <div style={{ marginTop: '4px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)' }}>Access documents — the PDF procedure and walkthrough video for this site</div>
+                    <AttachmentPanel entityType="pool_access" entityId={editingPool.id} />
+                    <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>Videos over about 50 MB won&apos;t upload — trim or compress them first.</div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '6px' }}>Save the pool first, then re-open it to attach the PDF / video.</div>
+                )}
               </div>
 
               <div style={{ ...s.sectionTitle, fontSize: '13px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
