@@ -24,6 +24,8 @@ export default function TechnicianPage() {
   const [showPlantLog, setShowPlantLog] = useState(false)
   const [showStockCount, setShowStockCount] = useState(false)
   const [showTasks, setShowTasks] = useState(false)          // full-screen Site Tasks tick list
+  const [startPrompt, setStartPrompt] = useState(false)      // 'Start shift here?' when a site is opened
+  const [finishPrompt, setFinishPrompt] = useState(false)    // 'Finished at this site?' when a tool is closed
   const [showCalc, setShowCalc] = useState<{ poolId: string; poolName: string } | null>(null)   // dose calculator overlay
   const [showHelp, setShowHelp] = useState(false)
   const [helpTab, setHelpTab] = useState<'app' | 'pool'>('app')   // ? screen: how to use the app / pool chemistry guide
@@ -90,6 +92,13 @@ export default function TechnicianPage() {
     setSelected(shift)
     setLastTest(null)
     if (shift.pool_id) loadLastTest(shift.pool_id)
+    // Not started yet → ask straight away so nobody forgets to clock on
+    if (shift.pool_id && shift.status !== 'completed' && !shift.actual_start) setStartPrompt(true)
+  }
+
+  // Called whenever a tool screen closes or the site panel is closed: if the shift is running, ask.
+  function maybeAskFinish() {
+    if (selected?.id && selected.actual_start && selected.status !== 'completed') setFinishPrompt(true)
   }
 
   // Start / Finish on site: actual_start and actual_end are what hours are counted from
@@ -106,6 +115,7 @@ export default function TechnicianPage() {
         if (!res.ok || !data.shift) { setCompleteError(data.error ?? 'Could not start this visit — try again.'); return }
         setShifts(prev => [...prev, data.shift])
         setSelected(data.shift)
+        setStartPrompt(false)
       } catch {
         setCompleteError('No connection — could not start this visit. Try again when back online.')
       }
@@ -120,6 +130,7 @@ export default function TechnicianPage() {
       if (!res.ok) { setCompleteError('Could not start this shift — try again.'); return }
       setShifts(prev => prev.map(s => s.id === shiftId ? { ...s, status: 'in_progress', actual_start } : s))
       setSelected((sel: any) => sel && sel.id === shiftId ? { ...sel, status: 'in_progress', actual_start } : sel)
+      setStartPrompt(false)
     } catch {
       setCompleteError('No connection — could not start this shift. Try again when back online.')
     }
@@ -135,6 +146,7 @@ export default function TechnicianPage() {
       })
       if (!res.ok) { setCompleteError('Could not finish this shift — try again.'); return }
       setShifts(prev => prev.map(s => s.id === shiftId ? { ...s, status: 'completed', actual_end } : s))
+      setFinishPrompt(false)
       setSelected(null)
     } catch {
       setCompleteError('No connection — could not finish this shift. Try again when back online.')
@@ -454,7 +466,7 @@ export default function TechnicianPage() {
                 <div style={{ color: '#d63031', fontSize: '12px', textAlign: 'center' }}>{completeError}</div>
               )}
               <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', padding: '14px' }}
-                onClick={() => { setSelected(null); setCompleteError(null) }}>
+                onClick={() => { setCompleteError(null); if (selected?.actual_start && selected.status !== 'completed') setFinishPrompt(true); else setSelected(null) }}>
                 Close
               </button>
             </div>
@@ -485,7 +497,7 @@ export default function TechnicianPage() {
               )}
             </div>
             <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: '15px' }}
-              onClick={() => { setSavedTest(null); setShowTestForm(false) }}>
+              onClick={() => { setSavedTest(null); setShowTestForm(false); maybeAskFinish() }}>
               Done
             </button>
           </div>
@@ -668,6 +680,46 @@ export default function TechnicianPage() {
         </div>
       )}
 
+      {/* Start shift prompt — shown the moment a site is opened */}
+      {startPrompt && selected && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 600, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '400px', textAlign: 'center' }}>
+            <Play size={40} color="#00b894" style={{ marginBottom: '8px' }} />
+            <div style={{ fontSize: '20px', fontWeight: '800', color: '#e2e8f0', marginBottom: '4px' }}>Start your shift here?</div>
+            <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '20px' }}>{selected.pools?.name}</div>
+            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '16px', fontSize: '16px', background: '#00b894', marginBottom: '10px' }}
+              onClick={() => handleStartShift(selected.id ?? null)}>
+              <Play size={18} /> Yes — I&apos;m on site, start the clock
+            </button>
+            <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', padding: '12px' }} onClick={() => setStartPrompt(false)}>
+              Not yet — just looking
+            </button>
+            {completeError && <div style={{ color: '#ff7675', fontSize: '12px', marginTop: '10px' }}>{completeError}</div>}
+          </div>
+        </div>
+      )}
+
+      {/* Finish shift prompt — shown when a tool screen or the site panel is closed while the clock is running */}
+      {finishPrompt && selected && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 600, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '400px', textAlign: 'center' }}>
+            <CheckCircle size={40} color="#00b4d8" style={{ marginBottom: '8px' }} />
+            <div style={{ fontSize: '20px', fontWeight: '800', color: '#e2e8f0', marginBottom: '4px' }}>Finished at this site?</div>
+            <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '4px' }}>{selected.pools?.name}</div>
+            <div style={{ fontSize: '12px', color: '#00b894', fontWeight: '600', marginBottom: '20px' }}>{fmtActual(selected)}</div>
+            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '16px', fontSize: '16px', marginBottom: '10px' }}
+              onClick={() => handleCompleteShift(selected.id)}>
+              <CheckCircle size={18} /> Yes — finish shift, I&apos;m leaving
+            </button>
+            <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', padding: '12px' }} onClick={() => setFinishPrompt(false)}>
+              No — keep going
+            </button>
+            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '12px' }}>Finishing sends the office your visit report — make sure tests, stock and tasks are all in first.</div>
+            {completeError && <div style={{ color: '#ff7675', fontSize: '12px', marginTop: '10px' }}>{completeError}</div>}
+          </div>
+        </div>
+      )}
+
       {/* Site Tasks — full screen so the whole list is visible and scrolls properly on a phone */}
       {showTasks && selected?.pool_id && (
         <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 400, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
@@ -682,7 +734,7 @@ export default function TechnicianPage() {
               </div>
             </div>
             <SiteTaskList poolId={selected.pool_id} fullScreen />
-            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: '15px' }} onClick={() => setShowTasks(false)}>
+            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: '15px' }} onClick={() => { setShowTasks(false); maybeAskFinish() }}>
               Done — back to site
             </button>
           </div>
@@ -713,7 +765,7 @@ export default function TechnicianPage() {
           fullScreen
           poolId={selected.pool_id ?? ''}
           poolName={selected.pools?.name ?? ''}
-          onClose={() => setShowStockCount(false)}
+          onClose={() => { setShowStockCount(false); maybeAskFinish() }}
         />
       )}
 
@@ -724,7 +776,7 @@ export default function TechnicianPage() {
           poolName={selected.pools?.name ?? 'Plant Room'}
           shiftId={selected.id ?? ''}
           onClose={() => setShowPlantLog(false)}
-          onSubmitted={() => { setShowPlantLog(false); setSelected(null) }}
+          onSubmitted={() => { setShowPlantLog(false); maybeAskFinish() }}
         />
       )}
     </div>

@@ -17,7 +17,7 @@ export const TECH_GUIDE: Section[] = [
       'Under today\'s list, "Week ahead" shows the next 7 days of your roster, day by day, with any job notes — so you can plan the drive.',
       'Not rostered, or at a different site? Scroll down to "Visit any site" and pick it from the list — everything works the same, and tapping Start shift there clocks your hours too.',
       'Tap a site to open it. Everything you do at that site happens from the panel that slides up.',
-      'Tap "Start shift" the moment you arrive and "Finish shift" as you leave. That is how your hours are recorded — the rostered time is only a guide, traffic happens.',
+      'When you open a site the app asks "Start your shift here?" — tap Yes as you arrive. Each time you close a screen it asks "Finished at this site?" — tap No to keep going, Yes as you leave. That is how your hours are recorded; the rostered time is only a guide.',
       'Change your password the first time you log in: tap ? at the top, scroll to the bottom and use Change my password.',
     ],
   },
