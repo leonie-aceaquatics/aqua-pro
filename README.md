@@ -32,6 +32,7 @@ set-estimated-pool-volumes.sql          ← placeholder volumes for pools with n
 add-facility-sites-and-task-photos-migration.sql ← 'facility' site type (no water) + photos_required on site tasks
 add-shift-actual-hours-migration.sql    ← rostered end time optional; techs log actual start/finish for hours
 add-uv-readings-migration.sql           ← water_tests.uv_output_pct + uv_run_hours
+add-client-roles-migration.sql          ← allow client_admin / client_operator (and pool_manager) on staff.role
 add-organisations-migration.sql         ← organisations + org_id on the six root tables (the tenancy fence)
 add-site-targets-and-rounds-migration.sql ← per-site water targets, manual dosing, round structure, round fields on water_tests
 seed-senza-dromana-site.sql             ← Senza's three 390 L ice baths
