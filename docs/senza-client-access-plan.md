@@ -69,12 +69,27 @@ The screens the techs use do not change. No retraining.
 | "Visit any site" | Sits on one of the endpoints being locked down. Keeps working for Ace roles, but needs care |
 | Site access key screen | Must not list another company's codes |
 
-## Still to decide
+## Decided
 
-1. **Where Senza's test results email.** Them, Ace, or both. Ace needs a copy to service the site; Senza need it for their own record.
-2. **Do Senza's baths appear in Ace's site counts?** They are serviced by Ace, so arguably yes, but it moves the numbers on the overview.
-3. **Branding.** AquaPro by Ace Aquatics, or Senza's own look and URL.
-4. **Their chemical list.** A copy of Ace's to edit, or their own from scratch. They must not see Ace's depot stock or reorder points.
+1. **Results email** goes to both: the Ace office inbox and Catherine@ozzfit.com.au. Needs per-site email routing, which does not exist today — one hardcoded address for everything.
+2. **Senza's baths do appear in Ace's site counts.** No filtering needed on the overview or the roster coverage chips.
+3. **Branding stays AquaPro by Ace Aquatics**, with room for the Senza logo on their portal. No separate URL.
+4. **Senza get their own chemical list**, not a copy of Ace's. They must never see Ace's depot stock or reorder points, so `chemicals` needs an `org_id` as well as pools and staff.
+
+## Storage: the attachment bucket is public
+
+Checked 29 Sep 2026 against the live project. The `attachments` bucket is **public**: a request for a missing file returns "Object not found" rather than "Bucket not found", which only happens when the bucket itself is readable without a login.
+
+What that means:
+
+- Any attachment URL works for anyone who has it. No login, no expiry, no record of who opened it.
+- That covers water test photos, fault photos, plant room photos, the gym before-and-after shots, and the site access documents — including the Meridian procedure with the front door and key safe codes in it.
+- Files **cannot** be listed or enumerated anonymously (that was tested separately and returns nothing), so this is not "the whole bucket is browsable". The exposure is per URL: forwarded emails, screenshots, browser history, a phone that syncs, someone who leaves.
+- The chain that matters for tenancy: the attachments API is one of the eighteen routes that only checks for a login. A Senza operator could request attachments for an entity id belonging to another site and get back permanent public links.
+
+The fix is contained: switch the bucket to private, add a route that checks the user is entitled to the file and then returns a short-lived signed URL, and have the attachment panel ask for that instead of using the stored URL. Existing rows keep working — the object path is derived from the URL already stored.
+
+This should be done before any Senza login exists, and the site access documents are reason enough to do it regardless.
 
 ## The regulation point
 
