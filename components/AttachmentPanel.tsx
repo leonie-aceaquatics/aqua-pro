@@ -35,15 +35,20 @@ export default function AttachmentPanel({ entityType, entityId, onChange }: { en
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filename: file.name, entity_type: entityType }),
       })
-      const { path, token, publicUrl, error: signErr } = await signRes.json()
+      const { path, token, bucket, publicUrl, storagePath, error: signErr } = await signRes.json()
       if (signErr) throw new Error(signErr)
 
-      const { error: upErr } = await supabaseBrowser.storage.from('attachments').uploadToSignedUrl(path, token, file)
+      const { error: upErr } = await supabaseBrowser.storage.from(bucket).uploadToSignedUrl(path, token, file)
       if (upErr) throw upErr
 
+      // Private buckets store the object path and are signed on read; public ones store the URL.
       await fetch('/api/admin/attachments', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entity_type: entityType, entity_id: entityId, file_url: publicUrl, file_name: file.name }),
+        body: JSON.stringify({
+          entity_type: entityType, entity_id: entityId, file_name: file.name,
+          file_url: publicUrl ?? storagePath,
+          storage_bucket: publicUrl ? null : bucket,
+        }),
       })
       load(); onChange?.()
     } catch (err: any) {
@@ -70,7 +75,8 @@ export default function AttachmentPanel({ entityType, entityId, onChange }: { en
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
           {attachments.map(a => (
             <div key={a.id} style={{ position: 'relative', width: '72px', height: '72px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border)' }}>
-              {a.file_url.match(/\.(png|jpe?g|webp|heic)$/i) ? (
+              {/* Match on the name, not the URL — a signed link carries a ?token and never ends in .jpg */}
+              {(a.file_name ?? a.file_url).match(/\.(png|jpe?g|webp|heic)(\?|$)/i) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={a.file_url} alt={a.file_name ?? 'attachment'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (

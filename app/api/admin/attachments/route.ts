@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { SIGNED_URL_SECONDS } from '@/lib/attachment-storage'
 
 // Generic entity_type/entity_id attachment store — scope was explicitly unclear from Anthony
 // ("ask him what for"), so this is wired into the two most obviously useful spots (incidents,
@@ -23,7 +24,17 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ attachments: data })
+
+  // Private rows hold an object path, not a URL. Swap in a short-lived signed link so callers
+  // can keep using file_url exactly as before. A failed signature drops the row rather than
+  // handing back an unusable path.
+  const attachments = await Promise.all((data ?? []).map(async (a: any) => {
+    if (!a.storage_bucket) return a
+    const { data: signed } = await supabaseAdmin.storage
+      .from(a.storage_bucket).createSignedUrl(a.file_url, SIGNED_URL_SECONDS)
+    return signed?.signedUrl ? { ...a, file_url: signed.signedUrl } : null
+  }))
+  return NextResponse.json({ attachments: attachments.filter(Boolean) })
 }
 
 export async function POST(req: NextRequest) {
@@ -41,7 +52,8 @@ export async function POST(req: NextRequest) {
       entity_type: body.entity_type,
       entity_id: body.entity_id,
       uploaded_by: user.id,
-      file_url: body.file_url,
+      file_url: body.file_url,            // a public URL, or the object path when private
+      storage_bucket: body.storage_bucket || null,
       file_name: body.file_name || null,
       caption: body.caption || null,
     })
@@ -59,6 +71,17 @@ export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+
+  // Take the file out of storage as well — deleting only the row leaves a public file behind,
+  // which is exactly what we are trying to avoid for anything sensitive.
+  const { data: row } = await supabaseAdmin.from('attachments').select('file_url, storage_bucket').eq('id', id).single()
+  if (row) {
+    const bucket = row.storage_bucket ?? 'attachments'
+    const path = row.storage_bucket
+      ? row.file_url
+      : row.file_url.split('/object/public/attachments/')[1]
+    if (path) await supabaseAdmin.storage.from(bucket).remove([decodeURIComponent(path)])
+  }
 
   const { error } = await supabaseAdmin.from('attachments').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

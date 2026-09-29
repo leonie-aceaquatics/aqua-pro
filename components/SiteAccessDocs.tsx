@@ -10,11 +10,12 @@ export default function SiteAccessDocs({ poolId, dark = true }: { poolId: string
       .then(r => r.json()).then(d => setDocs(d.attachments ?? [])).catch(() => setDocs([]))
   }, [poolId])
   if (docs.length === 0) return null
-  const kind = (url: string) => /\.(mp4|mov|m4v|webm)$/i.test(url) ? 'video' : /\.(png|jpe?g|webp|heic)$/i.test(url) ? 'image' : 'doc'
+  // Match on the file name — these are signed links now, so the URL carries a ?token and has no extension at the end
+  const kind = (a: any) => { const n = a.file_name ?? a.file_url; return /\.(mp4|mov|m4v|webm)(\?|$)/i.test(n) ? 'video' : /\.(png|jpe?g|webp|heic)(\?|$)/i.test(n) ? 'image' : 'doc' }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
       {docs.map(a => {
-        const k = kind(a.file_url)
+        const k = kind(a)
         const Icon = k === 'video' ? Video : k === 'image' ? ImageIcon : FileText
         return (
           <a key={a.id} href={a.file_url} target="_blank" rel="noreferrer"
