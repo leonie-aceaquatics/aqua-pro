@@ -372,12 +372,35 @@ export function buildWaterTestResultsEmail(test: Record<string, any>, poolName: 
   `)
 }
 
-export async function sendWaterTestResultsEmail(test: Record<string, any>, poolName: string, testedBy: string, testUrl: string) {
+/** A result worth interrupting someone for: out of range, a bath to close, or a fault reported. */
+export function isExceptionResult(test: Record<string, any>): boolean {
+  return test.risk_level === 'red' || test.risk_level === 'orange' || !!test.fault_report
+}
+
+/**
+ * Where a result goes. The service provider always gets it — that is their compliance evidence
+ * and they are the ones who act on a red reading. The owning organisation gets it according to
+ * its own setting, so a client with four rounds a day is not sent eighty-five emails a week.
+ */
+export async function sendWaterTestResultsEmail(
+  test: Record<string, any>, poolName: string, testedBy: string, testUrl: string,
+  clientEmail?: string | null, clientMode?: string | null,
+) {
   const risk = test.risk_level as string
   const prefix = (risk === 'red' ? '🚨 ' : risk === 'orange' ? '⚠️ ' : '') + (test.fault_report ? '🔧 ' : '')
-  try {
-    await sendEmail(RESULTS_EMAIL, `${prefix}Water test: ${poolName}`, buildWaterTestResultsEmail(test, poolName, testedBy, testUrl))
-  } catch (e) {
-    console.error('Water test results email failed:', e)
+
+  const to = new Set<string>([RESULTS_EMAIL])
+  if (clientEmail) {
+    const mode = clientMode ?? 'all'
+    if (mode === 'all' || (mode === 'exceptions' && isExceptionResult(test))) to.add(clientEmail)
+  }
+
+  const html = buildWaterTestResultsEmail(test, poolName, testedBy, testUrl)
+  for (const address of to) {
+    try {
+      await sendEmail(address, `${prefix}Water test: ${poolName}`, html)
+    } catch (e) {
+      console.error(`Water test results email to ${address} failed:`, e)
+    }
   }
 }

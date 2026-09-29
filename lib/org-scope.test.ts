@@ -41,6 +41,7 @@ const ALLOWED: Record<string, string> = {
   'feedback/upload/route.ts': 'bug report screenshot upload',
   'cron/compliance-check/route.ts': 'scheduled job, runs across all orgs by design',
   'cron/maintenance-reminders/route.ts': 'scheduled job, runs across all orgs by design',
+  'cron/daily-water-summary/route.ts': 'scheduled job; each summary is built for one org at a time',
   'iot/ingest/route.ts': 'authenticated by a per-sensor key, not a user session',
 }
 

@@ -177,7 +177,16 @@ export async function POST(req: NextRequest) {
   // round-trip never delays the save; the helper swallows send failures.
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
   const testedBy = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email
-  after(() => sendWaterTestResultsEmail({ ...data, doses: dosesLogged }, data?.pools?.name ?? 'Unknown pool', testedBy, `${appUrl}/admin`))
+  // The owning organisation gets a copy too, as often as it has asked for.
+  after(async () => {
+    const { data: org } = await supabaseAdmin
+      .from('pools').select('organisations(results_email, results_email_mode)').eq('id', body.pool_id).single()
+    const o = Array.isArray(org?.organisations) ? org?.organisations[0] : org?.organisations
+    await sendWaterTestResultsEmail(
+      { ...data, doses: dosesLogged }, data?.pools?.name ?? 'Unknown pool', testedBy, `${appUrl}/admin`,
+      o?.results_email, o?.results_email_mode,
+    )
+  })
 
   return NextResponse.json({ test: data })
 }
