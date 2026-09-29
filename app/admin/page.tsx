@@ -196,17 +196,22 @@ const BLANK_POOL_FORM = {
   pool_type: 'outdoor', sanitiser_type: 'chlorine', volume_litres: '',
   surface_area_m2: '', max_bather_load: '', owner_name: '', owner_email: '',
   owner_phone: '', is_commercial: false, health_licence_number: '',
-  licence_expiry: '', notes: '', access_notes: '',
+  licence_expiry: '', notes: '', access_notes: '', org_id: '',
   ph_correction_method: 'acid', close_threshold_free_chlorine: '', close_threshold_ph_low: '', close_threshold_ph_high: '',
 }
 
 function PoolsTab() {
   const [pools, setPools] = useState<any[]>([])
+  const [orgs, setOrgs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingPool, setEditingPool] = useState<any>(null)
   const [form, setForm] = useState(BLANK_POOL_FORM)
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/admin/organisations').then(r => r.ok ? r.json() : null).then(d => setOrgs(d?.organisations ?? []))
+  }, [])
 
   const load = useCallback(() => {
     fetch('/api/admin/pools').then(r => r.json()).then(d => {
@@ -232,7 +237,7 @@ function PoolsTab() {
       max_bather_load: pool.max_bather_load ?? '', owner_name: pool.owner_name ?? '',
       owner_email: pool.owner_email ?? '', owner_phone: pool.owner_phone ?? '',
       is_commercial: pool.is_commercial ?? false, health_licence_number: pool.health_licence_number ?? '',
-      licence_expiry: pool.licence_expiry ?? '', notes: pool.notes ?? '', access_notes: pool.access_notes ?? '',
+      licence_expiry: pool.licence_expiry ?? '', notes: pool.notes ?? '', access_notes: pool.access_notes ?? '', org_id: pool.org_id ?? '',
       ph_correction_method: pool.ph_correction_method ?? 'acid',
       close_threshold_free_chlorine: pool.close_threshold_free_chlorine ?? '',
       close_threshold_ph_low: pool.close_threshold_ph_low ?? '',
@@ -318,6 +323,18 @@ function PoolsTab() {
                   <input required value={form.site_code} onChange={e => setForm(f => ({ ...f, site_code: e.target.value }))} placeholder="e.g. AQ-001" />
                 </div>
               </div>
+              {orgs.length > 1 && (
+                <div style={s.formGroup}>
+                  <label>Organisation *</label>
+                  <select required value={form.org_id} onChange={e => setForm(f => ({ ...f, org_id: e.target.value }))} disabled={!!editingPool}>
+                    <option value="">Choose…</option>
+                    {orgs.map((o: any) => <option key={o.id} value={o.id}>{o.name}{o.is_service_provider ? ' (us)' : ''}</option>)}
+                  </select>
+                  <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>
+                    {editingPool ? 'A site cannot be moved between organisations here.' : 'Who owns this site. Their logins see it; ours see it because we service them.'}
+                  </div>
+                </div>
+              )}
               <div style={s.formGroup}>
                 <label>Street Address *</label>
                 <input required value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
@@ -894,10 +911,15 @@ function StaffTab() {
   const [routePoolForm, setRoutePoolForm] = useState({ pool_id: '', service_frequency: 'weekly' })
   const [unavailForm, setUnavailForm] = useState({ staff_id: '', start_date: '', end_date: '', reason: '' })
   const [staffForm, setStaffForm] = useState({
-    email: '', password: '', first_name: '', last_name: '', role: 'technician', phone: '', is_active: true, send_email: true,
+    email: '', password: '', first_name: '', last_name: '', role: 'technician', phone: '', is_active: true, send_email: true, org_id: '',
   })
+  const [orgs, setOrgs] = useState<any[]>([])
   const [saving, setSaving] = useState(false)
   const [staffNotice, setStaffNotice] = useState<{ ok: boolean; text: string } | null>(null)
+
+  useEffect(() => {
+    fetch('/api/admin/organisations').then(r => r.ok ? r.json() : null).then(d => setOrgs(d?.organisations ?? []))
+  }, [])
 
   const load = useCallback(() => {
     Promise.all([
@@ -966,13 +988,13 @@ function StaffTab() {
 
   function openAddStaff() {
     setEditingStaffMember(null)
-    setStaffForm({ email: '', password: '', first_name: '', last_name: '', role: 'technician', phone: '', is_active: true, send_email: true })
+    setStaffForm({ email: '', password: '', first_name: '', last_name: '', role: 'technician', phone: '', is_active: true, send_email: true, org_id: '' })
     setShowStaffModal(true)
   }
 
   function openEditStaff(m: any) {
     setEditingStaffMember(m)
-    setStaffForm({ email: m.email ?? '', password: '', first_name: m.first_name ?? '', last_name: m.last_name ?? '', role: m.role ?? 'technician', phone: m.phone ?? '', is_active: m.is_active ?? true, send_email: true })
+    setStaffForm({ email: m.email ?? '', password: '', first_name: m.first_name ?? '', last_name: m.last_name ?? '', role: m.role ?? 'technician', phone: m.phone ?? '', is_active: m.is_active ?? true, send_email: true, org_id: m.org_id ?? '' })
     setShowStaffModal(true)
   }
 
@@ -1137,6 +1159,20 @@ function StaffTab() {
                     <label>{editingStaffMember ? 'Reset Password (leave blank to keep current)' : 'Password *'}</label>
                     <input required={!editingStaffMember} type="password" value={staffForm.password} onChange={e => setStaffForm(f => ({ ...f, password: e.target.value }))} />
                   </div>
+                  {orgs.length > 1 && (
+                    <div style={s.formGroup}>
+                      <label>Organisation *</label>
+                      <select required value={staffForm.org_id} onChange={e => setStaffForm(f => ({ ...f, org_id: e.target.value }))} disabled={!!editingStaffMember}>
+                        <option value="">Choose…</option>
+                        {orgs.map((o: any) => <option key={o.id} value={o.id}>{o.name}{o.is_service_provider ? ' (us)' : ''}</option>)}
+                      </select>
+                      <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>
+                        {editingStaffMember
+                          ? 'A person cannot be moved between organisations here.'
+                          : 'A client login sees only their own sites. Give it a client role above.'}
+                      </div>
+                    </div>
+                  )}
                   {(!editingStaffMember || staffForm.password) && (
                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text)', cursor: 'pointer', marginBottom: '14px' }}>
                       <input type="checkbox" checked={staffForm.send_email} onChange={e => setStaffForm(f => ({ ...f, send_email: e.target.checked }))} />
@@ -1147,9 +1183,15 @@ function StaffTab() {
                     <div style={s.formGroup}>
                       <label>Role *</label>
                       <select required value={staffForm.role} onChange={e => setStaffForm(f => ({ ...f, role: e.target.value }))}>
-                        {['admin','manager','technician','contractor','pool_manager'].map(r => (
-                          <option key={r} value={r}>{r.replace('_', ' ')}</option>
-                        ))}
+                        <optgroup label="Ace Aquatics">
+                          {['admin','manager','technician','contractor','pool_manager'].map(r => (
+                            <option key={r} value={r}>{r.replace('_', ' ')}</option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Client">
+                          <option value="client_admin">client admin — their owner/manager</option>
+                          <option value="client_operator">client operator — records readings</option>
+                        </optgroup>
                       </select>
                     </div>
                     <div style={s.formGroup}>
