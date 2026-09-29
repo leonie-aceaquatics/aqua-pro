@@ -1,15 +1,15 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Droplets, LogOut, ChevronRight, HelpCircle, Calculator, ClipboardList, CheckCircle } from 'lucide-react'
+import { Droplets, LogOut, ChevronRight, HelpCircle, Calculator, ClipboardList, CheckCircle, Clock, RotateCcw } from 'lucide-react'
 import SiteTaskList from '@/components/SiteTaskList'
 import ChemistryCalculatorTab from '@/components/ChemistryCalculatorTab'
-import InstantAlerts from '@/components/InstantAlerts'
 import ChangePassword from '@/components/ChangePassword'
 import HelpGuide from '@/components/HelpGuide'
 import ReportIssueButton from '@/components/ReportIssueButton'
 import { POOL_GUIDE } from '@/lib/pool-guide'
-import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
+import { RISK_COLOURS, RISK_LABELS } from '@/lib/water-chemistry'
+import ManualRoundForm from '@/components/ManualRoundForm'
 
 // The client portal. A Senza login lands here and sees only their own bodies of water — the API
 // scopes every call to their organisation, so this page cannot show anything else even if asked.
@@ -17,10 +17,6 @@ import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from
 // Deliberately fewer screens than the technician app: record a round, the dose calculator, the
 // site checklist. No site register, no other companies, no roster, no prices.
 
-const BLANK_TEST = {
-  free_chlorine: '', combined_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '',
-  calcium_hardness: '', temperature_c: '', turbidity: '', notes: '',
-}
 
 export default function ClientPortalPage() {
   const [user, setUser] = useState<any>(null)
@@ -31,10 +27,8 @@ export default function ClientPortalPage() {
   const [showHelp, setShowHelp] = useState(false)
   const [tests, setTests] = useState<any[]>([])
 
-  const [form, setForm] = useState(BLANK_TEST)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [saved, setSaved] = useState(false)
+  const [site, setSite] = useState<any>(null)          // targets, rounds, today's entries
+  const [round, setRound] = useState<{ key: string; label: string; retestOf?: string } | null>(null)
 
   const load = useCallback(() => {
     Promise.all([
@@ -48,53 +42,21 @@ export default function ClientPortalPage() {
   }, [])
   useEffect(() => { load() }, [load])
 
+  const loadSite = useCallback((poolId: string) => {
+    fetch(`/api/client/site?pool_id=${poolId}`)
+      .then(r => r.json()).then(d => { setSite(d); setTests(d.tests ?? []) })
+      .catch(() => { setSite(null); setTests([]) })
+  }, [])
+
   function openSite(pool: any) {
-    setSelected(pool); setView(null); setForm(BLANK_TEST); setSaved(false); setError(null)
-    fetch(`/api/admin/water-tests?pool_id=${pool.id}&limit=5`)
-      .then(r => r.json()).then(d => setTests(d.tests ?? [])).catch(() => setTests([]))
+    setSelected(pool); setView(null); setRound(null); setSite(null)
+    loadSite(pool.id)
   }
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' })
     window.location.href = '/login'
   }
-
-  // Combined chlorine and LSI are worked out, never typed.
-  const combined = form.free_chlorine !== '' && form.total_chlorine !== ''
-    ? Math.max(0, Math.round((Number(form.total_chlorine) - Number(form.free_chlorine)) * 100) / 100).toFixed(2)
-    : ''
-  const lsi = [form.ph, form.temperature_c, form.calcium_hardness, form.total_alkalinity].every(v => v !== '')
-    ? calculateLSI(Number(form.ph), Number(form.temperature_c), Number(form.calcium_hardness), Number(form.total_alkalinity))
-    : null
-  const lsiStatus = lsi !== null ? classifyLSI(lsi) : null
-
-  async function submitTest(e: React.FormEvent) {
-    e.preventDefault()
-    setSaving(true); setError(null)
-    const payload: Record<string, any> = { pool_id: selected.id, tested_at: new Date().toISOString(), ...form }
-    for (const k of Object.keys(BLANK_TEST)) if (payload[k] === '') payload[k] = null
-    try {
-      const res = await fetch('/api/admin/water-tests', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
-      })
-      const d = await res.json().catch(() => ({}))
-      if (!res.ok) { setError(d.error ?? 'Could not save this test.'); setSaving(false); return }
-      setSaved(true); setForm(BLANK_TEST)
-      openSite(selected)
-    } catch {
-      setError('No connection — this test was not saved. Try again when you are back online.')
-    }
-    setSaving(false)
-  }
-
-  const input = (key: keyof typeof BLANK_TEST, label: string, placeholder: string) => (
-    <div style={{ marginBottom: '12px' }}>
-      <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</label>
-      <input type="number" step="0.01" placeholder={placeholder} value={form[key]}
-        onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-        style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '10px 12px', fontSize: '16px', width: '100%', outline: 'none' }} />
-    </div>
-  )
 
   const panel: React.CSSProperties = { background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }
   const heading: React.CSSProperties = { fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }
@@ -180,8 +142,8 @@ export default function ClientPortalPage() {
             <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#0077b6' }} onClick={() => setView('tasks')}>
               <ClipboardList size={16} /> Checklist
             </button>
-            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px' }} onClick={() => { setSaved(false); setView('test') }}>
-              <Droplets size={16} /> Record a reading
+            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px' }} onClick={() => setView('test')}>
+              <Droplets size={16} /> Record a round
             </button>
             <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#b8860b' }} onClick={() => setView('calc')}>
               <Calculator size={16} /> Dose calculator
@@ -200,65 +162,82 @@ export default function ClientPortalPage() {
         </div>
       )}
 
-      {/* Record a reading */}
+      {/* Record a round — the day's rounds, what is done, and what still has to be */}
       {selected && view === 'test' && (
         <div style={{ padding: '20px' }}>
-          <button onClick={() => setView(null)} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '8px 14px', cursor: 'pointer', marginBottom: '16px' }}>← Back</button>
-          <div style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', marginBottom: '4px' }}>Record a reading</div>
-          <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '16px' }}>{selected.name}</div>
+          <button onClick={() => { setView(null); setRound(null) }} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '8px 14px', cursor: 'pointer', marginBottom: '16px' }}>← Back</button>
 
-          {saved && (
-            <div style={{ background: '#00b89418', border: '1px solid #00b89440', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px', color: '#00b894', fontWeight: '700' }}>
-              <CheckCircle size={16} style={{ verticalAlign: '-3px', marginRight: '6px' }} />Reading saved
-            </div>
+          {!site ? (
+            <div style={{ color: '#64748b', fontSize: '13px' }}>Loading…</div>
+          ) : round ? (
+            <ManualRoundForm
+              pool={site.pool} targets={site.targets}
+              roundKey={round.key} roundLabel={round.label}
+              retestOf={round.retestOf ?? null}
+              acidDosesToday={site.acidDosesToday ?? 0}
+              onCancel={() => setRound(null)}
+              onSaved={() => { setRound(null); loadSite(selected.id) }}
+            />
+          ) : (
+            <>
+              <div style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', marginBottom: '4px' }}>Today&apos;s rounds</div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '16px' }}>{selected.name}</div>
+
+              {(site.rounds ?? []).length === 0 && (
+                <div style={{ color: '#64748b', fontSize: '13px', marginBottom: '16px' }}>No fixed rounds for this site — record a reading whenever you test.</div>
+              )}
+
+              {(site.rounds ?? []).map((r: any) => {
+                const done = (site.tests ?? []).filter((t: any) => t.round_key === r.round_key && !t.is_retest)
+                const isDone = done.length > 0
+                return (
+                  <div key={r.id} style={{ background: 'var(--surface)', border: `1px solid ${isDone ? '#00b89440' : 'var(--border)'}`, borderRadius: '12px', padding: '14px 16px', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                      <div>
+                        <div style={{ fontWeight: '700', fontSize: '15px', color: '#e2e8f0' }}>
+                          {isDone && <CheckCircle size={14} color="#00b894" style={{ verticalAlign: '-2px', marginRight: '6px' }} />}
+                          {r.label}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#64748b' }}>
+                          <Clock size={11} style={{ verticalAlign: '-1px', marginRight: '4px' }} />
+                          {String(r.scheduled_at).slice(0, 5)}
+                          {r.is_gate ? ' · the baths do not open until this passes' : ''}
+                        </div>
+                      </div>
+                      <button className="btn btn-primary" style={{ padding: '10px 14px', background: isDone ? 'var(--surface-2)' : undefined, color: isDone ? '#94a3b8' : undefined }}
+                        onClick={() => setRound({ key: r.round_key, label: r.label })}>
+                        {isDone ? 'Add another' : 'Record'}
+                      </button>
+                    </div>
+                    {done.map((t: any) => (
+                      <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', alignItems: 'center', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border)', fontSize: '12px', color: '#94a3b8' }}>
+                        <span>
+                          {new Date(t.tested_at).toLocaleTimeString('en-AU', { timeZone: 'Australia/Melbourne', hour: '2-digit', minute: '2-digit' })}
+                          {' · FC '}{t.free_chlorine ?? '—'}{' · pH '}{t.ph ?? '—'}
+                          {t.staff?.first_name ? ` · ${t.staff.first_name}` : ''}
+                        </span>
+                        <button type="button" onClick={() => setRound({ key: r.round_key, label: r.label, retestOf: t.id })}
+                          style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '6px', color: '#00b4d8', padding: '4px 8px', cursor: 'pointer', fontSize: '11px', whiteSpace: 'nowrap' }}>
+                          <RotateCcw size={10} style={{ verticalAlign: '-1px', marginRight: '3px' }} />Retest
+                        </button>
+                      </div>
+                    ))}
+                    {(site.tests ?? []).filter((t: any) => t.round_key === r.round_key && t.is_retest).map((t: any) => (
+                      <div key={t.id} style={{ marginTop: '6px', fontSize: '12px', color: '#00b894' }}>
+                        ↳ retest {new Date(t.tested_at).toLocaleTimeString('en-AU', { timeZone: 'Australia/Melbourne', hour: '2-digit', minute: '2-digit' })}
+                        {' · FC '}{t.free_chlorine ?? '—'}{' · pH '}{t.ph ?? '—'}
+                      </div>
+                    ))}
+                  </div>
+                )
+              })}
+
+              {(site.rounds ?? []).length === 0 && (
+                <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px' }}
+                  onClick={() => setRound({ key: 'adhoc', label: 'Reading' })}>Record a reading</button>
+              )}
+            </>
           )}
-
-          <form onSubmit={submitTest}>
-            <div style={panel}>
-              <div style={heading}>Chlorine</div>
-              {input('free_chlorine', 'Free chlorine (ppm)', '3.0')}
-              {input('total_chlorine', 'Total chlorine (ppm)', '3.2')}
-              <div style={{ marginBottom: '12px' }}>
-                <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Combined chlorine (ppm) · auto</label>
-                <input type="number" readOnly tabIndex={-1} value={combined} placeholder="Total − Free"
-                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#94a3b8', padding: '10px 12px', fontSize: '16px', width: '100%' }} />
-              </div>
-            </div>
-
-            <div style={panel}>
-              <div style={heading}>Balance</div>
-              {input('ph', 'pH', '7.4')}
-              {input('total_alkalinity', 'Total alkalinity (ppm)', '100')}
-              {input('calcium_hardness', 'Calcium hardness (ppm)', '200')}
-              {input('temperature_c', 'Temperature (°C)', '12')}
-              <InstantAlerts ta={form.total_alkalinity} ch={form.calcium_hardness} volumeLitres={selected.volume_litres} />
-              <div style={{ padding: '10px 12px', background: 'var(--surface-2)', borderRadius: '8px', border: `1px solid ${lsiStatus && lsiStatus !== 'balanced' ? '#e1705540' : 'var(--border)'}`, marginTop: '10px' }}>
-                <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>LSI · auto</div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '20px', fontWeight: '700', color: lsiStatus === 'balanced' ? '#00b894' : lsiStatus ? '#e17055' : '#475569' }}>
-                    {lsi !== null ? (lsi > 0 ? `+${lsi.toFixed(2)}` : lsi.toFixed(2)) : '—'}
-                  </span>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>{lsiStatus ? LSI_LABELS[lsiStatus] : 'Enter pH, TA, calcium and temperature'}</span>
-                </div>
-              </div>
-            </div>
-
-            <div style={panel}>
-              <div style={heading}>Other</div>
-              {input('turbidity', 'Turbidity (NTU)', '0')}
-              <div style={{ marginBottom: '4px' }}>
-                <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Notes</label>
-                <textarea rows={3} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                  placeholder="Bather count, clarity, anything unusual"
-                  style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '10px 12px', fontSize: '14px', width: '100%', outline: 'none' }} />
-              </div>
-            </div>
-
-            {error && <div style={{ color: '#ff7675', fontSize: '13px', textAlign: 'center', marginBottom: '12px' }}>{error}</div>}
-            <button type="submit" className="btn btn-primary" disabled={saving} style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: '15px' }}>
-              {saving ? 'Saving…' : 'Save reading'}
-            </button>
-          </form>
         </div>
       )}
 

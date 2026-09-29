@@ -27,6 +27,10 @@ export interface ParameterRange {
   unit: string
   priority: 'critical' | 'high' | 'normal'
   label: string
+  /** Below this the body of water is closed, not just corrected. */
+  closeBelow?: number
+  /** Above this the body of water is closed. */
+  closeAbove?: number
 }
 
 // Default ranges by pool type and sanitiser
@@ -86,6 +90,42 @@ const RANGES: Record<string, Record<string, ParameterRange>> = {
   },
 }
 
+/**
+ * A target set for one site, from pool_water_targets. Sites without rows fall back to the
+ * defaults above — which is why nothing changed for Ace's pools when this arrived.
+ */
+export interface SiteTarget {
+  parameter: string
+  min_value: number | null
+  max_value: number | null
+  ideal_value: number | null
+  close_below: number | null
+  close_above: number | null
+}
+
+/** Merge a site's own targets over the defaults for its type. */
+export function applySiteTargets(
+  ranges: Record<string, ParameterRange>,
+  targets: SiteTarget[] | null | undefined,
+): Record<string, ParameterRange> {
+  if (!targets?.length) return ranges
+  const merged: Record<string, ParameterRange> = { ...ranges }
+  for (const t of targets) {
+    const base = merged[t.parameter]
+    merged[t.parameter] = {
+      min:   t.min_value   ?? base?.min   ?? 0,
+      max:   t.max_value   ?? base?.max   ?? 0,
+      ideal: t.ideal_value ?? base?.ideal ?? 0,
+      unit:  base?.unit ?? 'ppm',
+      priority: base?.priority ?? 'high',
+      label: base?.label ?? t.parameter,
+      closeBelow: t.close_below ?? undefined,
+      closeAbove: t.close_above ?? undefined,
+    }
+  }
+  return merged
+}
+
 export function getRanges(poolType: PoolType, sanitiserType: SanitiserType): Record<string, ParameterRange> {
   const key = `${poolType}_${sanitiserType}`
   return RANGES[key] ?? RANGES['outdoor_chlorine']
@@ -105,6 +145,8 @@ export interface RiskThresholdOverrides {
   closeThresholdFreeChlorine?: number | null
   closeThresholdPhLow?: number | null
   closeThresholdPhHigh?: number | null
+  /** A site's own targets, which replace the type defaults where they overlap. */
+  siteTargets?: SiteTarget[] | null
 }
 
 export function classifyRisk(
@@ -113,7 +155,7 @@ export function classifyRisk(
   sanitiserType: SanitiserType,
   overrides?: RiskThresholdOverrides,
 ): RiskResult {
-  const ranges = getRanges(poolType, sanitiserType)
+  const ranges = applySiteTargets(getRanges(poolType, sanitiserType), overrides?.siteTargets)
   const flags: string[] = []
   const criticalFlags: string[] = []
 

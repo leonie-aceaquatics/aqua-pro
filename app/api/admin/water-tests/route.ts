@@ -51,6 +51,10 @@ export async function POST(req: NextRequest) {
     .eq('id', body.pool_id)
     .single()
 
+  // A site with its own targets (Senza) is judged against those, not the generic type defaults.
+  const { data: siteTargets } = await supabaseAdmin
+    .from('pool_water_targets').select('*').eq('pool_id', body.pool_id)
+
   const values: WaterTestValues = {
     freeChlorine: body.free_chlorine ?? undefined,
     combinedChlorine: body.combined_chlorine ?? undefined,
@@ -73,6 +77,7 @@ export async function POST(req: NextRequest) {
     closeThresholdFreeChlorine: pool?.close_threshold_free_chlorine,
     closeThresholdPhLow: pool?.close_threshold_ph_low,
     closeThresholdPhHigh: pool?.close_threshold_ph_high,
+    siteTargets,
   })
 
   // LSI needs pH, temperature, calcium hardness and alkalinity; CYA and TDS refine it when present
@@ -105,6 +110,14 @@ export async function POST(req: NextRequest) {
       turbidity: body.turbidity ?? null,
       uv_output_pct: body.uv_output_pct ?? null,
       balance_tank_pct: body.balance_tank_pct ?? null,
+      // Round records for manually dosed sites (Senza): which round, who was in it, was it clear,
+      // and whether this entry is the retest that has to follow a dose.
+      round_key: body.round_key ?? null,
+      bather_count: body.bather_count ?? null,
+      clarity_floor_visible: body.clarity_floor_visible ?? null,
+      calibration_pass: body.calibration_pass ?? null,
+      is_retest: body.is_retest ?? false,
+      retest_of: body.retest_of ?? null,
       uv_run_hours: body.uv_run_hours ?? null,
       langelier_saturation_index: lsi,
       risk_level: riskLevel,
