@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { visibleOrgIds, visiblePoolIds, canAccessPool } from '@/lib/org-scope'
 import { queueIfLowStockAtSite } from '@/lib/chemical-orders'
 
 // Per-site chemical stock.
@@ -17,11 +18,13 @@ export async function GET(req: NextRequest) {
   const { data: chemicals, error: cErr } = await supabaseAdmin
     .from('chemicals')
     .select('id, name, type, unit, reorder_point')
+    .in('org_id', await visibleOrgIds(user))
     .eq('is_active', true)
     .order('name')
   if (cErr) return NextResponse.json({ error: cErr.message }, { status: 500 })
 
   if (poolId) {
+    if (!(await canAccessPool(user, poolId))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const { data: stock, error } = await supabaseAdmin
       .from('site_chemical_stock')
       .select('chemical_id, quantity, last_counted_at, counter:last_counted_by(first_name, last_name)')
@@ -43,8 +46,8 @@ export async function GET(req: NextRequest) {
 
   if (!['admin', 'manager'].includes(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const [{ data: pools, error: pErr }, { data: stock, error: sErr }] = await Promise.all([
-    supabaseAdmin.from('pools').select('id, name').eq('is_active', true).order('name'),
-    supabaseAdmin.from('site_chemical_stock').select('pool_id, chemical_id, quantity, last_counted_at'),
+    supabaseAdmin.from('pools').select('id, name').in('org_id', await visibleOrgIds(user)).eq('is_active', true).order('name'),
+    supabaseAdmin.from('site_chemical_stock').select('pool_id, chemical_id, quantity, last_counted_at').in('pool_id', await visiblePoolIds(user)),
   ])
   if (pErr) return NextResponse.json({ error: pErr.message }, { status: 500 })
   if (sErr) return NextResponse.json({ error: sErr.message }, { status: 500 })
@@ -59,6 +62,7 @@ export async function POST(req: NextRequest) {
   const poolId = body.pool_id
   const counts = (body.counts ?? []) as { chemical_id: string; quantity: number | string }[]
   if (!poolId || counts.length === 0) return NextResponse.json({ error: 'pool_id and counts required' }, { status: 400 })
+  if (!(await canAccessPool(user, poolId))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const now = new Date().toISOString()
   const rows = counts

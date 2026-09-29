@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { visiblePoolIds, canAccessPool } from '@/lib/org-scope'
 import { sendWaterTestResultsEmail } from '@/lib/email'
 import { logChemicalUsage } from '@/lib/chemical-usage'
 import { classifyRisk, calculateLSI } from '@/lib/water-chemistry'
@@ -21,6 +22,7 @@ export async function GET(req: NextRequest) {
     .order('tested_at', { ascending: false })
     .limit(limit)
 
+  query = query.in('pool_id', await visiblePoolIds(user))
   if (poolId) query = query.eq('pool_id', poolId)
   if (riskLevel) query = query.eq('risk_level', riskLevel)
 
@@ -34,6 +36,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
+  if (!(await canAccessPool(user, body.pool_id))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   // Combined chlorine is derived, not measured: DPD1 gives free, DPD3 gives total,
   // combined (chloramines) = total - free. Always recompute when both are present.
@@ -173,6 +176,12 @@ export async function DELETE(req: NextRequest) {
 
   const id = new URL(req.url).searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+
+  // Only a test on a pool this user can see
+  const { data: existing } = await supabaseAdmin.from('water_tests').select('pool_id').eq('id', id).single()
+  if (!existing || !(await canAccessPool(user, existing.pool_id))) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
 
   await supabaseAdmin.from('attachments').delete().eq('entity_type', 'water_test').eq('entity_id', id)
   const { error } = await supabaseAdmin.from('water_tests').delete().eq('id', id)

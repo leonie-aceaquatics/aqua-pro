@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { visibleOrgIds, visiblePoolIds, canAccessPool } from '@/lib/org-scope'
 
 export async function GET(req: NextRequest) {
   const user = await getSession()
@@ -15,6 +16,7 @@ export async function GET(req: NextRequest) {
     .eq('is_active', true)
     .order('next_service_date', { ascending: true, nullsFirst: false })
 
+  assetsQuery = assetsQuery.in('pool_id', await visiblePoolIds(user))
   if (poolId) assetsQuery = assetsQuery.eq('pool_id', poolId)
 
   const [assetsRes, categoriesRes] = await Promise.all([

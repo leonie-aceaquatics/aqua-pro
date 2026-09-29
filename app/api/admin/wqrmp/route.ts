@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { canAccessPool, visiblePoolIds } from '@/lib/org-scope'
 import { getRanges } from '@/lib/water-chemistry'
 import type { PoolType, SanitiserType } from '@/lib/water-chemistry'
 
@@ -16,6 +17,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const poolId = searchParams.get('pool_id')
   if (!poolId) return NextResponse.json({ error: 'pool_id required' }, { status: 400 })
+  if (!(await canAccessPool(user, poolId))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const [poolRes, assetsRes, complianceRes, correctiveRes, riskRes, contactsRes] = await Promise.all([
     supabaseAdmin.from('pools').select('*').eq('id', poolId).single(),

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
 import { SIGNED_URL_SECONDS } from '@/lib/attachment-storage'
+import { canAccessEntity } from '@/lib/org-scope'
 
 // Generic entity_type/entity_id attachment store — scope was explicitly unclear from Anthony
 // ("ask him what for"), so this is wired into the two most obviously useful spots (incidents,
@@ -15,6 +16,7 @@ export async function GET(req: NextRequest) {
   const entityType = searchParams.get('entity_type')
   const entityId = searchParams.get('entity_id')
   if (!entityType || !entityId) return NextResponse.json({ error: 'entity_type and entity_id required' }, { status: 400 })
+  if (!(await canAccessEntity(user, entityType, entityId))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const { data, error } = await supabaseAdmin
     .from('attachments')
@@ -45,6 +47,9 @@ export async function POST(req: NextRequest) {
   if (!body.entity_type || !body.entity_id || !body.file_url) {
     return NextResponse.json({ error: 'entity_type, entity_id and file_url are required' }, { status: 400 })
   }
+  if (!(await canAccessEntity(user, body.entity_type, body.entity_id))) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
 
   const { data, error } = await supabaseAdmin
     .from('attachments')
@@ -74,7 +79,10 @@ export async function DELETE(req: NextRequest) {
 
   // Take the file out of storage as well — deleting only the row leaves a public file behind,
   // which is exactly what we are trying to avoid for anything sensitive.
-  const { data: row } = await supabaseAdmin.from('attachments').select('file_url, storage_bucket').eq('id', id).single()
+  const { data: row } = await supabaseAdmin.from('attachments').select('file_url, storage_bucket, entity_type, entity_id').eq('id', id).single()
+  if (!row || !(await canAccessEntity(user, row.entity_type, row.entity_id))) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
   if (row) {
     const bucket = row.storage_bucket ?? 'attachments'
     const path = row.storage_bucket

@@ -66,6 +66,11 @@ export default function TechnicianPage() {
       fetch('/api/technician/today').then(r => r.json()),
     ]).then(([u, s]) => {
       setUser(u.user)
+      // Client logins have their own portal — the technician app is Ace's.
+      if (u.user?.role && ['client_admin', 'client_operator'].includes(u.user.role)) {
+        window.location.href = '/client'
+        return
+      }
       setShifts(s.shifts ?? [])
       setLoading(false)
       if (u.user) {

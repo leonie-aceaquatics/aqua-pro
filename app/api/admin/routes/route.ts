@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { visibleOrgIds, visiblePoolIds, canAccessPool } from '@/lib/org-scope'
 
 export async function GET(req: NextRequest) {
   const user = await getSession()
@@ -9,6 +10,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await supabaseAdmin
     .from('service_routes')
     .select('*, technician:assigned_technician_id(first_name, last_name), route_pools(pool_id, visit_order, service_frequency, pools(name, site_code, address))')
+    .in('org_id', await visibleOrgIds(user))
     .order('name')
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { canAccessPool, visiblePoolIds } from '@/lib/org-scope'
 
 export async function GET(req: NextRequest) {
   const user = await getSession()
@@ -16,6 +17,7 @@ export async function GET(req: NextRequest) {
     .order('logged_at', { ascending: false })
     .limit(limit)
 
+  query = query.in('pool_id', await visiblePoolIds(user))
   if (poolId) query = query.eq('pool_id', poolId)
 
   const { data, error } = await query
@@ -28,6 +30,8 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
+  if (!(await canAccessPool(user, body.pool_id))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
   const { data, error } = await supabaseAdmin
     .from('plant_logs')
     .insert({ ...body, logged_by: user.id })

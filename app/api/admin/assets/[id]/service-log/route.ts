@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { visibleOrgIds, visiblePoolIds, canAccessPool } from '@/lib/org-scope'
 
 export async function GET(
   req: NextRequest,
@@ -10,6 +11,12 @@ export async function GET(
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await params
+  // The log hangs off an asset, which hangs off a pool.
+  const { data: asset } = await supabaseAdmin.from('assets').select('pool_id').eq('id', id).single()
+  if (!asset || !(await canAccessPool(user, asset.pool_id))) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
   const { data, error } = await supabaseAdmin
     .from('asset_service_log')
     .select('*, tech:serviced_by(first_name, last_name)')

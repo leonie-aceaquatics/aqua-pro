@@ -3,6 +3,8 @@ import crypto from 'crypto'
 import { supabaseAdmin } from './supabase'
 
 export type StaffRole = 'admin' | 'manager' | 'technician' | 'contractor' | 'pool_manager'
+  | 'client_admin'      // a client's owner/manager: their own sites, records and staff
+  | 'client_operator'   // a client's staff: record readings, checklist, calculator
 
 export interface SessionUser {
   id: string
@@ -10,7 +12,15 @@ export interface SessionUser {
   firstName: string
   lastName: string
   role: StaffRole
+  orgId: string
+  orgName: string
+  /** Ace: true. A client org: false. A provider also sees the orgs it services. */
+  isServiceProvider: boolean
 }
+
+/** Roles that belong to a client organisation rather than the service provider. */
+export const CLIENT_ROLES: StaffRole[] = ['client_admin', 'client_operator']
+export const isClientRole = (role: StaffRole) => CLIENT_ROLES.includes(role)
 
 const SESSION_COOKIE = 'aquapro_session'
 
@@ -42,12 +52,16 @@ export async function getSession(): Promise<SessionUser | null> {
 
   const { data } = await supabaseAdmin
     .from('staff')
-    .select('id, email, first_name, last_name, role, is_active')
+    .select('id, email, first_name, last_name, role, is_active, org_id, organisations(name, is_service_provider, is_active)')
     .eq('id', staffId)
     .eq('is_active', true)
     .single()
 
   if (!data) return null
+
+  // A deactivated organisation logs everybody in it out, not just the individual.
+  const org = Array.isArray(data.organisations) ? data.organisations[0] : data.organisations
+  if (org && org.is_active === false) return null
 
   return {
     id: data.id,
@@ -55,6 +69,9 @@ export async function getSession(): Promise<SessionUser | null> {
     firstName: data.first_name,
     lastName: data.last_name,
     role: data.role as StaffRole,
+    orgId: data.org_id,
+    orgName: org?.name ?? '',
+    isServiceProvider: org?.is_service_provider ?? false,
   }
 }
 

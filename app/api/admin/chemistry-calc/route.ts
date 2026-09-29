@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { canAccessPool, visiblePoolIds } from '@/lib/org-scope'
 import { calculateLSI, calculateDoses, classifyRisk } from '@/lib/water-chemistry'
 import type { PoolType, SanitiserType, WaterTestValues, PhCorrectionMethod } from '@/lib/water-chemistry'
 
@@ -13,6 +14,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
   if (!body.pool_id) return NextResponse.json({ error: 'pool_id required' }, { status: 400 })
+  if (!(await canAccessPool(user, body.pool_id))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const { data: pool, error } = await supabaseAdmin
     .from('pools')

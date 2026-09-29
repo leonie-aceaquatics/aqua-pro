@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { canAccessPool, visibleOrgIds } from '@/lib/org-scope'
 
 // GET  ?pool_id — the site's task list (global + pool-specific) with today's ticks
 // POST { pool_id, task_id, done } — tick / untick a task for today
@@ -13,6 +14,7 @@ export async function GET(req: NextRequest) {
 
   const poolId = new URL(req.url).searchParams.get('pool_id')
   if (!poolId) return NextResponse.json({ error: 'pool_id required' }, { status: 400 })
+  if (!(await canAccessPool(user, poolId))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const date = todaySydney()
 
   // All-sites tasks + tasks for this pool's type (e.g. splash_pad) + this pool's own tasks.
@@ -27,6 +29,7 @@ export async function GET(req: NextRequest) {
       .from('site_tasks')
       .select('*')   // '*' so the list still loads if the photos_required migration hasn't been run yet
       .eq('is_active', true)
+      .in('org_id', await visibleOrgIds(user))
       .or(scope)
       .order('sort_order')
       .order('created_at'),
@@ -70,6 +73,7 @@ export async function POST(req: NextRequest) {
 
   const { pool_id, task_id, done } = await req.json()
   if (!pool_id || !task_id) return NextResponse.json({ error: 'pool_id and task_id required' }, { status: 400 })
+  if (!(await canAccessPool(user, pool_id))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const date = todaySydney()
 
   if (done) {

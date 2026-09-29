@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
   const redirect = staff.role === 'technician' ? '/technician'
     : staff.role === 'contractor' ? '/contractor'
     : staff.role === 'pool_manager' ? '/pool-manager'
+    : ['client_admin', 'client_operator'].includes(staff.role) ? '/client'
     : '/admin'
 
   // Admins and managers can work in either the office dashboard or the technician app

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { visibleOrgIds, visiblePoolIds, canAccessPool } from '@/lib/org-scope'
 
 export async function GET(req: NextRequest) {
   const user = await getSession()
@@ -14,6 +15,7 @@ export async function GET(req: NextRequest) {
     .select('*, pools(name), owner:staff!owner_staff_id(first_name, last_name)')
     .order('due_date', { ascending: true, nullsFirst: false })
 
+  query = query.in('pool_id', await visiblePoolIds(user))
   if (poolId) query = query.eq('pool_id', poolId)
 
   const { data, error } = await query

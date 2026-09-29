@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { visibleOrgIds, visiblePoolIds, canAccessPool } from '@/lib/org-scope'
 
 export async function GET(req: NextRequest) {
   const user = await getSession()
@@ -9,6 +10,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await supabaseAdmin
     .from('compliance_requirements')
     .select('*, pools(name)')
+    .in('org_id', await visibleOrgIds(user))
     .order('requirement_type')
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

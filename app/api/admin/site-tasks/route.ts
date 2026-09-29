@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { visibleOrgIds, visiblePoolIds, canAccessPool, orgForNewRecord } from '@/lib/org-scope'
 
 // Admin CRUD for the simple per-site task list. pool_id null = task applies to every site.
 
@@ -18,6 +19,7 @@ export async function GET(req: NextRequest) {
       .from('site_task_completions')
       .select('id, task_date, completed_at, pool_id, pools(name), staff(first_name, last_name), site_tasks(label, category, sort_order, photos_required)')
       .eq('task_date', date)
+      .in('pool_id', await visiblePoolIds(user))
       .order('completed_at')
     if (poolId && poolId !== 'all') q = q.eq('pool_id', poolId)
     const { data, error } = await q
@@ -37,6 +39,7 @@ export async function GET(req: NextRequest) {
   let query = supabaseAdmin
     .from('site_tasks')
     .select('*, pools(name)')
+    .in('org_id', await visibleOrgIds(user))
     .eq('is_active', true)
     .order('sort_order')
     .order('created_at')
@@ -57,10 +60,15 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const label = String(body.label ?? '').trim()
   if (!label) return NextResponse.json({ error: 'label required' }, { status: 400 })
+  if (body.pool_id && !(await canAccessPool(user, body.pool_id))) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+  const orgId = await orgForNewRecord(user, body.org_id)
+  if (!orgId) return NextResponse.json({ error: 'Unknown organisation' }, { status: 403 })
 
   const { data, error } = await supabaseAdmin
     .from('site_tasks')
-    .insert({ label, category: String(body.category ?? '').trim() || null, pool_id: body.pool_id || null, pool_type: body.pool_type || null, sort_order: body.sort_order ?? 0, photos_required: Math.max(0, Number(body.photos_required) || 0), created_by: user.id })
+    .insert({ org_id: orgId, label, category: String(body.category ?? '').trim() || null, pool_id: body.pool_id || null, pool_type: body.pool_type || null, sort_order: body.sort_order ?? 0, photos_required: Math.max(0, Number(body.photos_required) || 0), created_by: user.id })
     .select('*, pools(name)')
     .single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -74,8 +82,11 @@ export async function DELETE(req: NextRequest) {
   const id = new URL(req.url).searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
-  // Soft delete so past completions keep their label
-  const { error } = await supabaseAdmin.from('site_tasks').update({ is_active: false }).eq('id', id)
+  // Soft delete so past completions keep their label. Scoped so one org cannot remove another's.
+  const { error } = await supabaseAdmin.from('site_tasks')
+    .update({ is_active: false })
+    .eq('id', id)
+    .in('org_id', await visibleOrgIds(user))
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })
 }

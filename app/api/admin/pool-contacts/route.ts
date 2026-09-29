@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { visibleOrgIds, visiblePoolIds, canAccessPool } from '@/lib/org-scope'
 
 export async function GET(req: NextRequest) {
   const user = await getSession()
@@ -9,6 +10,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const poolId = searchParams.get('pool_id')
   if (!poolId) return NextResponse.json({ error: 'pool_id required' }, { status: 400 })
+  if (!(await canAccessPool(user, poolId))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const { data, error } = await supabaseAdmin
     .from('pool_contacts')
@@ -29,6 +31,7 @@ export async function POST(req: NextRequest) {
   if (!body.pool_id || !body.contact_type || !body.name) {
     return NextResponse.json({ error: 'pool_id, contact_type and name are required' }, { status: 400 })
   }
+  if (!(await canAccessPool(user, body.pool_id))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const { data, error } = await supabaseAdmin
     .from('pool_contacts')

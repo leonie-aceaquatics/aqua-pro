@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { visibleOrgIds, visiblePoolIds, canAccessPool } from '@/lib/org-scope'
 import { localDayRange } from '@/lib/local-time'
 
 export async function GET(req: NextRequest) {
@@ -16,6 +17,9 @@ export async function GET(req: NextRequest) {
     .select('*, staff(first_name, last_name, role), pools(name, address, site_code)')
     .order('scheduled_start')
 
+  // Office shifts have no pool, so they are matched on the staff member's org instead.
+  const pools = await visiblePoolIds(user)
+  query = query.or(`pool_id.in.(${pools.join(',') || '00000000-0000-0000-0000-000000000000'}),pool_id.is.null`)
   if (staffId) query = query.eq('staff_id', staffId)
   if (date) {
     const { start, end } = localDayRange(date)

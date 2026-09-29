@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomBytes } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { visibleOrgIds, visiblePoolIds, canAccessPool } from '@/lib/org-scope'
 import { hashSensorKey } from '@/lib/sensor-key'
 
 export async function GET() {
@@ -11,6 +12,7 @@ export async function GET() {
   const { data, error } = await supabaseAdmin
     .from('iot_sensors')
     .select('*, pools(name, site_code)')
+    .in('pool_id', await visiblePoolIds(user))
     .order('installed_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

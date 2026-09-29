@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { visibleOrgIds, visiblePoolIds, canAccessPool, orgForNewRecord } from '@/lib/org-scope'
 import { queueIfLowStock } from '@/lib/chemical-orders'
 import { logChemicalUsage } from '@/lib/chemical-usage'
 
@@ -15,6 +16,7 @@ export async function GET(req: NextRequest) {
     const { data, error } = await supabaseAdmin
       .from('chemical_usage_log')
       .select('*, chemicals(name, unit, dose_unit, type), pools(name), applier:applied_by(first_name, last_name)')
+      .in('pool_id', await visiblePoolIds(user))
       .order('applied_at', { ascending: false })
       .limit(200)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -24,6 +26,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await supabaseAdmin
     .from('chemicals')
     .select('*')
+    .in('org_id', await visibleOrgIds(user))
     .eq('is_active', true)
     .order('name')
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -36,6 +39,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await req.json()
+  if (body.pool_id && !(await canAccessPool(user, body.pool_id))) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
 
   if (body.action === 'log_usage') {
     try {
@@ -76,6 +82,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabaseAdmin
     .from('chemicals')
     .insert({
+      org_id: (await orgForNewRecord(user, body.org_id)) ?? user.orgId,
       name: body.name,
       type: body.type,
       unit: body.unit ?? 'L',

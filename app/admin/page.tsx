@@ -3385,7 +3385,15 @@ export default function AdminPage() {
   const [showNotifs, setShowNotifs] = useState(false)
 
   useEffect(() => {
-    fetch('/api/auth/me').then(r => r.json()).then(d => setUser(d.user))
+    fetch('/api/auth/me').then(r => r.json()).then(d => {
+      setUser(d.user)
+      // The office dashboard is for Ace staff. A client login lands on their own portal instead.
+      const role = d.user?.role
+      if (role && !['admin', 'manager'].includes(role)) {
+        window.location.href = role === 'technician' || role === 'contractor' ? '/technician'
+          : role === 'pool_manager' ? '/pool-manager' : '/client'
+      }
+    })
   }, [])
 
   const loadNotifs = useCallback(() => {

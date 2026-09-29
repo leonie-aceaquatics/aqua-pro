@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { visibleOrgIds, visiblePoolIds, canAccessPool, orgForNewRecord } from '@/lib/org-scope'
 
 export async function GET(req: NextRequest) {
   const user = await getSession()
@@ -9,9 +10,10 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const includeRisk = searchParams.get('include_risk') === 'true'
 
-  let query = supabaseAdmin
+  const query = supabaseAdmin
     .from('pools')
     .select('*, pool_managers:staff(first_name, last_name)')
+    .in('org_id', await visibleOrgIds(user))
     .eq('is_active', true)
     .order('name')
 
@@ -46,9 +48,13 @@ export async function POST(req: NextRequest) {
   if (!user || !['admin', 'manager'].includes(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await req.json()
+  const orgId = await orgForNewRecord(user, body.org_id)
+  if (!orgId) return NextResponse.json({ error: 'Unknown organisation' }, { status: 403 })
+
   const { data, error } = await supabaseAdmin
     .from('pools')
     .insert({
+      org_id: orgId,
       name: body.name,
       site_code: body.site_code,
       address: body.address,
@@ -87,6 +93,7 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json()
   const { id, ...rest } = body
   if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 })
+  if (!(await canAccessPool(user, id))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const updates = {
     name: rest.name,

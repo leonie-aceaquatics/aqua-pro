@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { canAccessPool } from '@/lib/org-scope'
 import { getWaterAdvice } from '@/lib/ai'
 import type { PoolType, SanitiserType, WaterTestValues } from '@/lib/water-chemistry'
 
@@ -17,6 +18,7 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (error || !test) return NextResponse.json({ error: 'Test not found' }, { status: 404 })
+  if (!(await canAccessPool(user, test.pool_id))) return NextResponse.json({ error: 'Test not found' }, { status: 404 })
 
   const values: WaterTestValues = {
     freeChlorine: test.free_chlorine ?? undefined,

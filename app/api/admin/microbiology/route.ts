@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { visibleOrgIds, visiblePoolIds, canAccessPool } from '@/lib/org-scope'
 
 // Microbiology test logging — genuinely different workflow to water_tests: a sample is taken
 // on-site, sent to an external lab, and the result (pass/fail against a CFU threshold) arrives
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
     .order('sample_taken_at', { ascending: false })
     .limit(200)
 
+  query = query.in('pool_id', await visiblePoolIds(user))
   if (poolId) query = query.eq('pool_id', poolId)
   if (status) query = query.eq('pass_fail', status)
 
