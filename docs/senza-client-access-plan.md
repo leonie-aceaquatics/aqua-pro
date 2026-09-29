@@ -38,11 +38,18 @@ All data access goes through one scoped helper that applies the filter centrally
 
 ## Order of work
 
-**1. Storage bucket.** Before any outside company's records go in, confirm the attachment bucket is not public. The upload route hands back a public URL, which suggests photos may be readable by anyone with the link. Do this first regardless of everything else.
+**1. Storage buckets. DONE — live.** The `attachments` bucket was public. Site access procedures now live in a private `site-docs` bucket and bug-report screenshots in a private `feedback-screenshots`, both served as links that expire after an hour. Job photos stay public deliberately. Deleting an attachment now removes the file as well as the row.
 
-**2. The fence.** Organisations table, `org_id` on pools and staff, backfill to Ace, make it required. Org in the session. The scoped data helper. Role checks on the eighteen API routes that currently only ask "is someone logged in". A `middleware.ts` so pages are gated before they render — `/admin` currently loads its shell for anyone with a login.
+**2. The fence. DONE — commit `e713000`, not yet merged or deployed.**
 
-Nothing visible changes for Ace staff in this step. No Senza login exists until it is finished.
+- `organisations` and `provider_clients` tables. Ace is org 1 and flagged as the service provider; Senza is org 2 with Ace linked to it.
+- `org_id` on six root tables. Chemicals is in that list because Senza get their own list, and `site_tasks` and `compliance_requirements` are in it because their nullable `pool_id` means "applies to every site" and would otherwise cross companies.
+- `lib/org-scope.ts` is the single chokepoint: `visibleOrgIds`, `visiblePoolIds`, `canAccessPool`, `canAccessStaff`, `canAccessEntity`, `orgForNewRecord`. Applied across 22 routes.
+- Attachments are polymorphic, so `canAccessEntity` resolves each `entity_type` back to its pool. An unknown type is refused rather than allowed.
+- `lib/org-scope.test.ts` walks `app/api` and fails the build if a route reads a shared table without a scope helper. Exceptions are allowlisted with a reason and the allowlist is checked for rot.
+- `client_admin` and `client_operator` roles exist; login sends them to `/client`; the admin and technician pages bounce a role that does not belong there. `proxy.ts` (Next 16 renamed middleware to proxy) redirects anyone without a session cookie.
+
+Nothing visible changes for Ace: there is one org, so every query returns what it did before. No Senza login exists until the portal is built.
 
 **3. The Senza portal.** A separate cut-down app: today's rounds, water test with the calculator, checklist, close routine, incidents. Owner login adds staff management and the record export.
 
