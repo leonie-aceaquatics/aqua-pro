@@ -92,13 +92,19 @@ export function buildShiftReminderEmail(staffName: string, poolName: string, shi
 }
 
 export function buildWelcomeEmail(firstName: string, email: string, password: string, loginUrl: string, role: string = 'technician') {
-  const isTech = !['admin', 'manager'].includes(role)
+  // Three audiences, three emails. A client login must never be sent the technician instructions:
+  // they have no Today's Jobs, no stock count and no Mark Complete, and they are a different
+  // company with their own responsible person.
+  const isClient = ['client_admin', 'client_operator'].includes(role)
+  const isTech = !isClient && !['admin', 'manager'].includes(role)
   const h = (t: string) => `<p style="margin:28px 0 10px;font-size:13px;font-weight:700;color:#00b4d8;text-transform:uppercase;letter-spacing:0.08em;">${t}</p>`
   const p = (t: string) => `<p style="margin:0 0 12px;font-size:14px;color:#94a3b8;line-height:1.6;">${t}</p>`
   const li = (items: string[]) => `<ol style="margin:0 0 12px;padding-left:20px;color:#cbd5e1;font-size:14px;line-height:1.7;">${items.map(i => `<li style="margin-bottom:6px;">${i}</li>`).join('')}</ol>`
   const strong = (t: string) => `<strong style="color:#e2e8f0;">${t}</strong>`
 
-  const whatItIs = isTech
+  const whatItIs = isClient
+    ? p(`AquaPro is where you record your water. Ace Aquatics set it up for your site and look after the equipment; the readings, the dosing and the records are yours. Every reading you enter works out combined chlorine for you, tells you exactly how much to add if something is out of range, and builds the record you have to produce if Council asks for it.`)
+    : isTech
     ? p(`AquaPro is the app we use to run every site visit. It tells you where you're going today, gives you the tick list for the site, takes your water test readings (and works out combined chlorine and LSI for you), records the stock on site, and sends everything straight to the office — so there's no paperwork and nothing gets lost.`)
     : p(`AquaPro is our pool operations system. The office dashboard shows every site's water quality, what each technician has done, stock at each site, what needs ordering, compliance and incidents. The technician app is what the crew use on site.`)
 
@@ -110,11 +116,23 @@ export function buildWelcomeEmail(firstName: string, email: string, password: st
 
   const firstLogin = h('Your first login') + li([
     `Tap the AquaPro icon (or the button below) and sign in with the details above.`,
+    isClient ? `You'll see ${strong('Your water')} — your bodies of water, and nothing else. Tap one to open it.` :
     isTech ? `You'll see ${strong("Today's Jobs")} — every site you're rostered at today. Not rostered, or at a different site? Scroll down to ${strong('Visit any site')} and pick it from the list.` : `Choose ${strong('Office dashboard')} or ${strong('Technician app')} — you can switch between them any time.`,
-    `Tap the ${strong('?')} at the top of the technician app for the full "How to use AquaPro" guide — it's written for the job, step by step.`,
+    isClient
+      ? `Tap the ${strong('?')} at the top for the pool chemistry guide — ranges, what each chemical does, and what to check when a reading is out.`
+      : `Tap the ${strong('?')} at the top of the technician app for the full "How to use AquaPro" guide — it's written for the job, step by step.`,
   ])
 
-  const onSite = isTech ? h('At each site') + li([
+  const onSiteClient = h('Every round') + li([
+    `${strong('Checklist')} — work down it as you go: the pre-open checks, the close of business drain and refill, and the weekly plant check.`,
+    `${strong('Record a round')} — pick the round you are on and enter the readings. Combined chlorine is worked out for you. So is the dose.`,
+    `${strong('What to add')} appears under the readings as you type — how many millilitres or grams, for that body of water. Measure it, never estimate it.`,
+    `After you dose: ${strong('circulate 15 minutes, then tap Retest')} and record the second reading. A dose with no retest beneath it is the most common reason a record fails an inspection.`,
+    `${strong('Dose calculator')} — try a reading without saving it, to see what a dose would be.`,
+  ]) + p(`${strong('If a reading is out of range the app tells you in red, and it means it.')} Any staff member on duty can close a body of water and needs nobody's permission. You will never be questioned for closing one. Record it, do the corrective work, and record every retest until it is back in range.`)
+    + p(`${strong('Write it down as you do it')}, not at the end of the shift. If a round was missed, say so and why — an honest gap is manageable, an invented reading is not.`)
+
+  const onSite = isClient ? onSiteClient : isTech ? h('At each site') + li([
     `Tap the site to open it, then tap ${strong('Start shift')} as you arrive — that starts your hours.`,
     `${strong('Site Tasks')} — work through the tick list in order (Arrival → Water quality → Equipment → Cleaning → Safety → Departure). Tick each one as you do it.`,
     `${strong('Log Water Test')} — type in your readings. Combined chlorine and LSI fill in themselves. Add what the system screen shows, any chemicals you added by hand, and any faults. Then add photos and tap Done.`,
@@ -123,7 +141,13 @@ export function buildWelcomeEmail(firstName: string, email: string, password: st
     `${strong('Plant Room Log')} — at sites with a plant room: backwash, baskets, controller and alarms, pumps, filters, dosing pumps, then photos of gauges or leaks.`,
     `${strong('Finish shift')} as you leave. Your hours are the time between Start and Finish, so don't forget either one.`,
   ]) + p(`${strong('Red result = close the pool and phone Tony.')} Orange = adjust and re-test before you leave.`) : ''
-  const contacts = h('Who to call') + li([
+  const contactsClient = h('Who to call') + li([
+    `${strong('Water quality, dosing, equipment, anything the app tells you to escalate')} — Ace Aquatics, Anthony Van Rooyen: ${strong('0422 470 214')}.`,
+    `${strong('Facility decisions, closures and reopening')} — your responsible person.`,
+    `${strong('Chemical in the eyes or swallowed')} — Poisons Information Centre ${strong('13 11 26')}. Emergency or gas release — ${strong('000')}.`,
+  ])
+
+  const contacts = isClient ? contactsClient : h('Who to call') + li([
     `${strong('Anything about a pool or site')} — out-of-range results, faults, closures, chemicals: ${strong('Tony 0422 470 214')}.`,
     `${strong('Anything admin')} — logins, rosters, the app itself: ${strong('Leonie 0433 414 987')}.`,
   ])
@@ -178,6 +202,10 @@ export function buildWelcomeEmail(firstName: string, email: string, password: st
             ${onSite}
             ${contacts}
             ${help}
+
+            ${isClient ? `<p style="margin:24px 0 0;padding:14px 16px;background:#1a2d45;border-radius:8px;font-size:13px;color:#cbd5e1;line-height:1.6;">
+              <strong style="color:#e2e8f0;">The paper log book still goes in the folder.</strong> Regulation 61 requires your records to be held at the premises and produced to an authorised officer on request. AquaPro supports that obligation, it does not replace it — keep filling in the printed sheets as well.
+            </p>` : ''}
 
             <p style="margin:28px 0 0;font-size:14px;color:#e2e8f0;line-height:1.6;">
               Welcome aboard,<br>
