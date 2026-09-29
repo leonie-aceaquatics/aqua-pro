@@ -1,0 +1,83 @@
+# Senza client access: build plan
+
+Sep 29, 2026 · Leonie Van Rooyen · branch `client-access`
+
+Senza Health Club get their own logins to AquaPro. They dose their own water, run their own tests and hold their own records. Ace keeps the equipment service and the weekly balance panel, and can see Senza's records because Ace services them.
+
+This is the narrow version of multi-tenancy from the build spec's "Building it to sell" section. It is not throwaway: the fence built here is what client three logs in through.
+
+## Who gets what
+
+Two logins, both scoped to Senza and nothing else.
+
+| | Owner / admin | Staff (operator) |
+| --- | --- | --- |
+| Record a round: test, dose, retest | Yes | Yes |
+| Dose calculator | Yes | Yes |
+| Site checklist and nightly close routine | Yes | Yes |
+| Report a fault or incident | Yes | Yes |
+| History and records for their baths | Yes | Own entries |
+| Export the compliance record | Yes | No |
+| Add and deactivate their own staff | Yes | No |
+| Reset their staff's passwords | Yes | No |
+| Anything belonging to another company | No | No |
+
+Every Senza person gets their own login. The record is stamped with who took the reading and who poured the chemical, which is the point — a shared venue login is worth very little at an inspection.
+
+Senza never see: the site register, other companies, prices, the roster beyond their own site, WQRMP reports, the asset register, the risk register or remote sites.
+
+## How the fence works
+
+An `org_id` column on two tables only: **pools** and **staff**. Everything else in the database — tests, doses, checklists, plant logs, incidents, attachments — already hangs off a pool or a staff member, so it inherits the boundary without its own column.
+
+- Everything that exists today becomes org 1, Ace Aquatics, flagged as the service provider.
+- Senza is org 2. Their three baths are tagged to it.
+- A provider-to-client link lets Ace see the orgs it services. Senza have no such link, so they see only themselves.
+
+All data access goes through one scoped helper that applies the filter centrally, rather than 47 API routes each remembering to. One place to get right, with a test that fails the build if a route bypasses it.
+
+## Order of work
+
+**1. Storage bucket.** Before any outside company's records go in, confirm the attachment bucket is not public. The upload route hands back a public URL, which suggests photos may be readable by anyone with the link. Do this first regardless of everything else.
+
+**2. The fence.** Organisations table, `org_id` on pools and staff, backfill to Ace, make it required. Org in the session. The scoped data helper. Role checks on the eighteen API routes that currently only ask "is someone logged in". A `middleware.ts` so pages are gated before they render — `/admin` currently loads its shell for anyone with a login.
+
+Nothing visible changes for Ace staff in this step. No Senza login exists until it is finished.
+
+**3. The Senza portal.** A separate cut-down app: today's rounds, water test with the calculator, checklist, close routine, incidents. Owner login adds staff management and the record export.
+
+**4. Dromana rules.** The parts of the build spec that make the record defensible:
+
+- Three separate test entries per round, one per bath. Four rounds at 08:45, 12:45, 16:45, 20:00, flagged if a gap runs past four hours.
+- Pre-open is a gate. The site stays "not open" until all three baths pass.
+- Test, dose, circulate fifteen minutes, retest, record — in that order. No second dose on a bath with no test entry between.
+- Hypochlorite, bicarbonate and thiosulphate are calculated. Acid and soda ash are fixed doses with a counter, capped at two, then the app blocks and shows 0422 470 214.
+- Confirm the water is clear of bathers before any dose is recorded.
+- Nightly drain, clean, refill as a ticked sequence, with the weekly deep clean flagged.
+- Ozone is never recorded as a sanitiser and never counts towards a disinfectant residual.
+
+**5. Configuration as data.** Target bands currently live in code. The `water_test_targets` table exists and nothing reads it. Move the bands, dosing type, rounds per day and checklist there, and the next client is a setup form rather than a build.
+
+## What changes for Ace
+
+The screens the techs use do not change. No retraining.
+
+| | Effect |
+| --- | --- |
+| Site counts and dashboards | Senza's three baths would land in Ace's totals unless filtered out |
+| Result emails | Currently all go to `info@aceaquatics.com.au` — needs a decision below |
+| "Visit any site" | Sits on one of the endpoints being locked down. Keeps working for Ace roles, but needs care |
+| Site access key screen | Must not list another company's codes |
+
+## Still to decide
+
+1. **Where Senza's test results email.** Them, Ace, or both. Ace needs a copy to service the site; Senza need it for their own record.
+2. **Do Senza's baths appear in Ace's site counts?** They are serviced by Ace, so arguably yes, but it moves the numbers on the overview.
+3. **Branding.** AquaPro by Ace Aquatics, or Senza's own look and URL.
+4. **Their chemical list.** A copy of Ace's to edit, or their own from scratch. They must not see Ace's depot stock or reorder points.
+
+## The regulation point
+
+Regulation 61 records must be held at the premises. AquaPro supports that obligation, it does not discharge it. Senza remain responsible for their own records, and the printed daily log sheet (ACE-2026-SEN-LS-001) stays in the folder on site. Put that in writing in whatever is sold.
+
+Once Ace holds a client's compliance record, losing it becomes Ace's problem: daily backups and terms that say what Ace is and is not responsible for, before the second client signs.
