@@ -38,9 +38,10 @@ export default function ReportIssueButton({ iconOnly = true }: { iconOnly?: bool
           body: JSON.stringify({ filename: file.name }),
         })
         if (signRes.ok) {
-          const { path, token, publicUrl } = await signRes.json()
+          const { path, token, storagePath } = await signRes.json()
           const { error } = await supabaseBrowser.storage.from('feedback-screenshots').uploadToSignedUrl(path, token, file)
-          if (!error) screenshotUrl = publicUrl
+          // Private bucket: store the object path. The feedback API signs it for the office.
+          if (!error) screenshotUrl = storagePath
         }
       } catch { /* screenshot is optional — proceed without it */ }
     }

@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
 import { diagnoseFeedback } from '@/lib/ai'
 import { sendStaffFeedbackEmail } from '@/lib/email'
+import { FEEDBACK_BUCKET, signStoredFile } from '@/lib/attachment-storage'
 
 export async function GET() {
   const user = await getSession()
@@ -15,7 +16,12 @@ export async function GET() {
     .limit(500)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ feedback: data })
+
+  // Screenshots live in a private bucket — hand back a signed link, not a path.
+  const feedback = await Promise.all((data ?? []).map(async (f: any) => (
+    f.screenshot_url ? { ...f, screenshot_url: await signStoredFile(FEEDBACK_BUCKET, f.screenshot_url) } : f
+  )))
+  return NextResponse.json({ feedback })
 }
 
 export async function POST(req: NextRequest) {

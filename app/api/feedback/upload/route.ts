@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { FEEDBACK_BUCKET } from '@/lib/attachment-storage'
 
 export async function POST(req: NextRequest) {
   const user = await getSession()
@@ -14,12 +15,11 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await supabaseAdmin
     .storage
-    .from('feedback-screenshots')
+    .from(FEEDBACK_BUCKET)
     .createSignedUploadUrl(filePath)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const { data: pub } = supabaseAdmin.storage.from('feedback-screenshots').getPublicUrl(filePath)
-
-  return NextResponse.json({ path: data.path, token: data.token, publicUrl: pub.publicUrl })
+  // The bucket is private: store the path, and the feedback API signs it when the office reads it.
+  return NextResponse.json({ path: data.path, token: data.token, storagePath: filePath })
 }

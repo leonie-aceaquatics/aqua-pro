@@ -32,6 +32,8 @@ set-estimated-pool-volumes.sql          ← placeholder volumes for pools with n
 add-facility-sites-and-task-photos-migration.sql ← 'facility' site type (no water) + photos_required on site tasks
 add-shift-actual-hours-migration.sql    ← rostered end time optional; techs log actual start/finish for hours
 add-uv-readings-migration.sql           ← water_tests.uv_output_pct + uv_run_hours
+add-private-feedback-screenshots-migration.sql ← bug-report screenshots bucket made private (signed on read)
+add-private-site-docs-migration.sql     ← private 'site-docs' bucket for site access procedures (door codes)
 add-site-access-docs-migration.sql      ← attachments 'pool_access' (PDF / video per site) + Meridian access notes
 add-site-access-notes-migration.sql     ← pools.access_notes (keys, codes, parking) shown to techs
 add-balance-tank-migration.sql          ← water_tests.balance_tank_pct; Warburton 100,000 L / Seville 50,000 L tank volumes

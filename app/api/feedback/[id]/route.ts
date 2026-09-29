@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
 import { sendStaffFeedbackDoneEmail } from '@/lib/email'
+import { FEEDBACK_BUCKET, signStoredFile } from '@/lib/attachment-storage'
 
 export async function PATCH(
   req: NextRequest,
@@ -30,5 +31,10 @@ export async function PATCH(
     void sendStaffFeedbackDoneEmail(data.submitted_by_email, data.title, `${appUrl}/admin`)
   }
 
-  return NextResponse.json({ feedback: data })
+  // Same as the list: the screenshot path is signed before it goes back to the browser.
+  return NextResponse.json({
+    feedback: data.screenshot_url
+      ? { ...data, screenshot_url: await signStoredFile(FEEDBACK_BUCKET, data.screenshot_url) }
+      : data,
+  })
 }
