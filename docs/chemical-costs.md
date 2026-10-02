@@ -51,9 +51,51 @@ other way round.** Same part numbers:
 | Syringe tips, 3 pack | $25.86 | $20.00 | LaMotte |
 | Spin Touch disc cover | $33.46 | $18.00 | LaMotte |
 
-A 501 disc at $244.99 for 50 is $4.90 a disc, three tests a disc, so **$1.63 a test**. That is a
-per-visit consumable, not a dose, so it does not appear on the chemical usage report. Charging it
-on would need a separate per-visit line.
+Ace buys the discs from LaMotte, so LaMotte's prices are the ones loaded into the app by
+`add-lamotte-spin-discs.sql`. The Aquachem column above is only there to show the gap.
+
+## Spin Touch discs — LaMotte Pacific, net ex GST
+
+Per-test assumes the "3 x 3 use" discs give three tests each and the rest give one.
+
+| Code | Disc | Pack | Price | Per disc | Per test |
+|---|---|---|---|---|---|
+| 4334-H | 501 — Chlorine, 3 x 3 use | 50 | $259.00 | $5.18 | **$1.73** |
+| 4335-H | 601 — Chlorine + Alkalinity, 3 x 3 use | 50 | $259.00 | $5.18 | **$1.73** |
+| 4348-J | 104 — Chlorine | 100 | $450.00 | $4.50 | $4.50 |
+| 4348-D | 104 — Chlorine | 10 | $49.00 | $4.90 | $4.90 |
+| 4349-J | 204 — Chlorine + Phosphate | 100 | $420.00 | $4.20 | $4.20 |
+| 4349-D | 204 — Chlorine + Phosphate | 10 | $46.00 | $4.60 | $4.60 |
+| 4350-J | 304 — Chlorine + Borate | 100 | $460.00 | $4.60 | $4.60 |
+| 4355-J | 801 — Magnesium | 100 | $450.00 | $4.50 | $4.50 |
+| 4355-D | 801 — Magnesium | 10 | $49.00 | $4.90 | $4.90 |
+| 4331-J | 402 — Biguanide | 100 | $460.00 | $4.60 | $4.60 |
+
+The two 3 x 3 discs are less than half the cost per test of any single-use disc. Buy in the 100s
+where there is a choice: the 104 is $4.50 a disc in the 100 pack against $4.90 in the 10.
+
+### Spin Touch accessories — LaMotte Pacific, net ex GST
+
+| Code | Item | Price |
+|---|---|---|
+| 1705 | Calibration check disc, Spin Touch | $99.00 |
+| 1189-3 | Syringes, 3 pack | $30.00 |
+| 1189-TIP | Syringe tips, 3 pack | $20.00 |
+| 1719 | Black disc cover, Spin Touch | $18.00 |
+| 0669 | Cleaning tissues, 50 pack | $15.00 |
+| 1712 | USB cable, Spin Touch | $45.00 |
+| 1725 | AC adapter, Spin Touch | $59.00 |
+| 1727-CC | Car charger | $22.00 |
+| SC-1095 | SpinCare extended 3rd year warranty | $249.00 |
+| 3580-AU | WaterLink Spin Touch | $1,645.00 |
+| 3581-AU | WaterLink Spin Touch Mobile | $1,955.00 |
+
+The Mobile is $1,764.00 at Aquachem, $191 under LaMotte's price. The bench unit is $1,645.00 at
+both.
+
+A disc is a per-visit consumable, not a dose into a pool, so it never reaches the monthly
+chemical usage report. Charging testing on would need a separate per-visit line, or it stays
+inside the service fee.
 
 ## Markup
 
