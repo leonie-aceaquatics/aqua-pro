@@ -27,11 +27,6 @@ describe('the pre-open gate', () => {
     expect(s.state).toBe('open')
   })
 
-  it('a failed calibration disc keeps every bath shut', () => {
-    const s = bathStatus([{ tested_at: at('08:40'), round_key: 'pre_open', free_chlorine: 3.1, ph: 7.4 }], ROUNDS, TARGETS, { calibrationPass: false, now: noon })
-    expect(s.state).toBe('not_open_yet')
-    expect(s.reason).toContain('calibration')
-  })
 })
 
 describe('closing on a reading', () => {

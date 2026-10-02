@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     supabaseAdmin.from('pool_water_targets').select('*').eq('pool_id', poolId),
     supabaseAdmin.from('pool_rounds').select('*').eq('pool_id', poolId).order('sort_order'),
     supabaseAdmin.from('water_tests')
-      .select('id, tested_at, round_key, is_retest, retest_of, free_chlorine, total_chlorine, combined_chlorine, ph, total_alkalinity, temperature_c, clarity_floor_visible, bather_count, calibration_pass, risk_level, staff:tested_by(first_name)')
+      .select('id, tested_at, round_key, is_retest, retest_of, free_chlorine, total_chlorine, combined_chlorine, ph, total_alkalinity, temperature_c, clarity_floor_visible, risk_level, staff:tested_by(first_name)')
       .eq('pool_id', poolId).gte('tested_at', start).lte('tested_at', end).order('tested_at'),
     // Acid doses today, for the two-dose cap
     supabaseAdmin.from('chemical_usage_log')
@@ -38,12 +38,7 @@ export async function GET(req: NextRequest) {
     return /acid|bisulphate|bisulfate/i.test(name)
   }).length
 
-  // The calibration disc is run once a day on the one meter, before the pre-open round. It covers
-  // every bath, so it is reported for the whole site rather than asked for three times.
-  const calibration = (tests ?? []).find((t: any) => t.calibration_pass !== null && t.calibration_pass !== undefined)
-
   return NextResponse.json({
     pool, targets: targets ?? [], rounds: rounds ?? [], tests: tests ?? [], acidDosesToday, day,
-    calibrationToday: calibration ? { pass: calibration.calibration_pass, at: calibration.tested_at } : null,
   })
 }

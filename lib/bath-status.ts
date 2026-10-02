@@ -45,7 +45,7 @@ export function bathStatus(
   tests: Record<string, any>[],
   rounds: RoundRow[],
   targets: SiteTarget[],
-  opts: { calibrationPass?: boolean | null; maxGapHours?: number | null; now?: Date } = {},
+  opts: { maxGapHours?: number | null; now?: Date } = {},
 ): BathStatus {
   const now = opts.now ?? new Date()
   const ordered = [...tests].sort((a, b) => a.tested_at.localeCompare(b.tested_at))
@@ -64,11 +64,6 @@ export function bathStatus(
   if (latest && opts.maxGapHours) {
     const hours = (now.getTime() - new Date(latest.tested_at).getTime()) / 3600000
     if (hours > opts.maxGapHours) gapHours = Math.round(hours * 10) / 10
-  }
-
-  // A failed meter stops everything: the readings cannot be trusted.
-  if (opts.calibrationPass === false) {
-    return { state: 'not_open_yet', reason: 'The calibration check disc failed — the baths do not open on this meter’s readings', closures: [], overdue, gapHours }
   }
 
   const gate = rounds.find(r => r.is_gate)
