@@ -5,6 +5,10 @@ import { visibleOrgIds, visiblePoolIds, canAccessPool, orgForNewRecord } from '@
 import { queueIfLowStock } from '@/lib/chemical-orders'
 import { logChemicalUsage } from '@/lib/chemical-usage'
 
+// A blank price box is "no rate set", which the monthly report shows as unpriced. Storing it as
+// zero would instead invoice the site nothing for chemicals it actually used.
+const price = (v: any) => v === '' || v == null ? null : Number(v)
+
 export async function GET(req: NextRequest) {
   const user = await getSession()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -92,6 +96,8 @@ export async function POST(req: NextRequest) {
       reorder_point: body.reorder_point ?? 0,
       supplier: body.supplier || null,
       safety_data_sheet_url: body.safety_data_sheet_url || null,
+      unit_cost: price(body.unit_cost),
+      unit_charge: price(body.unit_charge),
     })
     .select()
     .single()
@@ -107,6 +113,8 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json()
   const { id, ...updates } = body
   if ('container_size' in updates) updates.container_size = updates.container_size ? Number(updates.container_size) : null
+  if ('unit_cost' in updates) updates.unit_cost = price(updates.unit_cost)
+  if ('unit_charge' in updates) updates.unit_charge = price(updates.unit_charge)
   const { data, error } = await supabaseAdmin
     .from('chemicals')
     .update(updates)

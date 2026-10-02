@@ -20,6 +20,7 @@ import MicrobiologyTab from '@/components/MicrobiologyTab'
 import RiskRegisterTab from '@/components/RiskRegisterTab'
 import ChemistryCalculatorTab from '@/components/ChemistryCalculatorTab'
 import SiteTasksAdmin from '@/components/SiteTasksAdmin'
+import ChemicalInvoicingTab from '@/components/ChemicalInvoicingTab'
 import SiteStockTab from '@/components/SiteStockTab'
 import HelpGuide, { TECH_GUIDE, ADMIN_GUIDE } from '@/components/HelpGuide'
 import { POOL_GUIDE } from '@/lib/pool-guide'
@@ -2315,7 +2316,7 @@ function RiskTab() {
 
 // ── CHEMICALS TAB ─────────────────────────────────────────────────────────────
 function ChemicalsTab() {
-  const [subTab, setSubTab] = useState<'inventory' | 'site_stock' | 'stock_take' | 'to_order' | 'usage'>('inventory')
+  const [subTab, setSubTab] = useState<'inventory' | 'site_stock' | 'stock_take' | 'to_order' | 'usage' | 'invoicing'>('inventory')
   const [chemicals, setChemicals] = useState<any[]>([])
   const [usage, setUsage] = useState<any[]>([])
   const [orders, setOrders] = useState<any[]>([])
@@ -2328,7 +2329,7 @@ function ChemicalsTab() {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     name: '', type: 'sanitiser', unit: 'drum', dose_unit: 'L', container_size: '', current_stock: '0',
-    reorder_point: '0', supplier: '', safety_data_sheet_url: '',
+    reorder_point: '0', supplier: '', safety_data_sheet_url: '', unit_cost: '', unit_charge: '',
   })
   const [usageForm, setUsageForm] = useState({
     pool_id: '', chemical_id: '', quantity: '', notes: '', applied_at: toLocalInput(),
@@ -2364,7 +2365,7 @@ function ChemicalsTab() {
 
   function openAddChemical() {
     setEditingChemical(null)
-    setForm({ name: '', type: 'sanitiser', unit: 'drum', dose_unit: 'L', container_size: '', current_stock: '0', reorder_point: '0', supplier: '', safety_data_sheet_url: '' })
+    setForm({ name: '', type: 'sanitiser', unit: 'drum', dose_unit: 'L', container_size: '', current_stock: '0', reorder_point: '0', supplier: '', safety_data_sheet_url: '', unit_cost: '', unit_charge: '' })
     setShowModal(true)
   }
 
@@ -2374,6 +2375,7 @@ function ChemicalsTab() {
       name: c.name ?? '', type: c.type ?? 'sanitiser', unit: c.unit ?? 'L',
       dose_unit: c.dose_unit ?? c.unit ?? 'L', container_size: c.container_size ? String(c.container_size) : '',
       current_stock: String(c.current_stock ?? '0'), reorder_point: String(c.reorder_point ?? '0'),
+      unit_cost: c.unit_cost != null ? String(c.unit_cost) : '', unit_charge: c.unit_charge != null ? String(c.unit_charge) : '',
       supplier: c.supplier ?? '', safety_data_sheet_url: c.safety_data_sheet_url ?? '',
     })
     setShowModal(true)
@@ -2474,6 +2476,7 @@ function ChemicalsTab() {
           { id: 'stock_take', label: 'Depot Stock Take' },
           { id: 'to_order', label: `To Order${orders.filter(o => o.status === 'pending').length ? ` (${orders.filter(o => o.status === 'pending').length})` : ''}` },
           { id: 'usage', label: 'Usage Log' },
+          { id: 'invoicing', label: 'Usage & Invoicing' },
         ].map(t => (
           <button key={t.id} onClick={() => setSubTab(t.id as any)} style={{
             padding: '7px 16px', borderRadius: '7px', border: 'none', cursor: 'pointer',
@@ -2488,13 +2491,13 @@ function ChemicalsTab() {
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>Chemical</th><th>Type</th><th>Counted / Dosed</th><th>In Stock</th><th>Reorder At</th><th>Supplier</th><th></th></tr>
+              <tr><th>Chemical</th><th>Type</th><th>Counted / Dosed</th><th>In Stock</th><th>Reorder At</th><th>Charge Rate</th><th>Supplier</th><th></th></tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>Loading…</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>Loading…</td></tr>
               ) : chemicals.length === 0 ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No chemicals added yet</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No chemicals added yet</td></tr>
               ) : chemicals.map((c: any) => {
                 const lowStock = c.reorder_point > 0 && Number(c.current_stock) <= Number(c.reorder_point)
                 return (
@@ -2528,6 +2531,11 @@ function ChemicalsTab() {
                       )}
                     </td>
                     <td style={{ color: 'var(--text-muted)' }}>{c.reorder_point > 0 ? `${c.reorder_point} ${c.unit}` : '—'}</td>
+                    <td style={{ fontSize: '12px' }}>
+                      {c.unit_charge == null
+                        ? <span style={{ color: '#e17055' }}>not set</span>
+                        : <span style={{ color: 'var(--text)', fontWeight: '600' }}>${Number(c.unit_charge).toFixed(2)}/{c.dose_unit === 'mL' ? 'L' : c.dose_unit === 'g' ? 'kg' : (c.dose_unit ?? c.unit)}</span>}
+                    </td>
                     <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{c.supplier ?? '—'}</td>
                     <td>
                       <div style={{ display: 'flex', gap: '6px' }}>
@@ -2713,6 +2721,8 @@ function ChemicalsTab() {
         </div>
       )}
 
+      {subTab === 'invoicing' && <ChemicalInvoicingTab pools={pools} />}
+
       {showModal && (
         <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}>
           <div className="modal" style={{ maxWidth: '560px' }}>
@@ -2760,6 +2770,22 @@ function ChemicalsTab() {
                   <label>Reorder Point</label>
                   <input type="number" step="0.1" value={form.reorder_point} onChange={e => setForm(f => ({ ...f, reorder_point: e.target.value }))} />
                 </div>
+              </div>
+              <div style={{ ...s.formGrid, gridTemplateColumns: 'repeat(2,1fr)' }}>
+                <div style={s.formGroup}>
+                  <label>Our cost per {form.dose_unit === 'mL' ? 'L' : form.dose_unit === 'g' ? 'kg' : form.dose_unit}</label>
+                  <input type="number" step="0.01" min="0" placeholder="what we pay"
+                    value={form.unit_cost} onChange={e => setForm(f => ({ ...f, unit_cost: e.target.value }))} />
+                </div>
+                <div style={s.formGroup}>
+                  <label>Charge per {form.dose_unit === 'mL' ? 'L' : form.dose_unit === 'g' ? 'kg' : form.dose_unit}</label>
+                  <input type="number" step="0.01" min="0" placeholder="what the site pays"
+                    value={form.unit_charge} onChange={e => setForm(f => ({ ...f, unit_charge: e.target.value }))} />
+                </div>
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '-6px', marginBottom: '12px' }}>
+                Both are per litre or per kilo, whatever the dose is recorded in. Leave the charge blank and the quantity still
+                shows on the monthly report, marked as having no rate, so nothing is ever billed at zero by accident.
               </div>
               <div style={s.formGroup}>
                 <label>Supplier</label>
