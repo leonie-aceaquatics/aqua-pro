@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Droplets, LogOut, ChevronRight, HelpCircle, Calculator, ClipboardList, CheckCircle, Clock, RotateCcw } from 'lucide-react'
+import { Droplets, LogOut, ChevronRight, HelpCircle, Calculator, ClipboardList, CheckCircle, Clock, RotateCcw, AlertTriangle } from 'lucide-react'
 import SiteTaskList from '@/components/SiteTaskList'
 import ManualDoseCalculator from '@/components/ManualDoseCalculator'
+import ContaminationForm from '@/components/ContaminationForm'
 import ChangePassword from '@/components/ChangePassword'
 import HelpGuide from '@/components/HelpGuide'
 import ReportIssueButton from '@/components/ReportIssueButton'
@@ -23,7 +24,7 @@ export default function ClientPortalPage() {
   const [pools, setPools] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<any>(null)
-  const [view, setView] = useState<'tasks' | 'test' | 'calc' | null>(null)
+  const [view, setView] = useState<'tasks' | 'test' | 'calc' | 'contam' | null>(null)
   const [showHelp, setShowHelp] = useState(false)
   const [tests, setTests] = useState<any[]>([])
 
@@ -37,7 +38,7 @@ export default function ClientPortalPage() {
   const load = useCallback(() => {
     Promise.all([
       fetch('/api/auth/me').then(r => r.json()),
-      fetch('/api/admin/pools').then(r => r.json()),
+      fetch('/api/client/overview').then(r => r.json()),
     ]).then(([u, p]) => {
       setUser(u.user)
       setPools(p.pools ?? [])
@@ -96,23 +97,57 @@ export default function ClientPortalPage() {
             {new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Australia/Melbourne' })}
           </div>
 
+          {!loading && pools.length > 0 && pools.some((p: any) => p.status?.state !== 'open') && (
+            <div style={{ background: '#fdcb6e18', border: '1px solid #fdcb6e55', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px' }}>
+              <div style={{ color: '#fdcb6e', fontWeight: '800', fontSize: '14px', marginBottom: '2px' }}>
+                {pools.filter((p: any) => p.status?.state !== 'open').length} of {pools.length} not open
+              </div>
+              <div style={{ color: '#e2e8f0', fontSize: '13px' }}>
+                A body of water does not open until its pre-open round has been recorded and passed.
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div style={{ textAlign: 'center', color: '#64748b', padding: '48px' }}>Loading…</div>
           ) : pools.length === 0 ? (
             <div style={{ textAlign: 'center', color: '#64748b', padding: '48px' }}>
               No bodies of water set up yet. Ring Ace Aquatics on 0422 470 214.
             </div>
-          ) : pools.map(p => (
-            <div key={p.id} onClick={() => openSite(p)} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', marginBottom: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontWeight: '700', fontSize: '15px', color: '#e2e8f0' }}>{p.name}</div>
-                <div style={{ fontSize: '12px', color: '#64748b' }}>
-                  {p.volume_litres ? `${Number(p.volume_litres).toLocaleString()} L` : 'Volume not set'}
+          ) : pools.map(p => {
+            const st = p.status
+            const colour = st?.state === 'open' ? '#00b894' : st?.state === 'closed' ? '#d63031' : '#fdcb6e'
+            const text = st?.state === 'open' ? 'OPEN' : st?.state === 'closed' ? 'CLOSED' : 'NOT OPEN'
+            return (
+              <div key={p.id} onClick={() => openSite(p)} style={{ background: 'var(--surface)', border: `1px solid ${colour}55`, borderRadius: '12px', padding: '16px', marginBottom: '12px', cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: '700', fontSize: '15px', color: '#e2e8f0' }}>{p.name}</div>
+                    <div style={{ fontSize: '12px', color: '#64748b' }}>
+                      {p.volume_litres ? `${Number(p.volume_litres).toLocaleString()} L` : 'Volume not set'}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <span style={{ fontSize: '11px', fontWeight: '800', letterSpacing: '0.5px', color: colour, background: `${colour}22`, border: `1px solid ${colour}55`, padding: '4px 9px', borderRadius: '99px' }}>{text}</span>
+                    <ChevronRight size={20} color="#64748b" />
+                  </div>
                 </div>
+                {st?.reason && st.state !== 'open' && (
+                  <div style={{ fontSize: '12px', color: colour, marginTop: '8px' }}>{st.reason}</div>
+                )}
+                {st?.overdue?.length > 0 && (
+                  <div style={{ fontSize: '12px', color: '#e17055', marginTop: '6px' }}>
+                    Not recorded yet: {st.overdue.join(', ')}
+                  </div>
+                )}
+                {st?.gapHours && st.state === 'open' && (
+                  <div style={{ fontSize: '12px', color: '#e17055', marginTop: '6px' }}>
+                    {st.gapHours} hours since the last reading — the gap must not exceed {p.max_round_gap_hours} while open
+                  </div>
+                )}
               </div>
-              <ChevronRight size={20} color="#64748b" />
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -152,6 +187,9 @@ export default function ClientPortalPage() {
             <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#b8860b' }} onClick={() => setView('calc')}>
               <Calculator size={16} /> Dose calculator
             </button>
+            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#d63031' }} onClick={() => setView('contam')}>
+              <AlertTriangle size={16} /> Something in the water
+            </button>
           </div>
         </div>
       )}
@@ -181,7 +219,7 @@ export default function ClientPortalPage() {
               acidDosesToday={site.acidDosesToday ?? 0}
               calibrationToday={site.calibrationToday ?? null}
               onCancel={() => setRound(null)}
-              onSaved={() => { setRound(null); loadSite(selected.id) }}
+              onSaved={() => { setRound(null); loadSite(selected.id); load() }}
             />
           ) : (
             <>
@@ -263,6 +301,15 @@ export default function ClientPortalPage() {
           {site
             ? <ManualDoseCalculator pool={site.pool} targets={site.targets} acidDosesToday={site.acidDosesToday ?? 0} />
             : <div style={{ color: '#64748b', fontSize: '13px' }}>Loading…</div>}
+        </div>
+      )}
+
+      {/* Contamination — form F5 */}
+      {selected && view === 'contam' && (
+        <div style={{ padding: '20px' }}>
+          <button onClick={() => setView(null)} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '8px 14px', cursor: 'pointer', marginBottom: '16px' }}>← Back</button>
+          <ContaminationForm pool={selected} onCancel={() => setView(null)}
+            onSaved={() => { setView(null); load(); if (selected?.id) loadSite(selected.id) }} />
         </div>
       )}
 

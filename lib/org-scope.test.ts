@@ -34,6 +34,7 @@ const ALLOWED: Record<string, string> = {
   'technician/shift/[id]/route.ts': 'update restricted to the caller’s own staff_id',
   'technician/checklist/route.ts': 'lifeguard checklist, hidden feature, no client access',
   'pool-manager/my-pool/route.ts': 'filtered to pools where the caller is the named manager',
+  'client/overview/route.ts': 'built from visiblePoolIds',
   'admin/reporting/route.ts': 'aggregate counts for the office overview',
   'admin/attachments/upload/route.ts': 'issues an upload token only; the row insert is checked',
   'feedback/route.ts': 'bug reports about the app itself',
