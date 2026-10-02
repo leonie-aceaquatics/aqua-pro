@@ -89,7 +89,7 @@ export default function ChemicalInvoicingTab({ pools }: { pools: any[] }) {
               <div style={{ fontSize: '26px', fontWeight: '700', color: '#00b894' }}>{money(data.totals.margin)}</div>
             </div>
             <div style={{ marginLeft: 'auto', alignSelf: 'flex-end', fontSize: '12px', color: 'var(--text-muted)' }}>
-              {data.invoices.length} site{data.invoices.length === 1 ? '' : 's'} · {from} to {to}
+              {data.invoices.length} site{data.invoices.length === 1 ? '' : 's'} · {from} to {to} · ex GST
             </div>
           </div>
 

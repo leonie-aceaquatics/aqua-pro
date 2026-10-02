@@ -2773,18 +2773,18 @@ function ChemicalsTab() {
               </div>
               <div style={{ ...s.formGrid, gridTemplateColumns: 'repeat(2,1fr)' }}>
                 <div style={s.formGroup}>
-                  <label>Our cost per {form.dose_unit === 'mL' ? 'L' : form.dose_unit === 'g' ? 'kg' : form.dose_unit}</label>
+                  <label>Our cost per {form.dose_unit === 'mL' ? 'L' : form.dose_unit === 'g' ? 'kg' : form.dose_unit} (ex GST)</label>
                   <input type="number" step="0.01" min="0" placeholder="what we pay"
                     value={form.unit_cost} onChange={e => setForm(f => ({ ...f, unit_cost: e.target.value }))} />
                 </div>
                 <div style={s.formGroup}>
-                  <label>Charge per {form.dose_unit === 'mL' ? 'L' : form.dose_unit === 'g' ? 'kg' : form.dose_unit}</label>
+                  <label>Charge per {form.dose_unit === 'mL' ? 'L' : form.dose_unit === 'g' ? 'kg' : form.dose_unit} (ex GST)</label>
                   <input type="number" step="0.01" min="0" placeholder="what the site pays"
                     value={form.unit_charge} onChange={e => setForm(f => ({ ...f, unit_charge: e.target.value }))} />
                 </div>
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '-6px', marginBottom: '12px' }}>
-                Both are per litre or per kilo, whatever the dose is recorded in. Leave the charge blank and the quantity still
+                Both are per litre or per kilo, whatever the dose is recorded in, and both exclude GST. Leave the charge blank and the quantity still
                 shows on the monthly report, marked as having no rate, so nothing is ever billed at zero by accident.
               </div>
               <div style={s.formGroup}>
