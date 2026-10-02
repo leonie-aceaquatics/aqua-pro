@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Droplets, LogOut, ChevronRight, HelpCircle, Calculator, ClipboardList, CheckCircle, Clock, RotateCcw } from 'lucide-react'
 import SiteTaskList from '@/components/SiteTaskList'
-import ChemistryCalculatorTab from '@/components/ChemistryCalculatorTab'
+import ManualDoseCalculator from '@/components/ManualDoseCalculator'
 import ChangePassword from '@/components/ChangePassword'
 import HelpGuide from '@/components/HelpGuide'
 import ReportIssueButton from '@/components/ReportIssueButton'
-import { POOL_GUIDE } from '@/lib/pool-guide'
+import { POOL_GUIDE, MANUAL_POOL_GUIDE } from '@/lib/pool-guide'
 import { RISK_COLOURS, RISK_LABELS } from '@/lib/water-chemistry'
 import ManualRoundForm from '@/components/ManualRoundForm'
 
@@ -29,6 +29,10 @@ export default function ClientPortalPage() {
 
   const [site, setSite] = useState<any>(null)          // targets, rounds, today's entries
   const [round, setRound] = useState<{ key: string; label: string; retestOf?: string } | null>(null)
+
+  // Hand-dosed sites get the guide written for them: no controllers, probes, backwash or salt,
+  // because none of that exists at a bath like this.
+  const manualSite = pools.length > 0 && pools.every((p: any) => p.dosing_type === 'manual')
 
   const load = useCallback(() => {
     Promise.all([
@@ -245,8 +249,11 @@ export default function ClientPortalPage() {
       {selected && view === 'calc' && (
         <div style={{ padding: '20px' }}>
           <button onClick={() => setView(null)} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '8px 14px', cursor: 'pointer', marginBottom: '16px' }}>← Back</button>
-          <div style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', marginBottom: '12px' }}>Dose calculator</div>
-          <ChemistryCalculatorTab compact initialPoolId={selected.id} />
+          <div style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', marginBottom: '4px' }}>Dose calculator</div>
+          <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>{selected.name}</div>
+          {site
+            ? <ManualDoseCalculator pool={site.pool} targets={site.targets} acidDosesToday={site.acidDosesToday ?? 0} />
+            : <div style={{ color: '#64748b', fontSize: '13px' }}>Loading…</div>}
         </div>
       )}
 
@@ -258,8 +265,8 @@ export default function ClientPortalPage() {
               <button onClick={() => setShowHelp(false)} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '8px 14px', cursor: 'pointer' }}>← Back</button>
               <div style={{ fontWeight: '700', fontSize: '16px', color: '#e2e8f0' }}>Pool chemistry</div>
             </div>
-            <div style={{ color: '#64748b', fontSize: '13px', marginBottom: '16px' }}>Ranges, what each chemical does, and what to check when something is out. Anything you are unsure of, ring Ace Aquatics on 0422 470 214.</div>
-            <HelpGuide sections={POOL_GUIDE} dark />
+            <div style={{ color: '#64748b', fontSize: '13px', marginBottom: '16px' }}>How to take a sample, what the numbers mean, the dosing and safety rules, and what to do when something is out. Anything you are unsure of, ring Ace Aquatics on 0422 470 214.</div>
+            <HelpGuide sections={manualSite ? MANUAL_POOL_GUIDE : POOL_GUIDE} dark />
             <ChangePassword />
           </div>
         </div>
