@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Paperclip, Upload, Trash2, FileText } from 'lucide-react'
 import { supabaseBrowser } from '@/lib/supabase-browser'
+import { compressImage, prettyBytes } from '@/lib/compress-image'
 
 interface Attachment {
   id: string
@@ -18,6 +19,7 @@ export default function AttachmentPanel({ entityType, entityId, onChange }: { en
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
+  const [progress, setProgress] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const load = useCallback(() => {
@@ -27,22 +29,35 @@ export default function AttachmentPanel({ entityType, entityId, onChange }: { en
   useEffect(() => { load() }, [load])
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const original = e.target.files?.[0]
+    if (!original) return
     setUploading(true); setError('')
     try {
+      // Phone photos are 4-12 MB. Shrink first: faster on site, and under the bucket's limit.
+      setProgress('Preparing the photo…')
+      const file = await compressImage(original)
+
+      setProgress(`Uploading ${prettyBytes(file.size)}…`)
       const signRes = await fetch('/api/admin/attachments/upload', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filename: file.name, entity_type: entityType }),
       })
-      const { path, token, bucket, publicUrl, storagePath, error: signErr } = await signRes.json()
-      if (signErr) throw new Error(signErr)
+      const signed = await signRes.json().catch(() => ({}))
+      if (!signRes.ok || signed.error) throw new Error(signed.error ?? `Could not start the upload (${signRes.status})`)
+      const { path, token, bucket, publicUrl, storagePath } = signed
 
       const { error: upErr } = await supabaseBrowser.storage.from(bucket).uploadToSignedUrl(path, token, file)
-      if (upErr) throw upErr
+      if (upErr) {
+        // The most common one on site: the file is still bigger than the bucket allows.
+        throw new Error(/exceeded|too large|payload/i.test(upErr.message)
+          ? `This photo is too big for the store even after shrinking (${prettyBytes(file.size)}). Take it again at a lower resolution.`
+          : `Upload failed: ${upErr.message}`)
+      }
 
-      // Private buckets store the object path and are signed on read; public ones store the URL.
-      await fetch('/api/admin/attachments', {
+      // Record it. Without this the file sits in storage attached to nothing — which is exactly
+      // how a photo used to disappear silently, because this response was never checked.
+      setProgress('Saving…')
+      const saveRes = await fetch('/api/admin/attachments', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           entity_type: entityType, entity_id: entityId, file_name: file.name,
@@ -50,11 +65,15 @@ export default function AttachmentPanel({ entityType, entityId, onChange }: { en
           storage_bucket: publicUrl ? null : bucket,
         }),
       })
+      if (!saveRes.ok) {
+        const d = await saveRes.json().catch(() => ({}))
+        throw new Error(d.error ?? `The photo uploaded but could not be attached (${saveRes.status}). Try again.`)
+      }
       load(); onChange?.()
     } catch (err: any) {
       setError(err.message ?? 'Upload failed')
     }
-    setUploading(false)
+    setUploading(false); setProgress('')
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -93,10 +112,15 @@ export default function AttachmentPanel({ entityType, entityId, onChange }: { en
       )}
 
       <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--aqua)', cursor: 'pointer' }}>
-        <Upload size={12} /> {uploading ? 'Uploading…' : 'Add photo / file'}
+        <Upload size={12} /> {uploading ? (progress || 'Uploading…') : 'Add photo / file'}
         <input ref={fileInputRef} type="file" accept="image/*,video/*,.pdf,.mp4,.mov" style={{ display: 'none' }} onChange={handleFile} disabled={uploading} />
       </label>
-      {error && <div style={{ fontSize: '11px', color: 'var(--red)', marginTop: '4px' }}>{error}</div>}
+      {error && (
+        <div style={{ fontSize: '12px', color: 'var(--red)', marginTop: '6px', lineHeight: 1.5 }}>
+          {error}
+          <button type="button" onClick={() => setError('')} style={{ marginLeft: '8px', background: 'none', border: '1px solid var(--red)', borderRadius: '5px', color: 'var(--red)', padding: '2px 7px', cursor: 'pointer', fontSize: '11px' }}>Dismiss</button>
+        </div>
+      )}
     </div>
   )
 }

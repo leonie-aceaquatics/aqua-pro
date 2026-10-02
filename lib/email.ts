@@ -365,6 +365,10 @@ export function buildWaterTestResultsEmail(test: Record<string, any>, poolName: 
       ${rows}${controllerRows}${lsiRow}
     </table>
     ${faultBlock}${dosesBlock}
+    ${(test.photo_urls ?? []).length ? `<div style="margin-bottom:20px">
+      <span style="color:#64748b;font-size:12px;display:block;margin-bottom:8px">Photos</span>
+      ${(test.photo_urls as string[]).map(u => `<a href="${u}"><img src="${u}" alt="" width="150" style="width:150px;height:112px;object-fit:cover;border-radius:8px;border:1px solid #1a2d45;margin:0 8px 8px 0"></a>`).join('')}
+    </div>` : ''}
     ${test.notes ? `<div style="background:#1a2d45;border-radius:8px;padding:12px 16px;margin-bottom:20px;color:#e2e8f0;font-size:14px"><span style="color:#64748b;font-size:12px;display:block;margin-bottom:4px">Notes</span>${String(test.notes).replace(/</g, '&lt;')}</div>` : ''}
     <a href="${testUrl}" style="display:inline-block;background:#00b4d8;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600">
       Open in AquaPro
@@ -384,7 +388,7 @@ export function isExceptionResult(test: Record<string, any>): boolean {
  */
 export async function sendWaterTestResultsEmail(
   test: Record<string, any>, poolName: string, testedBy: string, testUrl: string,
-  clientEmail?: string | null, clientMode?: string | null,
+  clientEmail?: string | null, clientMode?: string | null, photoUrls: string[] = [],
 ) {
   const risk = test.risk_level as string
   const prefix = (risk === 'red' ? '🚨 ' : risk === 'orange' ? '⚠️ ' : '') + (test.fault_report ? '🔧 ' : '')
@@ -395,7 +399,7 @@ export async function sendWaterTestResultsEmail(
     if (mode === 'all' || (mode === 'exceptions' && isExceptionResult(test))) to.add(clientEmail)
   }
 
-  const html = buildWaterTestResultsEmail(test, poolName, testedBy, testUrl)
+  const html = buildWaterTestResultsEmail({ ...test, photo_urls: photoUrls }, poolName, testedBy, testUrl)
   for (const address of to) {
     try {
       await sendEmail(address, `${prefix}Water test: ${poolName}`, html)

@@ -82,9 +82,25 @@ export async function sendSiteVisitReport(shiftId: string) {
   const tickById = new Map((ticks ?? []).map((t: any) => [t.task_id, t]))
   const tickIds = (ticks ?? []).map((t: any) => t.id)
   const photoCount = new Map<string, number>()
+  const taskPhotos = new Map<string, string[]>()
   if (tickIds.length) {
-    const { data: photos } = await supabaseAdmin.from('attachments').select('entity_id').eq('entity_type', 'site_task_completion').in('entity_id', tickIds)
-    for (const p of photos ?? []) photoCount.set(p.entity_id, (photoCount.get(p.entity_id) ?? 0) + 1)
+    const { data: photos } = await supabaseAdmin.from('attachments')
+      .select('entity_id, file_url, storage_bucket').eq('entity_type', 'site_task_completion').in('entity_id', tickIds)
+    for (const p of photos ?? []) {
+      photoCount.set(p.entity_id, (photoCount.get(p.entity_id) ?? 0) + 1)
+      if (!p.storage_bucket) taskPhotos.set(p.entity_id, [...(taskPhotos.get(p.entity_id) ?? []), p.file_url])
+    }
+  }
+
+  // Photos taken against the day's water tests and the plant log
+  const testIds = (tests ?? []).map((t: any) => t.id)
+  const plantIds = (plantLogs ?? []).map((l: any) => l.id)
+  const otherPhotos: { label: string; url: string }[] = []
+  for (const [type, ids, label] of [['water_test', testIds, 'Water test'], ['plant_log', plantIds, 'Plant room']] as const) {
+    if (!ids.length) continue
+    const { data } = await supabaseAdmin.from('attachments')
+      .select('file_url, storage_bucket').eq('entity_type', type).in('entity_id', ids)
+    for (const a of data ?? []) if (!a.storage_bucket) otherPhotos.push({ label, url: a.file_url })
   }
   // Chemicals added today at this site
   const { data: dosesToday } = await supabaseAdmin
@@ -102,6 +118,8 @@ export async function sendSiteVisitReport(shiftId: string) {
       <span style="color:${c ? '#00b894' : '#d63031'};font-weight:700">${c ? '✓' : '✗'}</span> ${esc(t.label)}
       ${c ? `<span style="color:#64748b"> — ${esc(c.staff?.first_name ?? '')} ${fmtTime(c.completed_at)}</span>` : ''}
       ${t.photos_required > 0 ? `<span style="color:${short ? '#e17055' : '#00b894'}"> · 📷 ${photos}/${t.photos_required}</span>` : ''}
+      ${c && taskPhotos.get(c.id)?.length ? `<div style="margin-top:6px">${taskPhotos.get(c.id)!.map(u =>
+        `<a href="${u}"><img src="${u}" alt="" width="104" style="width:104px;height:78px;object-fit:cover;border-radius:6px;border:1px solid #1a2d45;margin:0 6px 6px 0"></a>`).join('')}</div>` : ''}
     </div>`
   }
 
@@ -161,6 +179,9 @@ export async function sendSiteVisitReport(shiftId: string) {
     ${h('Chemicals added')}${dosesBlock}
     ${h('Stock count')}${stockBlock}
     ${h('Plant room log')}${plantBlock}
+    ${otherPhotos.length ? h('Photos') + `<div>${otherPhotos.map(p =>
+      `<a href="${p.url}" style="text-decoration:none"><img src="${p.url}" alt="${p.label}" width="150" style="width:150px;height:112px;object-fit:cover;border-radius:8px;border:1px solid #1a2d45;margin:0 8px 8px 0"></a>`).join('')}</div>
+      <div style="color:#64748b;font-size:12px">Tap a photo to open it full size.</div>` : ''}
     <a href="${appUrl}/admin" style="display:inline-block;margin-top:20px;background:#00b4d8;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600">Open in AquaPro</a>
   `)
 

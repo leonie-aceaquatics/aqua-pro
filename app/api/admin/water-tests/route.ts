@@ -182,9 +182,18 @@ export async function POST(req: NextRequest) {
     const { data: org } = await supabaseAdmin
       .from('pools').select('organisations(results_email, results_email_mode)').eq('id', body.pool_id).single()
     const o = Array.isArray(org?.organisations) ? org?.organisations[0] : org?.organisations
+
+    // Photos are usually added on the screen after the test is saved, so there are rarely any
+    // this early — the end-of-visit report is where they reliably appear. Included anyway for a
+    // test entered from the office with photos already attached.
+    const { data: photos } = await supabaseAdmin
+      .from('attachments').select('file_url, storage_bucket')
+      .eq('entity_type', 'water_test').eq('entity_id', data.id)
+    const photoUrls = (photos ?? []).filter(p => !p.storage_bucket).map(p => p.file_url)
+
     await sendWaterTestResultsEmail(
       { ...data, doses: dosesLogged }, data?.pools?.name ?? 'Unknown pool', testedBy, `${appUrl}/admin`,
-      o?.results_email, o?.results_email_mode,
+      o?.results_email, o?.results_email_mode, photoUrls,
     )
   })
 
