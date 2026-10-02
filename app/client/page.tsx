@@ -179,13 +179,22 @@ export default function ClientPortalPage() {
               roundKey={round.key} roundLabel={round.label}
               retestOf={round.retestOf ?? null}
               acidDosesToday={site.acidDosesToday ?? 0}
+              calibrationToday={site.calibrationToday ?? null}
               onCancel={() => setRound(null)}
               onSaved={() => { setRound(null); loadSite(selected.id) }}
             />
           ) : (
             <>
               <div style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', marginBottom: '4px' }}>Today&apos;s rounds</div>
-              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '16px' }}>{selected.name}</div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>{selected.name}</div>
+
+              {site.calibrationToday
+                ? <div style={{ fontSize: '12px', fontWeight: '700', color: site.calibrationToday.pass ? '#00b894' : '#ff7675', marginBottom: '12px' }}>
+                    Calibration disc {site.calibrationToday.pass ? 'passed' : 'FAILED'} today — {site.calibrationToday.pass ? 'the meter is good to use' : 'do not use the meter, ring Ace on 0422 470 214'}
+                  </div>
+                : <div style={{ fontSize: '12px', color: '#fdcb6e', marginBottom: '12px' }}>
+                    Calibration disc not run yet today — it is the first thing on the pre-open round.
+                  </div>}
 
               {(site.rounds ?? []).length === 0 && (
                 <div style={{ color: '#64748b', fontSize: '13px', marginBottom: '16px' }}>No fixed rounds for this site — record a reading whenever you test.</div>

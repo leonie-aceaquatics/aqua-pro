@@ -1,6 +1,6 @@
 'use client'
 import { useState, useMemo } from 'react'
-import { CheckCircle, AlertTriangle, Beaker, Users, Eye, Phone } from 'lucide-react'
+import { CheckCircle, AlertTriangle, Beaker, Users, Eye, Phone, TestTube } from 'lucide-react'
 import { manualDoses, DOSING_RULES, type ManualDose } from '@/lib/manual-dose'
 import type { SiteTarget } from '@/lib/water-chemistry'
 
@@ -26,6 +26,8 @@ export interface RoundFormProps {
   roundKey: string
   roundLabel: string
   acidDosesToday: number
+  /** Whether the calibration disc has already been run today, and how it went. */
+  calibrationToday?: { pass: boolean; at: string } | null
   /** Recording a retest after a dose, rather than a fresh round reading. */
   retestOf?: string | null
   onSaved: () => void
@@ -37,11 +39,15 @@ function targetOf(targets: SiteTarget[], p: string) {
 }
 
 export default function ManualRoundForm({
-  pool, targets, roundKey, roundLabel, acidDosesToday, retestOf, onSaved, onCancel,
+  pool, targets, roundKey, roundLabel, acidDosesToday, calibrationToday, retestOf, onSaved, onCancel,
 }: RoundFormProps) {
   const [form, setForm] = useState(BLANK)
   const [clear, setClear] = useState<boolean | null>(null)
   const [bathersClear, setBathersClear] = useState(false)
+  // The calibration disc runs once a day, before the pre-open round, on the one meter.
+  const needsCalibration = roundKey === 'pre_open' && !retestOf && !calibrationToday
+  const [calPass, setCalPass] = useState<boolean | null>(null)
+  const calFailed = needsCalibration ? calPass === false : calibrationToday?.pass === false
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -98,7 +104,8 @@ export default function ManualRoundForm({
           round_key: roundKey, is_retest: !!retestOf, retest_of: retestOf ?? null,
           free_chlorine: fc, total_chlorine: tc, ph, total_alkalinity: ta,
           temperature_c: num(form.temperature_c), bather_count: num(form.bather_count),
-          clarity_floor_visible: clear, notes: form.notes || null,
+          clarity_floor_visible: clear, calibration_pass: needsCalibration ? calPass : null,
+          notes: form.notes || null,
         }),
       })
       const d = await res.json().catch(() => ({}))
@@ -130,6 +137,49 @@ export default function ManualRoundForm({
         {pool.name}{retestOf ? ' · after a dose' : ''}
       </div>
 
+      {/* The disc runs before the pre-open round. A fail means the meter is not used and the
+          baths do not open on its readings, so there is nothing to record below it. */}
+      {needsCalibration && (
+        <div style={{ ...panel, border: `1px solid ${calPass === false ? '#d63031' : calPass === true ? '#00b89440' : '#fdcb6e50'}` }}>
+          <div style={heading}><TestTube size={13} style={{ verticalAlign: '-2px', marginRight: '5px' }} />Calibration check disc</div>
+          <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '12px' }}>
+            Run the check disc through the meter before the first round of the day, and record it.
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {[['Pass', true], ['Fail', false]].map(([txt, val]) => (
+              <button key={txt as string} type="button" onClick={() => setCalPass(val as boolean)}
+                style={{ flex: 1, padding: '12px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700',
+                  border: `1px solid ${calPass === val ? (val ? '#00b894' : '#d63031') : 'var(--border)'}`,
+                  background: calPass === val ? (val ? '#00b89425' : '#d6303125') : 'var(--surface-2)',
+                  color: calPass === val ? (val ? '#00b894' : '#ff7675') : '#94a3b8' }}>{txt as string}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {calibrationToday && (
+        <div style={{ fontSize: '12px', color: calibrationToday.pass ? '#64748b' : '#ff7675', marginBottom: '12px' }}>
+          Calibration disc {calibrationToday.pass ? 'passed' : 'FAILED'} today at{' '}
+          {new Date(calibrationToday.at).toLocaleTimeString('en-AU', { timeZone: 'Australia/Melbourne', hour: '2-digit', minute: '2-digit' })}.
+        </div>
+      )}
+
+      {calFailed && (
+        <div role="alert" style={{ background: '#d6303122', border: '2px solid #d63031', borderRadius: '10px', padding: '14px 16px', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ff7675', fontWeight: '800', fontSize: '15px', marginBottom: '6px' }}>
+            <AlertTriangle size={18} /> DO NOT USE THE METER
+          </div>
+          <div style={{ color: '#e2e8f0', fontSize: '13px' }}>
+            The check disc failed, so the readings cannot be trusted and the baths do not open on them.
+            Record the failure, then ring Ace Aquatics.
+          </div>
+          <a href="tel:0422470214" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '10px', color: '#fff', background: '#d63031', padding: '10px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: '700' }}>
+            <Phone size={15} /> Call Ace 0422 470 214
+          </a>
+        </div>
+      )}
+
+      {!calFailed && (<>
       <div style={panel}>
         <div style={heading}>Chlorine</div>
         {input('free_chlorine', 'Free chlorine (mg/L)', '3.0', '0.01')}
@@ -216,6 +266,8 @@ export default function ManualRoundForm({
         </div>
       )}
 
+      </>)}
+
       <div style={{ ...panel, marginBottom: '16px' }}>
         <label style={label}>Notes</label>
         <textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
@@ -226,8 +278,9 @@ export default function ManualRoundForm({
 
       <div style={{ display: 'flex', gap: '10px' }}>
         <button type="button" onClick={onCancel} className="btn btn-secondary" style={{ padding: '14px 18px' }}>Cancel</button>
-        <button type="submit" className="btn btn-primary" disabled={saving} style={{ flex: 1, justifyContent: 'center', padding: '14px', fontSize: '15px' }}>
-          {saving ? 'Saving…' : <><CheckCircle size={16} /> Save reading</>}
+        <button type="submit" className="btn btn-primary" disabled={saving || (needsCalibration && calPass === null)}
+          style={{ flex: 1, justifyContent: 'center', padding: '14px', fontSize: '15px', background: calFailed ? '#d63031' : undefined }}>
+          {saving ? 'Saving…' : calFailed ? <><AlertTriangle size={16} /> Record the failure</> : <><CheckCircle size={16} /> Save reading</>}
         </button>
       </div>
       {doses.length > 0 && (
