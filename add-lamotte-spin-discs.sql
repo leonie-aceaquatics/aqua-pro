@@ -10,10 +10,14 @@
 -- into a pool, so it never reaches the monthly chemical invoice. Charging testing on would be
 -- a separate per-visit line, or it stays inside the service fee.
 
+-- A spin disc is stock, but it is not something anyone doses into a pool. `dosable` keeps it
+-- off the technician's "Chemicals Added" dropdown while leaving it in stock and To Order.
+alter table chemicals add column if not exists dosable boolean not null default true;
+
 insert into chemicals (org_id, name, type, unit, dose_unit, container_size,
-                       current_stock, reorder_point, supplier, unit_cost, is_active)
+                       current_stock, reorder_point, supplier, unit_cost, is_active, dosable)
 select (select id from organisations where slug = 'ace-aquatics'),
-       d.name, 'other', 'pack', 'each', d.per_pack, 0, 1, 'LaMotte Pacific', d.cost_per_disc, true
+       d.name, 'other', 'pack', 'each', d.per_pack, 0, 1, 'LaMotte Pacific', d.cost_per_disc, true, false
 from (values
   -- code     name                                                              pack  $/disc
   ('4334-H', 'Spin disc 501 — Chlorine, 3 x 3 use (50 pack)',                     50,  5.18),
@@ -27,6 +31,6 @@ where not exists (select 1 from chemicals c where c.name = d.name);
 
 notify pgrst, 'reload schema';
 
-select name, unit as counted_in, dose_unit as used_in, container_size as per_pack,
-       unit_cost as cost_per_disc, current_stock, reorder_point, supplier
+select name, unit as counted_in, container_size as per_pack, unit_cost as cost_per_disc,
+       current_stock, reorder_point, supplier, dosable
 from chemicals where supplier = 'LaMotte Pacific' order by name;

@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, FlaskConical, Package, HelpCircle, Camera, Plus, X, LayoutDashboard, Calculator, Play, CalendarDays, ClipboardList, KeyRound } from 'lucide-react'
-import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
+import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS, calculateDoses,
+  type PoolType, type SanitiserType, type PhCorrectionMethod } from '@/lib/water-chemistry'
+import { buildPrefills } from '@/lib/dose-prefill'
 import PlantLog from '@/components/PlantLog'
 import ChemistryCalculatorTab from '@/components/ChemistryCalculatorTab'
 import ChangePassword from '@/components/ChangePassword'
@@ -38,6 +40,7 @@ export default function TechnicianPage() {
     controller_ph: '', controller_fcl: '', calibrate_ph: false, calibrate_fcl: false, fault_report: '',
   })
   const [doses, setDoses] = useState<{ chemical_id: string; quantity: string }[]>([])
+  const [doseSkipAsked, setDoseSkipAsked] = useState(false)   // asked once if they dosed but logged nothing
   const [chemicals, setChemicals] = useState<any[]>([])
   const [savedTest, setSavedTest] = useState<any>(null)   // just-saved test, for the photo step
   const [allPools, setAllPools] = useState<any[]>([])      // everyone: visit any site, rostered or not
@@ -160,8 +163,48 @@ export default function TechnicianPage() {
     }
   }
 
+  // What the readings say to add, worked out live as the technician types, and matched to the
+  // stock list so the amount can be recorded with one tap instead of read off one screen and
+  // retyped into another. Anything the engine is not certain about offers no button at all.
+  const dosableChemicals = chemicals.filter(c => c.dosable !== false)
+  const prefills = useMemo(() => {
+    const pool = selected?.pools
+    if (!pool || !Number(pool.volume_litres)) return []
+    const num = (v: string) => v === '' ? undefined : Number(v)
+    try {
+      const recs = calculateDoses(
+        {
+          freeChlorine: num(testForm.free_chlorine), combinedChlorine: num(testForm.combined_chlorine),
+          ph: num(testForm.ph), totalAlkalinity: num(testForm.total_alkalinity),
+          calciumHardness: num(testForm.calcium_hardness), cyanuricAcid: num(testForm.cyanuric_acid),
+          saltLevel: num(testForm.salt_level), temperatureC: num(testForm.temperature_c),
+        },
+        pool.pool_type as PoolType,
+        pool.sanitiser_type as SanitiserType,
+        Number(pool.volume_litres),
+        (pool.ph_correction_method ?? 'acid') as PhCorrectionMethod,
+      )
+      return buildPrefills(recs, dosableChemicals)
+    } catch { return [] }
+  }, [testForm, selected, chemicals])   // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Put a suggested amount straight into the Chemicals Added list, or take it out again. */
+  function togglePrefill(p: { chemical: { id: string }; amount: number }) {
+    setDoses(ds => ds.some(d => d.chemical_id === p.chemical.id)
+      ? ds.filter(d => d.chemical_id !== p.chemical.id)
+      : [...ds.filter(d => d.chemical_id || d.quantity), { chemical_id: p.chemical.id, quantity: String(p.amount) }])
+  }
+
   async function handleLogTest(e: React.FormEvent) {
     e.preventDefault()
+    // The readings called for a dose and nothing was recorded. Ask once — a tech who genuinely
+    // added nothing says so and carries on; a tech who forgot gets the chance before it is gone.
+    const recorded = doses.filter(d => d.chemical_id && Number(d.quantity) > 0)
+    if (prefills.length > 0 && recorded.length === 0 && !doseSkipAsked) {
+      setDoseSkipAsked(true)
+      setTestError('You have not recorded any chemicals, but these readings needed some. If you dosed, tap the suggestion above. If you added nothing, press Submit again.')
+      return
+    }
     setSaving(true)
     setTestError(null)
     const payload: Record<string, any> = {
@@ -181,10 +224,14 @@ export default function TechnicianPage() {
       })
       const data = await res.json().catch(() => ({}))
       if (res.ok) {
+        if (data.test?.dose_errors?.length) {
+          setTestError(`Test saved, but ${data.test.dose_errors.length} chemical(s) did not record. Tell the office so the site is still invoiced for them.`)
+        }
         setLastTest(data.test)
         setSavedTest(data.test)      // stay on screen for photos; form resets when they tap Done
         setTestForm(blankTestForm)
         setDoses([])
+        setDoseSkipAsked(false)
       } else {
         setTestError(data.error ?? 'Could not save this test — try again.')
       }
@@ -623,7 +670,31 @@ export default function TechnicianPage() {
               {/* Chemicals added by hand at this visit — logged as usage, comes off site stock */}
               <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
                 <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Chemicals Added (manual dosing)</div>
-                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>Only what you added by hand. Leave empty if the controller did the dosing.</div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>Record everything you put in, every time — this is what the site gets invoiced for. Leave empty only if the controller did the dosing.</div>
+
+                {prefills.length > 0 && (
+                  <div style={{ background: 'var(--surface-2)', border: '1px solid #00b4d840', borderRadius: '8px', padding: '12px', marginBottom: '12px' }}>
+                    <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px' }}>
+                      Your readings suggest these. Tap to record what you actually added, then change the number if you poured something different.
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {prefills.map(p => {
+                        const on = doses.some(d => d.chemical_id === p.chemical.id)
+                        return (
+                          <button key={p.chemical.id} type="button" onClick={() => togglePrefill(p)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 12px', borderRadius: '8px', cursor: 'pointer',
+                              fontSize: '13px', fontWeight: '600', textAlign: 'left',
+                              border: `1px solid ${on ? '#00b894' : 'var(--border)'}`,
+                              background: on ? '#00b89425' : 'var(--surface)',
+                              color: on ? '#00b894' : '#e2e8f0' }}>
+                            {on ? <CheckCircle size={14} /> : <Plus size={14} />}
+                            {p.amount} {p.unit} · {p.chemical.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
                 {doses.map((d, i) => {
                   const chem = chemicals.find(c => c.id === d.chemical_id)
                   return (
@@ -631,7 +702,7 @@ export default function TechnicianPage() {
                       <select value={d.chemical_id} onChange={e => setDoses(ds => ds.map((x, j) => j === i ? { ...x, chemical_id: e.target.value } : x))}
                         style={{ flex: 1, minWidth: 0, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '10px', fontSize: '14px' }}>
                         <option value="">Product…</option>
-                        {chemicals.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        {dosableChemicals.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                       </select>
                       <input type="number" inputMode="decimal" step="0.1" min="0" placeholder="Qty" value={d.quantity}
                         onChange={e => setDoses(ds => ds.map((x, j) => j === i ? { ...x, quantity: e.target.value } : x))}

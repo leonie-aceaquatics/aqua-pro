@@ -138,6 +138,7 @@ export async function POST(req: NextRequest) {
   // Chemicals added at this test — logged as usage against the test so stock comes down
   const doses = (body.doses ?? []) as { chemical_id: string; quantity: number | string }[]
   const dosesLogged: any[] = []
+  const doseErrors: string[] = []
   for (const d of doses) {
     if (!d.chemical_id || !(Number(d.quantity) > 0)) continue
     try {
@@ -145,8 +146,14 @@ export async function POST(req: NextRequest) {
         pool_id: body.pool_id, chemical_id: d.chemical_id, quantity: Number(d.quantity),
         applied_by: user.id, applied_at: data.tested_at, water_test_id: data.id,
       }))
-    } catch (e) { console.error('Dose log failed:', e) }
+    } catch (e) {
+      // A dose that fails here is chemical the site never gets invoiced for, so it is reported
+      // back rather than swallowed. The test itself is already saved and stays saved.
+      console.error('Dose log failed:', e)
+      doseErrors.push(e instanceof Error ? e.message : 'unknown error')
+    }
   }
+  if (doseErrors.length) data.dose_errors = doseErrors
 
   // A fault / breakdown reported with the test becomes an open incident so the office sees it
   if (data.fault_report) {
