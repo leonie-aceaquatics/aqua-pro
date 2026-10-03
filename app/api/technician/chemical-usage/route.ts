@@ -12,6 +12,11 @@ import { logChemicalUsage } from '@/lib/chemical-usage'
 //
 // GET returns the products ordered by how often they are actually used AT THIS SITE, with the
 // amount used last time, so the common case is one tap rather than a hunt through a dropdown.
+//
+// This covers everything consumed at a site, not only what is dosed into the water. A spin disc
+// or a scum block costs real money and is used up at one site, so it belongs in what that site
+// costs to service. `dosable` only decides whether a product can be offered as a DOSE on the
+// water test — nobody pours a disc into a pool — and is passed through for grouping.
 
 export async function GET(req: NextRequest) {
   const user = await getSession()
@@ -39,7 +44,6 @@ export async function GET(req: NextRequest) {
   }
 
   const products = (chemicals ?? [])
-    .filter((c: any) => c.dosable !== false)
     .map((c: any) => ({ ...c, uses: stats.get(c.id)?.uses ?? 0, last_quantity: stats.get(c.id)?.last ?? null }))
     .sort((a: any, b: any) => b.uses - a.uses || a.name.localeCompare(b.name))
 

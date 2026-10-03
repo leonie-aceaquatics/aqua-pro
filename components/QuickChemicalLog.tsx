@@ -7,6 +7,10 @@ import { Package, CheckCircle, Minus, Plus, Search } from 'lucide-react'
 // A dropdown of forty products is a hunt, and a hunt on a wet phone in a plant room gets
 // skipped. So the products this site actually uses come first, each tile already carrying the
 // amount used here last time: tap it and it is recorded. Adjust only when today was different.
+//
+// This covers everything used up at the site, not just what goes into the water — spin discs,
+// scum blocks and the like. They cost money and they are consumed at one site, so they are part
+// of what that site costs to service.
 
 export interface UsedItem { chemical_id: string; quantity: string }
 
@@ -22,6 +26,10 @@ const presetsFor = (unit: string): number[] =>
 
 const stepFor = (unit: string) => unit === 'mL' || unit === 'g' ? 50 : unit === 'kg' ? 0.5 : 1
 const tidy = (n: number) => Math.round(n * 100) / 100
+
+const Heading = ({ children }: { children: React.ReactNode }) => (
+  <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '14px 0 8px' }}>{children}</div>
+)
 
 export default function QuickChemicalLog({
   poolId, poolName, onSaved, onCancel,
@@ -66,7 +74,7 @@ export default function QuickChemicalLog({
   }
 
   async function save() {
-    if (!items.length) { setError('Tap a product first.'); return }
+    if (!items.length) { setError('Tap what you used first.'); return }
     setSaving(true); setError(null)
     try {
       const res = await fetch('/api/technician/chemical-usage', {
@@ -88,11 +96,62 @@ export default function QuickChemicalLog({
   const visible = q ? products.filter(p => p.name.toLowerCase().includes(q))
     : showAll || used.length === 0 ? products : used
 
+  // What this site actually uses comes first as one list. Only when they go looking for
+  // something else is it worth splitting chemicals from the consumables.
+  const grouped: { heading: string; list: any[] }[] =
+    q ? [{ heading: '', list: visible }]
+    : !showAll && used.length > 0 ? [{ heading: 'Used at this site', list: visible }]
+    : [
+        { heading: 'Chemicals', list: visible.filter(c => c.dosable !== false) },
+        { heading: 'Discs, blocks and other consumables', list: visible.filter(c => c.dosable === false) },
+      ].filter(g => g.list.length > 0)
+
+  function renderTile(c: any) {
+    const unit = unitOf(c)
+    const on = !!qtyOf(c.id)
+    return (
+      <div key={c.id} style={{ background: 'var(--surface)', border: `1px solid ${on ? '#00b894' : 'var(--border)'}`, borderRadius: '10px', padding: '12px', marginBottom: '8px' }}>
+        <button type="button" onClick={() => tapTile(c)}
+          style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
+          {on ? <CheckCircle size={18} color="#00b894" style={{ flexShrink: 0 }} /> : <Package size={18} color="#64748b" style={{ flexShrink: 0 }} />}
+          <span style={{ flex: 1, fontSize: '14px', fontWeight: '600', color: on ? '#00b894' : '#e2e8f0' }}>{c.name}</span>
+          {!on && c.last_quantity != null && (
+            <span style={{ fontSize: '12px', color: '#64748b', flexShrink: 0 }}>last: {c.last_quantity} {unit}</span>
+          )}
+        </button>
+
+        {on && (
+          <div style={{ marginTop: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <button type="button" onClick={() => nudge(c, -1)} aria-label="less"
+                style={{ width: '44px', height: '44px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: '#e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Minus size={18} /></button>
+              <input type="number" inputMode="decimal" step="any" min="0" value={qtyOf(c.id)}
+                onChange={e => setQty(c.id, e.target.value)}
+                style={{ flex: 1, minWidth: 0, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '12px', fontSize: '18px', fontWeight: '700', textAlign: 'center', outline: 'none' }} />
+              <span style={{ fontSize: '14px', color: '#94a3b8', width: '34px' }}>{unit}</span>
+              <button type="button" onClick={() => nudge(c, 1)} aria-label="more"
+                style={{ width: '44px', height: '44px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: '#e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Plus size={18} /></button>
+            </div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {presetsFor(unit).map(v => (
+                <button key={v} type="button" onClick={() => setQty(c.id, String(v))}
+                  style={{ padding: '7px 12px', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
+                    border: `1px solid ${Number(qtyOf(c.id)) === v ? '#00b4d8' : 'var(--border)'}`,
+                    background: Number(qtyOf(c.id)) === v ? '#00b4d825' : 'var(--surface-2)',
+                    color: Number(qtyOf(c.id)) === v ? '#00b4d8' : '#94a3b8' }}>{v} {unit}</button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <>
-      <div style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0' }}>What did you put in?</div>
+      <div style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0' }}>What did you use here?</div>
       <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>
-        {poolName} · everything recorded here goes on the site&apos;s monthly invoice.
+        {poolName} · chemicals, discs, scum blocks — anything used up here. It all goes on this site&apos;s monthly figures.
       </div>
 
       {products.length > 6 && (
@@ -107,52 +166,12 @@ export default function QuickChemicalLog({
         <div style={{ color: '#64748b', textAlign: 'center', padding: '32px' }}>Loading…</div>
       ) : (
         <>
-          {!q && used.length > 0 && !showAll && (
-            <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
-              Used at this site
+          {grouped.map(g => (
+            <div key={g.heading}>
+              {g.heading && <Heading>{g.heading}</Heading>}
+              {g.list.map(renderTile)}
             </div>
-          )}
-          {visible.map(c => {
-            const unit = unitOf(c)
-            const on = !!qtyOf(c.id)
-            return (
-              <div key={c.id} style={{ background: 'var(--surface)', border: `1px solid ${on ? '#00b894' : 'var(--border)'}`, borderRadius: '10px', padding: '12px', marginBottom: '8px' }}>
-                <button type="button" onClick={() => tapTile(c)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-                  {on ? <CheckCircle size={18} color="#00b894" style={{ flexShrink: 0 }} /> : <Package size={18} color="#64748b" style={{ flexShrink: 0 }} />}
-                  <span style={{ flex: 1, fontSize: '14px', fontWeight: '600', color: on ? '#00b894' : '#e2e8f0' }}>{c.name}</span>
-                  {!on && c.last_quantity != null && (
-                    <span style={{ fontSize: '12px', color: '#64748b', flexShrink: 0 }}>last: {c.last_quantity} {unit}</span>
-                  )}
-                </button>
-
-                {on && (
-                  <div style={{ marginTop: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <button type="button" onClick={() => nudge(c, -1)} aria-label="less"
-                        style={{ width: '44px', height: '44px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: '#e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Minus size={18} /></button>
-                      <input type="number" inputMode="decimal" step="any" min="0" value={qtyOf(c.id)}
-                        onChange={e => setQty(c.id, e.target.value)}
-                        style={{ flex: 1, minWidth: 0, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '12px', fontSize: '18px', fontWeight: '700', textAlign: 'center', outline: 'none' }} />
-                      <span style={{ fontSize: '14px', color: '#94a3b8', width: '34px' }}>{unit}</span>
-                      <button type="button" onClick={() => nudge(c, 1)} aria-label="more"
-                        style={{ width: '44px', height: '44px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: '#e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Plus size={18} /></button>
-                    </div>
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                      {presetsFor(unit).map(v => (
-                        <button key={v} type="button" onClick={() => setQty(c.id, String(v))}
-                          style={{ padding: '7px 12px', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
-                            border: `1px solid ${Number(qtyOf(c.id)) === v ? '#00b4d8' : 'var(--border)'}`,
-                            background: Number(qtyOf(c.id)) === v ? '#00b4d825' : 'var(--surface-2)',
-                            color: Number(qtyOf(c.id)) === v ? '#00b4d8' : '#94a3b8' }}>{v} {unit}</button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-
+          ))}
           {!q && !showAll && used.length > 0 && products.length > used.length && (
             <button type="button" onClick={() => setShowAll(true)} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', padding: '12px', marginBottom: '8px' }}>
               Something else ({products.length - used.length} more)
@@ -163,7 +182,7 @@ export default function QuickChemicalLog({
       )}
 
       <div style={{ marginTop: '4px', marginBottom: '12px' }}>
-        <textarea rows={2} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Note (optional) — why you added it"
+        <textarea rows={2} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Note (optional)"
           style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '10px 12px', fontSize: '14px', width: '100%', resize: 'vertical' }} />
       </div>
 
@@ -173,7 +192,7 @@ export default function QuickChemicalLog({
         <button type="button" onClick={onCancel} className="btn btn-secondary" style={{ padding: '14px 18px' }}>Cancel</button>
         <button type="button" onClick={save} disabled={saving || !items.length} className="btn btn-primary"
           style={{ flex: 1, justifyContent: 'center', padding: '14px', fontSize: '15px', opacity: items.length ? 1 : 0.5 }}>
-          {saving ? 'Saving…' : items.length ? `Record ${items.length} product${items.length === 1 ? '' : 's'}` : 'Tap a product above'}
+          {saving ? 'Saving…' : items.length ? `Record ${items.length} item${items.length === 1 ? '' : 's'}` : 'Tap what you used'}
         </button>
       </div>
     </>
