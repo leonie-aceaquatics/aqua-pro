@@ -10,6 +10,7 @@ import ChemistryCalculatorTab from '@/components/ChemistryCalculatorTab'
 import ChangePassword from '@/components/ChangePassword'
 import { POOL_GUIDE } from '@/lib/pool-guide'
 import SiteAccessDocs from '@/components/SiteAccessDocs'
+import QuickChemicalLog from '@/components/QuickChemicalLog'
 import InstantAlerts from '@/components/InstantAlerts'
 import { fmtTime, fmtActual } from '@/lib/shift-time'
 import SiteTaskList from '@/components/SiteTaskList'
@@ -31,6 +32,8 @@ export default function TechnicianPage() {
   const [startPrompt, setStartPrompt] = useState(false)      // 'Start shift here?' when a site is opened
   const [finishPrompt, setFinishPrompt] = useState(false)    // 'Finished at this site?' when a tool is closed
   const [showCalc, setShowCalc] = useState<{ poolId: string; poolName: string } | null>(null)   // dose calculator overlay
+  const [showChemLog, setShowChemLog] = useState(false)      // 'what did you put in?' overlay
+  const [chemLogDone, setChemLogDone] = useState<string | null>(null)
   const [showHelp, setShowHelp] = useState(false)
   const [helpTab, setHelpTab] = useState<'app' | 'pool'>('app')   // ? screen: how to use the app / pool chemistry guide
   const [testForm, setTestForm] = useState({
@@ -494,6 +497,15 @@ export default function TechnicianPage() {
                 </button>
               )}
               {selected.pool_id && !isFacility && (
+                <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#c2410c' }}
+                  onClick={() => setShowChemLog(true)}>
+                  <Package size={16} /> Chemicals Used
+                </button>
+              )}
+              {chemLogDone && (
+                <div style={{ fontSize: '12px', color: '#00b894', textAlign: 'center', fontWeight: '600' }}>{chemLogDone}</div>
+              )}
+              {selected.pool_id && !isFacility && (
                 <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#0d6e4e' }}
                   onClick={() => setShowPlantLog(true)}>
                   <FlaskConical size={16} /> Plant Room Log
@@ -859,6 +871,23 @@ export default function TechnicianPage() {
       )}
 
       {/* Dose calculator — scratch calculation, nothing is saved */}
+      {showChemLog && selected?.pool_id && (
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 400, overflowY: 'auto' }}>
+          <div style={{ padding: '20px', maxWidth: '480px', margin: '0 auto', paddingBottom: '40px' }}>
+            <QuickChemicalLog
+              poolId={selected.pool_id}
+              poolName={selected.pools?.name ?? ''}
+              onCancel={() => { setShowChemLog(false); maybeAskFinish() }}
+              onSaved={n => {
+                setShowChemLog(false)
+                setChemLogDone(`${n} product${n === 1 ? '' : 's'} recorded — it will be on this site's invoice.`)
+                maybeAskFinish()
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {showCalc && (
         <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 400, overflowY: 'auto' }}>
           <div style={{ padding: '20px', maxWidth: '480px', margin: '0 auto', paddingBottom: '40px' }}>
