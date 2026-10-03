@@ -35,9 +35,9 @@ with price(pattern, cost) as (values
 update chemicals c set unit_cost = p.cost
 from price p where c.name ilike p.pattern;
 
--- ── 2. charge: what the client pays. Change the 2.0 to Tony's markup, or skip this block
---     entirely and type the charges in by hand under Depot Inventory. ────────────────────────
-update chemicals set unit_charge = round(unit_cost * 2.0, 2) where unit_cost is not null;
+-- No charge rates. Tony prices the invoice himself; this app's job is to say how much went in
+-- at each site and what it cost us. Set unit_charge later only if that changes — the report
+-- hides the charge and margin columns entirely until something has one.
 
 notify pgrst, 'reload schema';
 
@@ -45,8 +45,7 @@ notify pgrst, 'reload schema';
 select
   name,
   dose_unit as "per",
-  coalesce(unit_cost::text,   'NO COST SET')   as cost,
-  coalesce(unit_charge::text, 'NO CHARGE SET') as charge
+  coalesce(unit_cost::text, 'NO COST SET') as cost_per_unit
 from chemicals
 where is_active
 order by unit_cost is not null, name;

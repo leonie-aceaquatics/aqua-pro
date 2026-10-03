@@ -68,11 +68,17 @@ describe('the spreadsheet', () => {
   it('has a line per chemical, a site total and a grand total', () => {
     const csv = invoicesToCsv(buildSiteInvoices([row({ quantity: 10 })]), '2026-09-01', '2026-09-30')
     const lines = csv.split('\n')
-    expect(lines[0]).toContain('Site,Chemical,Quantity,Unit,Rate,Charge')
+    expect(lines[0]).toContain('Site,Chemical,Quantity,Unit,Cost rate,Cost,Charge rate,Charge,Margin')
     expect(lines[1]).toContain('Eltham College')
     expect(lines[2]).toContain('SITE TOTAL')
     expect(lines[3]).toContain('ALL SITES')
     expect(lines[3]).toContain('2026-09-01 to 2026-09-30')
+  })
+
+  it('carries the cost even when nothing has a charge rate', () => {
+    const csv = invoicesToCsv(buildSiteInvoices([row({ quantity: 10, unit_charge: null, unit_cost: 0.83 })]), 'a', 'b')
+    expect(csv).toContain('8.3')          // 10 L at $0.83
+    expect(csv).not.toContain('NaN')
   })
 
   it('quotes a site name containing a comma', () => {

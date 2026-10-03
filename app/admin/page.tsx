@@ -2476,7 +2476,7 @@ function ChemicalsTab() {
           { id: 'stock_take', label: 'Depot Stock Take' },
           { id: 'to_order', label: `To Order${orders.filter(o => o.status === 'pending').length ? ` (${orders.filter(o => o.status === 'pending').length})` : ''}` },
           { id: 'usage', label: 'Usage Log' },
-          { id: 'invoicing', label: 'Usage & Invoicing' },
+          { id: 'invoicing', label: 'Usage & Cost' },
         ].map(t => (
           <button key={t.id} onClick={() => setSubTab(t.id as any)} style={{
             padding: '7px 16px', borderRadius: '7px', border: 'none', cursor: 'pointer',

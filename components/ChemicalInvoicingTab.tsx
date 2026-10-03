@@ -33,8 +33,11 @@ export default function ChemicalInvoicingTab({ pools }: { pools: any[] }) {
   const setMonth = (offset: number) => { const m = monthRange(offset); setFrom(m.from); setTo(m.to) }
   const csvUrl = `/api/admin/chemical-invoicing?from=${from}&to=${to}&pool_id=${poolId}&format=csv`
 
-  const unpriced = (data?.invoices ?? []).flatMap((i: any) => i.unpriced)
-  const uniqueUnpriced = [...new Set(unpriced)] as string[]
+  const invoices = data?.invoices ?? []
+  // Tony prices the invoice himself, so charge rates may never be set. The charge and margin
+  // columns appear only once something actually has one — otherwise they are empty noise.
+  const charging = invoices.some((i: any) => i.lines.some((l: any) => l.rate != null))
+  const uncosted = [...new Set(invoices.flatMap((i: any) => i.uncosted))] as string[]
 
   return (
     <>
@@ -57,15 +60,15 @@ export default function ChemicalInvoicingTab({ pools }: { pools: any[] }) {
         <button type="button" className="btn btn-secondary" onClick={() => setMonth(-1)}>Last month</button>
         <button type="button" className="btn btn-secondary" onClick={() => setMonth(0)}>This month</button>
         <a href={csvUrl} className="btn btn-primary" style={{ marginLeft: 'auto', textDecoration: 'none' }}>
-          <Download size={15} /> Download for invoicing
+          <Download size={15} /> Download for Tony
         </a>
       </div>
 
-      {uniqueUnpriced.length > 0 && (
+      {uncosted.length > 0 && (
         <div style={{ background: '#e1705518', border: '1px solid #e1705550', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', fontSize: '13px', color: 'var(--text)' }}>
           <AlertTriangle size={14} style={{ verticalAlign: '-2px', marginRight: '6px', color: '#e17055' }} />
-          No charge rate set for: <strong>{uniqueUnpriced.join(', ')}</strong>. The quantity is counted but nothing is billed —
-          set a rate under Depot Inventory and these will price themselves.
+          No cost set for: <strong>{uncosted.join(', ')}</strong>. The quantity used is still counted, but the
+          cost total below is short by whatever these came to. Set a cost under Depot Inventory.
         </div>
       )}
 
@@ -77,19 +80,23 @@ export default function ChemicalInvoicingTab({ pools }: { pools: any[] }) {
         <>
           <div className="card" style={{ marginBottom: '16px', display: 'flex', gap: '28px', flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>To invoice</div>
-              <div style={{ fontSize: '26px', fontWeight: '700', color: 'var(--aqua)' }}>{money(data.totals.charge)}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>What it cost us</div>
+              <div style={{ fontSize: '26px', fontWeight: '700', color: 'var(--aqua)' }}>{money(data.totals.cost)}</div>
             </div>
-            <div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Chemical cost</div>
-              <div style={{ fontSize: '26px', fontWeight: '700', color: 'var(--text)' }}>{money(data.totals.cost)}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Margin</div>
-              <div style={{ fontSize: '26px', fontWeight: '700', color: '#00b894' }}>{money(data.totals.margin)}</div>
-            </div>
+            {charging && (
+              <>
+                <div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>To invoice</div>
+                  <div style={{ fontSize: '26px', fontWeight: '700', color: 'var(--text)' }}>{money(data.totals.charge)}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Margin</div>
+                  <div style={{ fontSize: '26px', fontWeight: '700', color: '#00b894' }}>{money(data.totals.margin)}</div>
+                </div>
+              </>
+            )}
             <div style={{ marginLeft: 'auto', alignSelf: 'flex-end', fontSize: '12px', color: 'var(--text-muted)' }}>
-              {data.invoices.length} site{data.invoices.length === 1 ? '' : 's'} · {from} to {to} · ex GST
+              {invoices.length} site{invoices.length === 1 ? '' : 's'} · {from} to {to} · ex GST
             </div>
           </div>
 
@@ -99,24 +106,32 @@ export default function ChemicalInvoicingTab({ pools }: { pools: any[] }) {
                 <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)' }}>
                   <Receipt size={15} style={{ verticalAlign: '-2px', marginRight: '6px' }} />{site.pool}
                 </div>
-                <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--aqua)' }}>{money(site.charge)}</div>
+                <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--aqua)' }}>
+                  {money(site.cost)}{charging && <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '600' }}> cost · {money(site.charge)} to invoice</span>}
+                </div>
               </div>
               <div className="table-wrap">
                 <table>
                   <thead>
-                    <tr><th>Chemical</th><th>Used</th><th>Rate</th><th>Charge</th><th>Cost</th><th>Margin</th></tr>
+                    <tr><th>Chemical</th><th>Used</th><th>Cost rate</th><th>Cost</th>
+                      {charging && <><th>Charge rate</th><th>Charge</th><th>Margin</th></>}</tr>
                   </thead>
                   <tbody>
                     {site.lines.map((l: any) => (
                       <tr key={l.chemicalId}>
                         <td>{l.chemical}</td>
                         <td style={{ fontWeight: '600' }}>{l.quantity} {l.unit}</td>
-                        <td style={{ color: 'var(--text-muted)' }}>{l.rate == null ? <span style={{ color: '#e17055' }}>no rate</span> : `${money(l.rate)}/${l.unit}`}</td>
-                        <td style={{ fontWeight: '700', color: l.charge == null ? '#e17055' : 'var(--text)' }}>{money(l.charge)}</td>
-                        <td style={{ color: 'var(--text-muted)' }}>{money(l.cost)}</td>
-                        <td style={{ color: l.charge != null && l.cost != null ? '#00b894' : 'var(--text-dim)' }}>
-                          {l.charge != null && l.cost != null ? money(Math.round((l.charge - l.cost) * 100) / 100) : '—'}
-                        </td>
+                        <td style={{ color: 'var(--text-muted)' }}>{l.costRate == null ? <span style={{ color: '#e17055' }}>no cost</span> : `${money(l.costRate)}/${l.unit}`}</td>
+                        <td style={{ fontWeight: '700', color: l.cost == null ? '#e17055' : 'var(--text)' }}>{money(l.cost)}</td>
+                        {charging && (
+                          <>
+                            <td style={{ color: 'var(--text-muted)' }}>{l.rate == null ? '—' : `${money(l.rate)}/${l.unit}`}</td>
+                            <td style={{ color: 'var(--text)' }}>{money(l.charge)}</td>
+                            <td style={{ color: l.charge != null && l.cost != null ? '#00b894' : 'var(--text-dim)' }}>
+                              {l.charge != null && l.cost != null ? money(Math.round((l.charge - l.cost) * 100) / 100) : '—'}
+                            </td>
+                          </>
+                        )}
                       </tr>
                     ))}
                   </tbody>

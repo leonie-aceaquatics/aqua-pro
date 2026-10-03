@@ -34,10 +34,12 @@ export interface InvoiceLine {
   chemical: string
   quantity: number
   unit: BillUnit
-  /** Per billed unit. Null when the chemical has no rate set. */
+  /** What we paid, per billed unit. Null when the chemical has no cost set. */
+  costRate: number | null
+  cost: number | null
+  /** What the client is charged, per billed unit. Null when no charge rate is set. */
   rate: number | null
   charge: number | null
-  cost: number | null
 }
 
 export interface SiteInvoice {
@@ -47,6 +49,8 @@ export interface SiteInvoice {
   charge: number
   cost: number
   margin: number
+  /** Chemicals used here with no cost rate, so the cost total understates what was spent. */
+  uncosted: string[]
   /** Chemicals used here that have no charge rate, so cannot be billed yet. */
   unpriced: string[]
 }
@@ -63,7 +67,7 @@ export function buildSiteInvoices(rows: UsageRow[]): SiteInvoice[] {
 
     let site = bySite.get(r.pool_id)
     if (!site) {
-      site = { poolId: r.pool_id, pool: r.pool_name, lines: [], charge: 0, cost: 0, margin: 0, unpriced: [] }
+      site = { poolId: r.pool_id, pool: r.pool_name, lines: [], charge: 0, cost: 0, margin: 0, uncosted: [], unpriced: [] }
       bySite.set(r.pool_id, site)
     }
 
@@ -71,7 +75,8 @@ export function buildSiteInvoices(rows: UsageRow[]): SiteInvoice[] {
     if (!line) {
       line = {
         chemicalId: r.chemical_id, chemical: r.chemical_name, quantity: 0, unit,
-        rate: r.unit_charge ?? null, charge: r.unit_charge != null ? 0 : null, cost: r.unit_cost != null ? 0 : null,
+        costRate: r.unit_cost ?? null, cost: r.unit_cost != null ? 0 : null,
+        rate: r.unit_charge ?? null, charge: r.unit_charge != null ? 0 : null,
       }
       site.lines.push(line)
     }
@@ -82,8 +87,8 @@ export function buildSiteInvoices(rows: UsageRow[]): SiteInvoice[] {
     for (const line of site.lines) {
       line.quantity = round2(line.quantity)
       if (line.rate != null) line.charge = round2(line.quantity * line.rate)
-      const costRate = rows.find(r => r.chemical_id === line.chemicalId)?.unit_cost
-      line.cost = costRate != null ? round2(line.quantity * costRate) : null
+      line.cost = line.costRate != null ? round2(line.quantity * line.costRate) : null
+      if (line.cost == null) site.uncosted.push(line.chemical)
       if (line.charge == null) site.unpriced.push(line.chemical)
     }
     site.lines.sort((a, b) => a.chemical.localeCompare(b.chemical))
@@ -101,16 +106,16 @@ export function invoicesToCsv(invoices: SiteInvoice[], from: string, to: string)
     const s = String(v ?? '')
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
   }
-  const lines = [['Site', 'Chemical', 'Quantity', 'Unit', 'Rate', 'Charge', 'Cost', 'Margin'].join(',')]
+  const lines = [['Site', 'Chemical', 'Quantity', 'Unit', 'Cost rate', 'Cost', 'Charge rate', 'Charge', 'Margin'].join(',')]
   for (const site of invoices) {
     for (const l of site.lines) {
-      lines.push([site.pool, l.chemical, l.quantity, l.unit, l.rate ?? '', l.charge ?? '', l.cost ?? '',
+      lines.push([site.pool, l.chemical, l.quantity, l.unit, l.costRate ?? '', l.cost ?? '', l.rate ?? '', l.charge ?? '',
         l.charge != null && l.cost != null ? round2(l.charge - l.cost) : ''].map(esc).join(','))
     }
-    lines.push([site.pool, 'SITE TOTAL', '', '', '', site.charge, site.cost, site.margin].map(esc).join(','))
+    lines.push([site.pool, 'SITE TOTAL', '', '', '', site.cost, '', site.charge, site.margin].map(esc).join(','))
   }
   const total = round2(invoices.reduce((s, i) => s + i.charge, 0))
   const totalCost = round2(invoices.reduce((s, i) => s + i.cost, 0))
-  lines.push(['ALL SITES', `${from} to ${to}`, '', '', '', total, totalCost, round2(total - totalCost)].map(esc).join(','))
+  lines.push(['ALL SITES', `${from} to ${to}`, '', '', '', totalCost, '', total, round2(total - totalCost)].map(esc).join(','))
   return lines.join('\n')
 }
