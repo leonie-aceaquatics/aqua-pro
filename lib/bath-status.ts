@@ -36,7 +36,12 @@ export function closureReasons(test: Record<string, any>, targets: SiteTarget[])
   if (ph != null && phT?.close_below != null && ph < phT.close_below) out.push(`pH ${ph} is below ${phT.close_below}`)
   if (ph != null && phT?.close_above != null && ph > phT.close_above) out.push(`pH ${ph} is above ${phT.close_above}`)
   if (cc != null && ccT?.close_above != null && cc > ccT.close_above) out.push(`Combined chlorine ${cc} is above ${ccT.close_above}`)
-  if (cc != null && fc != null && cc > fc) out.push(`Combined chlorine ${cc} is above the free chlorine ${fc}`)
+  // "Combined above free" only stands in for a ceiling where no ceiling is set. Where a site
+  // states its own limit, that limit is the rule — Ace's instruction for Senza is that combined
+  // chlorine closes a bath above 1.0 and not below it. In practice this changes nothing at a
+  // site that also has a free-chlorine floor: combined above free, with free at or above the
+  // floor of 1.0, is already combined above 1.0.
+  if (cc != null && fc != null && cc > fc && ccT?.close_above == null) out.push(`Combined chlorine ${cc} is above the free chlorine ${fc}`)
   if (test.clarity_floor_visible === false) out.push('The floor of the bath is not clearly visible')
   return out
 }

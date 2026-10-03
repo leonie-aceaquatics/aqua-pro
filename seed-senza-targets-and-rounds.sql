@@ -27,9 +27,9 @@ cross join (values
   -- parameter,           min,  max,  ideal, close_below, close_above
   ('freeChlorine',        2.0,  5.0,  3.0,   1.0,         null),   -- legal min 1.0, we run at 3.0
   ('totalChlorine',       null, 6.0,  null,  null,        10.0),   -- legal max 10
-  ('combinedChlorine',    null, 0.5,  0.0,   null,        1.0),    -- also closed if above free Cl
+  ('combinedChlorine',    null, 0.5,  0.0,   null,        1.0),    -- closes above 1.0 only (Ace, 3 Oct 2026)
   ('ph',                  7.3,  7.6,  7.45,  7.0,         8.0),    -- legal 7.2 to 7.8
-  ('totalAlkalinity',     80,   120,  100,   60,          null),   -- correct, do not close
+  ('totalAlkalinity',     80,   null, 100,  60,          null),   -- no upper limit; below 60 closes (Ace, 3 Oct 2026)
   ('turbidity',           null, 0.5,  0.2,   null,        null)
 ) as v(parameter, min_value, max_value, ideal_value, close_below, close_above)
 where p.site_code like 'SEN-BATH-%'

@@ -36,10 +36,21 @@ describe('closing on a reading', () => {
     expect(s.closures[0]).toContain('below the legal minimum')
   })
 
-  it('combined chlorine above the free closes it', () => {
+  it('does not close for combined chlorine under the ceiling, even above the free', () => {
+    // Ace's rule for Senza: combined chlorine closes a bath above 1.0 and not below it.
+    expect(closureReasons({ free_chlorine: 1.2, combined_chlorine: 0.9, ph: 7.4, clarity_floor_visible: true }, TARGETS)).toEqual([])
+  })
+
+  it('still uses "above free" as the rule where a site sets no ceiling', () => {
+    const noCeiling = TARGETS.map(t => t.parameter === 'combinedChlorine' ? { ...t, close_above: null } : t)
+    const out = closureReasons({ free_chlorine: 1.2, combined_chlorine: 1.3, ph: 7.4, clarity_floor_visible: true }, noCeiling)
+    expect(out.some(c => c.includes('above the free chlorine'))).toBe(true)
+  })
+
+  it('combined chlorine above the site ceiling closes it', () => {
     const s = bathStatus([{ tested_at: at('08:45'), round_key: 'pre_open', free_chlorine: 2.8, combined_chlorine: 3.1, ph: 7.4 }], ROUNDS, TARGETS, { now: noon })
     expect(s.state).toBe('closed')
-    expect(s.closures.some(c => c.includes('above the free chlorine'))).toBe(true)
+    expect(s.closures.some(c => c.includes('is above 1'))).toBe(true)
   })
 
   it('a passing retest after a bad reading reopens it', () => {

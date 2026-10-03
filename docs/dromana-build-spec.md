@@ -138,10 +138,23 @@ The app should colour every reading as it is entered and tell the operator what 
 | --- | --- | --- | --- |
 | Free chlorine | 3.0 mg/L, trade 2.0 to 5.0 | Minimum 1.0 mg/L | Below 1.0 |
 | pH | 7.3 to 7.6 | 7.2 to 7.8 | Below 7.0 or above 8.0 |
-| Combined chlorine | Below 0.5 mg/L | Below free chlorine, and below 1.0 | Above 1.0, or above free |
+| Combined chlorine | Below 0.5 mg/L | Below 1.0 | Above 1.0 |
 | Total chlorine | Below 6.0 mg/L | Maximum 10 mg/L | Above 10 |
-| Total alkalinity | 80 to 120 mg/L | Above 60 mg/L | Correct it, do not close |
+| Total alkalinity | 80 or above | Above 60 mg/L | Correct it, do not close |
 | Clarity | Clear, no film | Floor clearly visible | Floor not visible |
+
+**Two rules here differ from the printed log book, on Ace's instruction of 3 October 2026.**
+
+The log book closes a bath when combined chlorine is *above 1.0, or above free*. The second half
+is dropped: combined chlorine closes a bath above 1.0 and not below it. In practice this changes
+nothing at these baths, because free chlorine already closes below 1.0 — for combined to exceed
+free while free is 1.0 or more, combined must itself be over 1.0, which closes it anyway. It
+would matter at a site with no free-chlorine floor, so `closureReasons` still applies "above
+free" wherever a site sets no combined-chlorine ceiling of its own.
+
+The log book bands alkalinity 80 to 120. The upper figure is removed: high alkalinity is not
+treated as a fault at these baths and nothing flags a reading over 200. The floor is unchanged —
+below 80 is corrected with bicarbonate, below 60 closes the bath.
 
 Free chlorine is dosed to 3.0 rather than the legal 1.0 on purpose. In 390 litres with people getting in and out, the residual can drop several mg/L within the hour, and every reading below 1.0 is a recorded breach sitting in the log book with someone's name on it.
 
@@ -156,7 +169,7 @@ Free chlorine is dosed to 3.0 rather than the legal 1.0 on purpose. In 390 litre
 | pH 7.9 to 8.0 | 5 mL acid, circulate, retest. Once more if needed | pH 7.8 or below |
 | pH above 8.0 or below 7.0 | Close the bath. 5 mL steps. If two doses do not fix it, drain and refill | pH 7.2 to 7.8 on two readings |
 | Combined chlorine 0.5 to 1.0 | Note it. Tell Ace if it keeps happening |  |
-| Combined above 1.0, or above free | Close the bath. Drain, clean, refill | Full panel in range after the refill |
+| Combined above 1.0 | Close the bath. Drain, clean, refill | Full panel in range after the refill |
 | Alkalinity below 60 | Dose bicarbonate from the chart. Circulate, retest | Above 60 |
 | Floor not visible | Close the bath. Check the filter, drain, refill | Clear water and full panel in range |
 | Pump not running | Close that bath. Restore circulation before dosing anything | Pump running, full panel in range |
