@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, FlaskConical, Package, HelpCircle, Camera, Plus, X, LayoutDashboard, Calculator, Play, CalendarDays, ClipboardList, KeyRound } from 'lucide-react'
+import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, FlaskConical, Package, HelpCircle, Camera, Plus, X, LayoutDashboard, Calculator, Play, CalendarDays, ClipboardList, KeyRound, AlertTriangle } from 'lucide-react'
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS, calculateDoses,
   type PoolType, type SanitiserType, type PhCorrectionMethod } from '@/lib/water-chemistry'
 import { buildPrefills } from '@/lib/dose-prefill'
@@ -11,6 +11,7 @@ import ChangePassword from '@/components/ChangePassword'
 import { POOL_GUIDE } from '@/lib/pool-guide'
 import SiteAccessDocs from '@/components/SiteAccessDocs'
 import QuickChemicalLog from '@/components/QuickChemicalLog'
+import SiteIssueForm from '@/components/SiteIssueForm'
 import InstantAlerts from '@/components/InstantAlerts'
 import { fmtTime, fmtActual } from '@/lib/shift-time'
 import SiteTaskList from '@/components/SiteTaskList'
@@ -33,6 +34,7 @@ export default function TechnicianPage() {
   const [finishPrompt, setFinishPrompt] = useState(false)    // 'Finished at this site?' when a tool is closed
   const [showCalc, setShowCalc] = useState<{ poolId: string; poolName: string } | null>(null)   // dose calculator overlay
   const [showChemLog, setShowChemLog] = useState(false)      // 'what did you put in?' overlay
+  const [showIssue, setShowIssue] = useState(false)          // broken thing / recommendation
   const [chemLogDone, setChemLogDone] = useState<string | null>(null)
   const [showHelp, setShowHelp] = useState(false)
   const [helpTab, setHelpTab] = useState<'app' | 'pool'>('app')   // ? screen: how to use the app / pool chemistry guide
@@ -480,7 +482,7 @@ export default function TechnicianPage() {
             )}
 
             {isFacility && (
-              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>No water here — just the tasks. Photos attach to the task they belong to.</div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>No water here — just the tasks. Photos attach to the task they belong to, and anything broken or worth quoting goes under Report a Problem.</div>
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -488,6 +490,12 @@ export default function TechnicianPage() {
                 <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#0077b6' }}
                   onClick={() => setShowTasks(true)}>
                   <ClipboardList size={16} /> Site Tasks — tick list
+                </button>
+              )}
+              {selected.pool_id && (
+                <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#8b2635' }}
+                  onClick={() => setShowIssue(true)}>
+                  <AlertTriangle size={16} /> Report a Problem or Recommend Work
                 </button>
               )}
               {selected.pool_id && !isFacility && (
@@ -871,6 +879,17 @@ export default function TechnicianPage() {
       )}
 
       {/* Dose calculator — scratch calculation, nothing is saved */}
+      {showIssue && selected?.pool_id && (
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 400, overflowY: 'auto' }}>
+          <div style={{ padding: '20px', maxWidth: '480px', margin: '0 auto', paddingBottom: '40px' }}>
+            <SiteIssueForm
+              pool={{ id: selected.pool_id, name: selected.pools?.name ?? '' }}
+              onDone={() => { setShowIssue(false); maybeAskFinish() }}
+            />
+          </div>
+        </div>
+      )}
+
       {showChemLog && selected?.pool_id && (
         <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 400, overflowY: 'auto' }}>
           <div style={{ padding: '20px', maxWidth: '480px', margin: '0 auto', paddingBottom: '40px' }}>

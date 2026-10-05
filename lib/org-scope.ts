@@ -66,6 +66,7 @@ const ENTITY_POOL_LOOKUP: Record<string, { table: string; column?: string }> = {
   incident:             { table: 'incidents' },
   microbiology_test:    { table: 'microbiology_tests' },
   corrective_action:    { table: 'corrective_actions' },
+  recommendation:       { table: 'site_recommendations' },
   pool_access:          { table: 'pools', column: 'id' },
 }
 

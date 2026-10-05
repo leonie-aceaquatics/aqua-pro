@@ -102,6 +102,30 @@ export async function sendSiteVisitReport(shiftId: string) {
       .select('file_url, storage_bucket').eq('entity_type', type).in('entity_id', ids)
     for (const a of data ?? []) if (!a.storage_bucket) otherPhotos.push({ label, url: a.file_url })
   }
+  // Faults and recommendations raised here today, each with its own photos. A photo of the
+  // thing is usually what makes a recommendation decidable, so they travel together.
+  const [{ data: faults }, { data: recs }] = await Promise.all([
+    supabaseAdmin.from('incidents')
+      .select('id, description, severity, occurred_at, reporter:staff!incidents_reported_by_fkey(first_name)')
+      .eq('pool_id', pool.id).gte('occurred_at', dayStart).lte('occurred_at', dayEnd)
+      .order('occurred_at'),
+    supabaseAdmin.from('site_recommendations')
+      .select('id, title, detail, urgency, raised_at, raiser:staff!site_recommendations_raised_by_fkey(first_name)')
+      .eq('pool_id', pool.id).gte('raised_at', dayStart).lte('raised_at', dayEnd)
+      .order('raised_at'),
+  ])
+  const photosFor = new Map<string, string[]>()
+  for (const [type, rows] of [['incident', faults], ['recommendation', recs]] as const) {
+    const ids = (rows ?? []).map((r: any) => r.id)
+    if (!ids.length) continue
+    const { data } = await supabaseAdmin.from('attachments')
+      .select('entity_id, file_url, storage_bucket').eq('entity_type', type).in('entity_id', ids)
+    for (const a of data ?? []) {
+      if (a.storage_bucket) continue   // private bucket: no signed URL in an email
+      photosFor.set(a.entity_id, [...(photosFor.get(a.entity_id) ?? []), a.file_url])
+    }
+  }
+
   // Chemicals added today at this site
   const { data: dosesToday } = await supabaseAdmin
     .from('chemical_usage_log').select('quantity, applied_at, chemicals(name, dose_unit, unit)')
@@ -154,6 +178,33 @@ export async function sendSiteVisitReport(shiftId: string) {
   const dosesBlock = (dosesToday ?? []).length === 0 ? muted('No chemicals added by hand.') :
     box((dosesToday ?? []).map((d: any) => `<div>${Number(d.quantity)} ${esc(d.chemicals?.dose_unit ?? d.chemicals?.unit ?? '')} ${esc(d.chemicals?.name ?? '')} <span style="color:#64748b">${fmtTime(d.applied_at)}</span></div>`).join(''))
 
+  const thumbs = (id: string) => {
+    const urls = photosFor.get(id) ?? []
+    if (!urls.length) return ''
+    return `<div style="margin-top:8px">${urls.map(u =>
+      `<a href="${u}" style="text-decoration:none"><img src="${u}" width="120" style="width:120px;height:90px;object-fit:cover;border-radius:6px;border:1px solid #1a2d45;margin:0 6px 6px 0"></a>`).join('')}</div>`
+  }
+
+  const faultsBlock = (faults ?? []).length === 0 ? muted('Nothing reported broken today.') :
+    (faults ?? []).map((f: any) => box(`
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+        <strong style="color:#ff7675">${fmtTime(f.occurred_at)} · ${esc(f.reporter?.first_name ?? '')}</strong>
+        <span style="color:${f.severity === 'high' || f.severity === 'critical' ? '#d63031' : '#e17055'};font-weight:700;text-transform:uppercase;font-size:12px">${esc(f.severity ?? '')}</span>
+      </div>
+      <div style="color:#e2e8f0;font-size:13px;line-height:1.6;white-space:pre-wrap">${esc(f.description ?? '')}</div>
+      ${thumbs(f.id)}`)).join('')
+
+  const URGENCY_LABEL: Record<string, string> = { urgent: 'Urgent', soon: 'Soon', when_convenient: 'When convenient' }
+  const recsBlock = (recs ?? []).length === 0 ? '' :
+    (recs ?? []).map((r: any) => box(`
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+        <strong style="color:#fdcb6e">${esc(r.title)}</strong>
+        <span style="color:${r.urgency === 'urgent' ? '#e17055' : '#94a3b8'};font-weight:700;text-transform:uppercase;font-size:12px">${esc(URGENCY_LABEL[r.urgency] ?? r.urgency)}</span>
+      </div>
+      ${r.detail ? `<div style="color:#cbd5e1;font-size:13px;line-height:1.6;white-space:pre-wrap">${esc(r.detail)}</div>` : ''}
+      <div style="color:#64748b;font-size:12px;margin-top:4px">${esc(r.raiser?.first_name ?? '')} · ${fmtTime(r.raised_at)}</div>
+      ${thumbs(r.id)}`)).join('')
+
   const stockRows: any[] = stock ?? []
   const stockBlock = stockRows.length === 0 ? muted('No stock count today.') :
     box(`<table cellpadding="0" cellspacing="0" style="font-size:13px;color:#e2e8f0">${stockRows.map((r: any) =>
@@ -175,6 +226,8 @@ export async function sendSiteVisitReport(shiftId: string) {
     <div style="color:#64748b;font-size:13px;margin-bottom:16px">${dateLabel} · ${esc(tech)}</div>
     ${timeBlock}
     ${h('Site tasks')}${tasksBlock}
+    ${h('Faults reported')}${faultsBlock}
+    ${recsBlock ? h('Recommendations') + recsBlock : ''}
     ${h('Water tests')}${testsBlock}
     ${h('Chemicals added')}${dosesBlock}
     ${h('Stock count')}${stockBlock}
@@ -185,6 +238,7 @@ export async function sendSiteVisitReport(shiftId: string) {
     <a href="${appUrl}/admin" style="display:inline-block;margin-top:20px;background:#00b4d8;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600">Open in AquaPro</a>
   `)
 
-  const alarm = (tests ?? []).some((t: any) => t.risk_level === 'red' || t.risk_level === 'orange') || notDone.length > 0
+  const alarm = (tests ?? []).some((t: any) => t.risk_level === 'red' || t.risk_level === 'orange')
+    || notDone.length > 0 || (faults ?? []).length > 0
   await sendEmail(RESULTS_EMAIL, `${alarm ? '⚠️ ' : ''}Site visit: ${pool.name} — ${tech} — ${done.length}/${(tasks ?? []).length} tasks${hours ? ` — ${hours}` : ''}`, html)
 }
