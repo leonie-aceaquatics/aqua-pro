@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateLSI, classifyLSI } from './water-chemistry'
+import { calculateLSI, classifyLSI, getRanges } from './water-chemistry'
 
 describe('calculateLSI', () => {
   it('matches the Taylor / CPO worked example (balanced water)', () => {
@@ -37,5 +37,22 @@ describe('calculateLSI', () => {
     expect(calculateLSI(7.5, -5, 300, 100)).toBe(calculateLSI(7.5, 0, 300, 100))
     expect(calculateLSI(7.5, 45, 300, 100)).toBe(calculateLSI(7.5, 40.6, 300, 100))
     expect(calculateLSI(7.5, 26, 300, 100)).toBeGreaterThan(calculateLSI(7.5, 24, 300, 100))
+  })
+})
+
+describe('cold plunge pools', () => {
+  it('run chlorine above a pool and below a hot spa', () => {
+    const plunge = getRanges('plunge', 'chlorine')
+    const spa = getRanges('spa', 'chlorine')
+    const indoor = getRanges('indoor', 'chlorine')
+    expect(plunge.freeChlorine.min).toBe(2.0)
+    expect(plunge.freeChlorine.min).toBeGreaterThan(indoor.freeChlorine.min)
+    expect(plunge.freeChlorine.min).toBeLessThan(spa.freeChlorine.min)
+  })
+
+  it('has its own ranges rather than falling back to an outdoor pool', () => {
+    // A plunge pool left to the fallback was the Senza bug: outdoor ranges put the chlorine
+    // floor at 1.0, so a cold plunge sitting at 1.6 was called fine and never dosed.
+    expect(getRanges('plunge', 'chlorine')).not.toEqual(getRanges('outdoor', 'chlorine'))
   })
 })

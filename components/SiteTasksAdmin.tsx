@@ -4,7 +4,7 @@ import { ListChecks, Plus, Trash2, ClipboardCheck, Camera } from 'lucide-react'
 import { groupByCategory } from '@/lib/site-tasks'
 import AttachmentPanel from './AttachmentPanel'
 
-const POOL_TYPES: [string, string][] = [['facility', 'Facilities (gyms etc.)'], ['splash_pad', 'Splash pads'], ['outdoor', 'Outdoor pools'], ['indoor', 'Indoor pools'], ['spa', 'Spas'], ['wading', 'Wading pools'], ['hydrotherapy', 'Hydrotherapy pools'], ['leisure', 'Leisure pools']]
+const POOL_TYPES: [string, string][] = [['facility', 'Facilities (gyms etc.)'], ['splash_pad', 'Splash pads'], ['outdoor', 'Outdoor pools'], ['indoor', 'Indoor pools'], ['spa', 'Spas'], ['plunge', 'Cold plunge pools'], ['wading', 'Wading pools'], ['hydrotherapy', 'Hydrotherapy pools'], ['leisure', 'Leisure pools']]
 const CATEGORIES = ['Arrival', 'Water quality', 'Equipment', 'Chemical dosing', 'Cleaning', 'Filtration', 'Safety', 'Compliance', 'Departure']
 
 // Admin side of the per-site task list: edit the tasks, and see who ticked what on a day.

@@ -1,6 +1,6 @@
 // Water chemistry calculations and risk classification for AquaPro
 
-export type PoolType = 'indoor' | 'outdoor' | 'spa' | 'wading' | 'hydrotherapy' | 'leisure' | 'splash_pad'
+export type PoolType = 'indoor' | 'outdoor' | 'spa' | 'wading' | 'hydrotherapy' | 'leisure' | 'splash_pad' | 'plunge'
 export type SanitiserType = 'chlorine' | 'bromine' | 'saltwater' | 'uv_chlorine' | 'ozone_chlorine' | 'baquacil'
 export type RiskLevel = 'green' | 'yellow' | 'orange' | 'red'
 
@@ -62,6 +62,17 @@ const RANGES: Record<string, Record<string, ParameterRange>> = {
     totalAlkalinity:    { min: 80,  max: 150,  ideal: 100,  unit: 'ppm', priority: 'high',     label: 'Total Alkalinity' },
     calciumHardness:    { min: 100, max: 300,  ideal: 200,  unit: 'ppm', priority: 'normal',   label: 'Calcium Hardness' },
     phosphates:         { min: 0,   max: 100,  ideal: 0,    unit: 'ppb', priority: 'normal',   label: 'Phosphates' },
+  },
+  // Cold plunge / ice bath. Not a spa: no heat, no aerosol, and chlorine holds far better in
+  // cold water. But a small body of water taking athlete after athlete burns a residual fast,
+  // so it runs well above a main pool. These are Ace's own cold-plunge numbers, taken from the
+  // Senza operator training pack rather than invented here.
+  plunge_chlorine: {
+    freeChlorine:       { min: 2.0, max: 5.0,  ideal: 3.0,  unit: 'ppm', priority: 'critical', label: 'Free Chlorine' },
+    combinedChlorine:   { min: 0,   max: 0.5,  ideal: 0.0,  unit: 'ppm', priority: 'critical', label: 'Combined Chlorine' },
+    ph:                 { min: 7.2, max: 7.8,  ideal: 7.5,  unit: 'pH',  priority: 'critical', label: 'pH' },
+    totalAlkalinity:    { min: 80,  max: 150,  ideal: 100,  unit: 'ppm', priority: 'high',     label: 'Total Alkalinity' },
+    calciumHardness:    { min: 100, max: 300,  ideal: 200,  unit: 'ppm', priority: 'normal',   label: 'Calcium Hardness' },
   },
   spa_chlorine: {
     freeChlorine:       { min: 3.0, max: 5.0,  ideal: 4.0,  unit: 'ppm', priority: 'critical', label: 'Free Chlorine' },
