@@ -135,7 +135,6 @@ export async function sendSiteVisitReport(shiftId: string, { updated = false }: 
 
   // ── Build the email ──────────────────────────────────────────────────────
   const done = (tasks ?? []).filter((t: any) => tickById.has(t.id))
-  const notDone = (tasks ?? []).filter((t: any) => !tickById.has(t.id))
   const taskRow = (t: any) => {
     const c = tickById.get(t.id)
     const photos = c ? (photoCount.get(c.id) ?? 0) : 0
@@ -159,10 +158,11 @@ export async function sendSiteVisitReport(shiftId: string, { updated = false }: 
     </div>
     ${shift.notes ? `<div style="margin-top:8px;color:#94a3b8;font-size:13px">Job note: ${esc(shift.notes)}</div>` : ''}`)
 
-  const tasksBlock = (tasks ?? []).length === 0 ? muted('No task list for this site.') : `
-    ${muted(`${done.length} of ${(tasks ?? []).length} tasks ticked`)}
-    ${done.map(taskRow).join('')}
-    ${notDone.length ? `<div style="margin-top:10px;color:#e17055;font-weight:700;font-size:12px">NOT DONE</div>${notDone.map(taskRow).join('')}` : ''}`
+  // Only what was done goes in the email — unticked tasks are left out (Tasks Done in the dashboard still shows them)
+  const tasksBlock = (tasks ?? []).length === 0 ? muted('No task list for this site.')
+    : done.length === 0 ? muted('No tasks ticked.') : `
+    ${muted(`${done.length} task${done.length === 1 ? '' : 's'} done`)}
+    ${done.map(taskRow).join('')}`
 
   const riskColour = (r: string) => r === 'red' ? '#d63031' : r === 'orange' ? '#e17055' : r === 'yellow' ? '#fdcb6e' : '#00b894'
   const testsBlock = (tests ?? []).length === 0 ? muted('No water test logged today.') : (tests ?? []).map((t: any) => box(`
@@ -242,6 +242,6 @@ export async function sendSiteVisitReport(shiftId: string, { updated = false }: 
   `)
 
   const alarm = (tests ?? []).some((t: any) => t.risk_level === 'red' || t.risk_level === 'orange')
-    || notDone.length > 0 || (faults ?? []).length > 0
-  await sendEmail(RESULTS_EMAIL, `${alarm ? '⚠️ ' : ''}${updated ? 'UPDATED ' : ''}Site visit:${pool.name} — ${tech} — ${done.length}/${(tasks ?? []).length} tasks${hours ? ` — ${hours}` : ''}`, html)
+    || (faults ?? []).length > 0
+  await sendEmail(RESULTS_EMAIL, `${alarm ? '⚠️ ' : ''}${updated ? 'UPDATED ' : ''}Site visit: ${pool.name} — ${tech} — ${done.length} tasks done${hours ? ` — ${hours}` : ''}`, html)
 }

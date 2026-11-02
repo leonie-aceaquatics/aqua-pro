@@ -152,7 +152,7 @@ export const ADMIN_GUIDE: Section[] = [
     steps: [
       'Overview — today\'s risk levels per pool and anything red/orange.',
       'Site Tasks → Tasks Done — pick a date to see exactly what each technician ticked off at each site, and who skipped what.',
-      'Every time a technician taps Finish shift, the office inbox gets a Site Visit email: hours on site, every task ticked and NOT ticked (with photo counts), water tests, chemicals added, stock count and plant room log for that site that day. The subject line starts with ⚠️ if anything was red/orange or left unticked.',
+      'Every time a technician taps Finish shift, the office inbox gets a Site Visit email: hours on site, every task ticked (with photo counts), water tests, chemicals added, stock count and plant room log for that site that day. Tasks not ticked are left out of the email — Site Tasks → Tasks Done shows those. The subject line starts with ⚠️ if anything was red/orange or a fault was reported.',
       'Water Testing — every result. Click one for the full readings, LSI and AI advice. Every result is also emailed to info@aceaquatics.com.au. A wrong entry can be removed with Delete test at the bottom of that view (admins only, and it cannot be undone).',
       'Chemicals → Site Stock — which sites are low (orange strip at the top). Items at/below reorder are already on the To Order list against that site.',
     ],
