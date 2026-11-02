@@ -110,6 +110,12 @@ export const TECH_GUIDE: Section[] = [
       'Tap Start shift as soon as you arrive. The office sees you are on site and the clock starts.',
       'Once your Site Tasks are ticked, the water test is saved and stock is counted, tap Finish shift on the site panel. That sends the office a report of everything you did at the site, so make sure it is all in first.',
       'The site turns grey with a tick on Today\'s Jobs. Move on to the next one.',
+      { text: 'Forgot something after you tapped Finish? Go back and add it:', sub: [
+        'Tap the site again on Today\'s Jobs, or pick it again from "Visit any site". It opens the visit you already did — it does not start a new one.',
+        'Use the buttons as normal: tick the missed task, add the photo, log the water test, count the stock. Your hours stay the same.',
+        'Tap Send updated report. The office gets the visit report again, marked UPDATED, with what you added.',
+        'Got a water reading wrong? Log a new test with the right numbers and put "correction" in the notes — tests are never changed after they are saved.',
+      ] },
       'If you cannot finish (locked out, fault, ran out of time), do not mark it complete — add a note in the water test or report an issue so the office knows.',
     ],
   },

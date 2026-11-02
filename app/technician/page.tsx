@@ -58,6 +58,7 @@ export default function TechnicianPage() {
   const [loadError, setLoadError] = useState(false)
   const [testError, setTestError] = useState<string | null>(null)
   const [completeError, setCompleteError] = useState<string | null>(null)
+  const [resend, setResend] = useState<{ sending: boolean; msg: string | null; ok: boolean }>({ sending: false, msg: null, ok: false })
 
   const blankTestForm = {
     free_chlorine: '', combined_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '',
@@ -106,6 +107,7 @@ export default function TechnicianPage() {
   async function handleSelectShift(shift: any) {
     setSelected(shift)
     setLastTest(null)
+    setResend({ sending: false, msg: null, ok: false })
     if (shift.pool_id) loadLastTest(shift.pool_id)
     // Not started yet → ask straight away so nobody forgets to clock on
     if (shift.pool_id && shift.status !== 'completed' && !shift.actual_start) setStartPrompt(true)
@@ -165,6 +167,19 @@ export default function TechnicianPage() {
       setSelected(null)
     } catch {
       setCompleteError('No connection — could not finish this shift. Try again when back online.')
+    }
+  }
+
+  // Went back to a finished site and added something forgotten → the office gets the visit report again, marked UPDATED
+  async function handleResendReport(shiftId: string) {
+    setResend({ sending: true, msg: null, ok: false })
+    try {
+      const res = await fetch(`/api/technician/shift/${shiftId}`, { method: 'POST' })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setResend({ sending: false, msg: data.error ?? 'Could not send — try again.', ok: false }); return }
+      setResend({ sending: false, msg: 'Updated report sent to the office.', ok: true })
+    } catch {
+      setResend({ sending: false, msg: 'No connection — try again when back online.', ok: false })
     }
   }
 
@@ -424,7 +439,11 @@ export default function TechnicianPage() {
           <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Visit any site</div>
           <select value="" onChange={e => {
             const p = allPools.find(x => x.id === e.target.value)
-            if (p) handleSelectShift({ id: null, pool_id: p.id, pools: p, status: 'adhoc', shift_type: 'service_visit' })
+            if (!p) return
+            // Already been here today → open that visit (to finish it, or add what was forgotten) rather than start a second one
+            const existing = [...shifts].reverse().find(s => s.pool_id === p.id)
+            if (existing) handleSelectShift({ ...existing, pools: { ...existing.pools, ...p } })
+            else handleSelectShift({ id: null, pool_id: p.id, pools: p, status: 'adhoc', shift_type: 'service_visit' })
           }} style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', color: '#e2e8f0', padding: '12px', fontSize: '14px' }}>
             <option value="">Choose a site…</option>
             {allPools.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -443,6 +462,17 @@ export default function TechnicianPage() {
             <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
               {selected.pools?.address ?? ''}
             </div>
+
+            {selected.id && selected.status === 'completed' && (
+              <div style={{ background: '#00b4d818', border: '1px solid #00b4d850', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px' }}>
+                <div style={{ fontSize: '13px', color: '#00b4d8', fontWeight: '700', marginBottom: '4px' }}>
+                  <CheckCircle size={13} style={{ verticalAlign: '-2px', marginRight: '5px' }} />Finished here{selected.actual_start ? ` · ${fmtActual(selected)}` : ''}
+                </div>
+                <div style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.45 }}>
+                  Forgot something? Use the buttons below to add it — your hours stay the same. Then tap <strong>Send updated report</strong> so the office gets it.
+                </div>
+              </div>
+            )}
 
             {selected.pools?.access_notes && (
               <div style={{ background: '#fdcb6e18', border: '1px solid #fdcb6e50', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px' }}>
@@ -546,8 +576,20 @@ export default function TechnicianPage() {
                   </button>
                 </>
               )}
-              {selected.id && selected.status === 'completed' && selected.actual_start && (
-                <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>Done · {fmtActual(selected)}</div>
+              {selected.id && selected.status === 'completed' && (
+                <>
+                  <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#00b4d8' }}
+                    disabled={resend.sending} onClick={() => handleResendReport(selected.id)}>
+                    <ClipboardList size={16} /> {resend.sending ? 'Sending…' : 'Send updated report'}
+                  </button>
+                  {resend.msg && (
+                    <div style={{ fontSize: '12px', color: resend.ok ? '#00b894' : '#d63031', textAlign: 'center', fontWeight: '600' }}>{resend.msg}</div>
+                  )}
+                  <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', padding: '14px' }}
+                    onClick={() => handleStartShift(null)}>
+                    <Play size={16} /> Back again later? Start a new visit
+                  </button>
+                </>
               )}
               {completeError && (
                 <div style={{ color: '#d63031', fontSize: '12px', textAlign: 'center' }}>{completeError}</div>

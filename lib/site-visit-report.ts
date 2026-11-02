@@ -55,7 +55,9 @@ const h = (t: string) => `<h3 style="margin:24px 0 8px;color:#00b4d8;font-size:1
 const box = (inner: string, colour = '#1a2d45') => `<div style="background:${colour};border-radius:8px;padding:12px 16px;margin-bottom:8px;font-size:14px;color:#e2e8f0">${inner}</div>`
 const muted = (t: string) => `<div style="color:#64748b;font-size:13px">${t}</div>`
 
-export async function sendSiteVisitReport(shiftId: string) {
+// updated: the technician went back after Finish shift and added something they forgot —
+// the report is rebuilt from everything at the site that day and flagged so the office knows it replaces the first.
+export async function sendSiteVisitReport(shiftId: string, { updated = false }: { updated?: boolean } = {}) {
   const { data: shift } = await supabaseAdmin
     .from('shifts')
     .select('*, staff(first_name, last_name), pools(id, name, pool_type, site_code)')
@@ -224,6 +226,7 @@ export async function sendSiteVisitReport(shiftId: string) {
   const html = emailBase(`
     <h2 style="margin:0 0 4px;color:#ffffff">Site visit — ${esc(pool.name)}</h2>
     <div style="color:#64748b;font-size:13px;margin-bottom:16px">${dateLabel} · ${esc(tech)}</div>
+    ${updated ? box(`<strong style="color:#fdcb6e">Updated report</strong> — ${esc(shift.staff?.first_name ?? 'The technician')} went back at ${fmtTime(new Date().toISOString())} and added to this visit. This replaces the earlier report.`, '#3d3415') : ''}
     ${timeBlock}
     ${h('Site tasks')}${tasksBlock}
     ${h('Faults reported')}${faultsBlock}
@@ -240,5 +243,5 @@ export async function sendSiteVisitReport(shiftId: string) {
 
   const alarm = (tests ?? []).some((t: any) => t.risk_level === 'red' || t.risk_level === 'orange')
     || notDone.length > 0 || (faults ?? []).length > 0
-  await sendEmail(RESULTS_EMAIL, `${alarm ? '⚠️ ' : ''}Site visit: ${pool.name} — ${tech} — ${done.length}/${(tasks ?? []).length} tasks${hours ? ` — ${hours}` : ''}`, html)
+  await sendEmail(RESULTS_EMAIL, `${alarm ? '⚠️ ' : ''}${updated ? 'UPDATED ' : ''}Site visit:${pool.name} — ${tech} — ${done.length}/${(tasks ?? []).length} tasks${hours ? ` — ${hours}` : ''}`, html)
 }

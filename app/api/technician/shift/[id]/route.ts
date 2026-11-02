@@ -26,3 +26,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
   return NextResponse.json({ shift: data })
 }
+
+// POST — "Send updated report": the technician went back to a finished site and added something
+// they forgot. Hours are left alone; the visit report is rebuilt and sent again, marked UPDATED.
+export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getSession()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { id } = await params
+  const { data: shift } = await supabaseAdmin
+    .from('shifts').select('id, status').eq('id', id).eq('staff_id', user.id).single()
+  if (!shift) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (shift.status !== 'completed') return NextResponse.json({ error: 'Finish the shift first — the report goes when you tap Finish shift.' }, { status: 400 })
+
+  try {
+    await sendSiteVisitReport(id, { updated: true })
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message ?? 'Could not send the report' }, { status: 500 })
+  }
+  return NextResponse.json({ ok: true })
+}
