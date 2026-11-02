@@ -2,6 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { sendEmail, RESULTS_EMAIL, emailBase } from '@/lib/email'
 import { fmtTime, fmtDuration } from '@/lib/shift-time'
 import { localDayRange } from '@/lib/local-time'
+import { cleaningJobName } from '@/lib/cleaning-jobs'
 
 // One email per finished shift: everything the technician did at that site today —
 // hours on site, every task ticked (and not ticked) with photo counts, water tests,
@@ -128,6 +129,25 @@ export async function sendSiteVisitReport(shiftId: string, { updated = false }: 
     }
   }
 
+  // Before & After cleaning jobs here today, with their two sets of photos — the office forwards
+  // these to the client as proof the clean was done.
+  const { data: cleaning } = await supabaseAdmin.from('cleaning_jobs')
+    .select('id, job_type, job_label, status, started_at, finished_at, staff:started_by(first_name)')
+    .eq('pool_id', pool.id).gte('started_at', dayStart).lte('started_at', dayEnd).order('started_at')
+  const cleaningPhotos = new Map<string, { before: string[]; after: string[] }>()
+  if ((cleaning ?? []).length) {
+    const { data } = await supabaseAdmin.from('attachments')
+      .select('entity_id, entity_type, file_url, storage_bucket, created_at')
+      .in('entity_type', ['cleaning_before', 'cleaning_after']).in('entity_id', (cleaning ?? []).map((c: any) => c.id))
+      .order('created_at')
+    for (const a of data ?? []) {
+      if (a.storage_bucket) continue
+      const p = cleaningPhotos.get(a.entity_id) ?? { before: [], after: [] }
+      ;(a.entity_type === 'cleaning_before' ? p.before : p.after).push(a.file_url)
+      cleaningPhotos.set(a.entity_id, p)
+    }
+  }
+
   // Chemicals added today at this site
   const { data: dosesToday } = await supabaseAdmin
     .from('chemical_usage_log').select('quantity, applied_at, chemicals(name, dose_unit, unit)')
@@ -207,6 +227,23 @@ export async function sendSiteVisitReport(shiftId: string, { updated = false }: 
       <div style="color:#64748b;font-size:12px;margin-top:4px">${esc(r.raiser?.first_name ?? '')} · ${fmtTime(r.raised_at)}</div>
       ${thumbs(r.id)}`)).join('')
 
+  const photoRow = (label: string, colour: string, urls: string[]) => `
+    <div style="margin-top:8px"><div style="color:${colour};font-weight:700;font-size:11px;letter-spacing:0.5px;margin-bottom:4px">${label}</div>
+    ${urls.length ? urls.map(u => `<a href="${u}" style="text-decoration:none"><img src="${u}" alt="${label}" width="150" style="width:150px;height:112px;object-fit:cover;border-radius:6px;border:1px solid #1a2d45;margin:0 6px 6px 0"></a>`).join('')
+      : '<span style="color:#64748b;font-size:12px">No photo</span>'}</div>`
+  const cleaningBlock = (cleaning ?? []).map((c: any) => {
+    const p = cleaningPhotos.get(c.id) ?? { before: [], after: [] }
+    const done = c.status === 'done'
+    return box(`
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <strong>${esc(cleaningJobName(c))}</strong>
+        <span style="color:${done ? '#00b894' : '#fdcb6e'};font-weight:700;text-transform:uppercase;font-size:12px">${done ? 'Done' : 'Not finished'}</span>
+      </div>
+      <div style="color:#64748b;font-size:12px">${esc(c.staff?.first_name ?? '')} · ${fmtTime(c.started_at)}${c.finished_at ? ' – ' + fmtTime(c.finished_at) : ''}</div>
+      ${photoRow('BEFORE', '#fdcb6e', p.before)}
+      ${photoRow('AFTER', '#00b894', p.after)}`)
+  }).join('')
+
   const stockRows: any[] = stock ?? []
   const stockBlock = stockRows.length === 0 ? muted('No stock count today.') :
     box(`<table cellpadding="0" cellspacing="0" style="font-size:13px;color:#e2e8f0">${stockRows.map((r: any) =>
@@ -229,6 +266,7 @@ export async function sendSiteVisitReport(shiftId: string, { updated = false }: 
     ${updated ? box(`<strong style="color:#fdcb6e">Updated report</strong> — ${esc(shift.staff?.first_name ?? 'The technician')} went back at ${fmtTime(new Date().toISOString())} and added to this visit. This replaces the earlier report.`, '#3d3415') : ''}
     ${timeBlock}
     ${h('Site tasks')}${tasksBlock}
+    ${cleaningBlock ? h('Before &amp; after') + cleaningBlock : ''}
     ${h('Faults reported')}${faultsBlock}
     ${recsBlock ? h('Recommendations') + recsBlock : ''}
     ${h('Water tests')}${testsBlock}

@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
 import { SIGNED_URL_SECONDS } from '@/lib/attachment-storage'
 import { canAccessEntity } from '@/lib/org-scope'
+import { MAX_CLEANING_PHOTOS } from '@/lib/cleaning-jobs'
 
 // Generic entity_type/entity_id attachment store — scope was explicitly unclear from Anthony
 // ("ask him what for"), so this is wired into the two most obviously useful spots (incidents,
@@ -49,6 +50,13 @@ export async function POST(req: NextRequest) {
   }
   if (!(await canAccessEntity(user, body.entity_type, body.entity_id))) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+  if (body.entity_type === 'cleaning_before' || body.entity_type === 'cleaning_after') {
+    const { count } = await supabaseAdmin.from('attachments').select('id', { count: 'exact', head: true })
+      .eq('entity_type', body.entity_type).eq('entity_id', body.entity_id)
+    if ((count ?? 0) >= MAX_CLEANING_PHOTOS) {
+      return NextResponse.json({ error: `Up to ${MAX_CLEANING_PHOTOS} photos each for before and after.` }, { status: 400 })
+    }
   }
 
   const { data, error } = await supabaseAdmin

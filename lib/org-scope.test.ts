@@ -16,6 +16,7 @@ const SCOPED_TABLES = [
   'water_tests', 'microbiology_tests', 'plant_logs', 'shifts', 'site_task_completions',
   'site_chemical_stock', 'chemical_usage_log', 'incidents', 'water_closures', 'assets',
   'attachments', 'corrective_actions', 'risk_register_entries', 'pool_contacts', 'iot_sensors',
+  'cleaning_jobs',
 ]
 
 const SCOPE_HELPERS = [

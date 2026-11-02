@@ -51,6 +51,7 @@ add-site-tasks-migration.sql           ← simple per-site visit task list (admi
 add-site-tasks-seed.sql                ← site_tasks.category + the standard 36-item per-visit list for all sites
 add-site-stock-migration.sql           ← per-site chemical stock (site_chemical_stock), chemical_orders.pool_id, stock-count site task
 add-splash-pad-migration.sql           ← splash_pad pool type, site_tasks.pool_type, splash pad visit checks, water_tests.fault_report
+add-cleaning-jobs-migration.sql        ← Before & After cleaning jobs (cleaning_jobs) + cleaning_before/cleaning_after/recommendation photo types
 ```
 
 After running each migration, run `NOTIFY pgrst, 'reload schema';` in the SQL editor so PostgREST picks up the new tables/columns immediately instead of erroring on the next request.

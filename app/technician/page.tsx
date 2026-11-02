@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, FlaskConical, Package, HelpCircle, Camera, Plus, X, LayoutDashboard, Calculator, Play, CalendarDays, ClipboardList, KeyRound, AlertTriangle } from 'lucide-react'
+import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, FlaskConical, Package, HelpCircle, Camera, Plus, X, LayoutDashboard, Calculator, Play, CalendarDays, ClipboardList, KeyRound, AlertTriangle, Sparkles } from 'lucide-react'
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS, calculateDoses,
   type PoolType, type SanitiserType, type PhCorrectionMethod } from '@/lib/water-chemistry'
 import { buildPrefills } from '@/lib/dose-prefill'
@@ -12,6 +12,7 @@ import { POOL_GUIDE } from '@/lib/pool-guide'
 import SiteAccessDocs from '@/components/SiteAccessDocs'
 import QuickChemicalLog from '@/components/QuickChemicalLog'
 import SiteIssueForm from '@/components/SiteIssueForm'
+import CleaningJobs from '@/components/CleaningJobs'
 import InstantAlerts from '@/components/InstantAlerts'
 import { fmtTime, fmtActual } from '@/lib/shift-time'
 import SiteTaskList from '@/components/SiteTaskList'
@@ -35,6 +36,7 @@ export default function TechnicianPage() {
   const [showCalc, setShowCalc] = useState<{ poolId: string; poolName: string } | null>(null)   // dose calculator overlay
   const [showChemLog, setShowChemLog] = useState(false)      // 'what did you put in?' overlay
   const [showIssue, setShowIssue] = useState(false)          // broken thing / recommendation
+  const [showCleaning, setShowCleaning] = useState(false)    // Before & After cleaning photos
   const [chemLogDone, setChemLogDone] = useState<string | null>(null)
   const [showHelp, setShowHelp] = useState(false)
   const [helpTab, setHelpTab] = useState<'app' | 'pool'>('app')   // ? screen: how to use the app / pool chemistry guide
@@ -523,6 +525,12 @@ export default function TechnicianPage() {
                 </button>
               )}
               {selected.pool_id && (
+                <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#0e7490' }}
+                  onClick={() => setShowCleaning(true)}>
+                  <Sparkles size={16} /> Before &amp; After — cleaning photos
+                </button>
+              )}
+              {selected.pool_id && (
                 <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', background: '#8b2635' }}
                   onClick={() => setShowIssue(true)}>
                   <AlertTriangle size={16} /> Report a Problem or Recommend Work
@@ -916,6 +924,19 @@ export default function TechnicianPage() {
             <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: '15px' }} onClick={() => { setShowTasks(false); maybeAskFinish() }}>
               Done — back to site
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Before & After — cleaning jobs with photo proof for the client */}
+      {showCleaning && selected?.pool_id && (
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 400, overflowY: 'auto' }}>
+          <div style={{ padding: '20px', maxWidth: '480px', margin: '0 auto', paddingBottom: '40px' }}>
+            <CleaningJobs
+              pool={{ id: selected.pool_id, name: selected.pools?.name ?? '' }}
+              shiftId={selected.id ?? null}
+              onDone={() => { setShowCleaning(false); maybeAskFinish() }}
+            />
           </div>
         </div>
       )}

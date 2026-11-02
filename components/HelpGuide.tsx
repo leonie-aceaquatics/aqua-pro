@@ -32,10 +32,11 @@ export const TECH_GUIDE: Section[] = [
         'Your name goes against every tick, so only tick what you actually did.',
         'Some tasks need photos (e.g. "Take 3 BEFORE photos of the gym"). Tick the task, then tap the camera bar under it to add them. It stays orange until all the photos are in.',
       ] },
-      { text: '2. Log Water Test — enter your readings.', sub: [] },
-      { text: '3. Count Stock — count what chemicals are on the shelf.', sub: [] },
-      { text: '4. Plant Room Log — if the site has a plant room (see below).', sub: [] },
-      { text: '5. Finish shift — as you leave the site. Your hours are the time between Start and Finish.', sub: [] },
+      { text: '2. Before & After — if you are cleaning something the client should see, start the job and take the BEFORE photos first.', sub: [] },
+      { text: '3. Log Water Test — enter your readings.', sub: [] },
+      { text: '4. Count Stock — count what chemicals are on the shelf.', sub: [] },
+      { text: '5. Plant Room Log — if the site has a plant room (see below).', sub: [] },
+      { text: '6. Finish shift — as you leave the site. Your hours are the time between Start and Finish.', sub: [] },
     ],
   },
   {
@@ -70,6 +71,18 @@ export const TECH_GUIDE: Section[] = [
         'Red — CLOSE THE POOL and phone Tony immediately (0422 470 214).',
       ] },
       'If you make a mistake, log a new test with the right numbers and put "correction" in the notes — the office can see both.',
+    ],
+  },
+  {
+    title: 'Before & After — cleaning photos', colour: '#0e7490',
+    steps: [
+      'Use this to prove a clean was done: pool floor, scum line, plant room tidy-up, pool deck, or anything else. The office forwards the photos to the client.',
+      'BEFORE you start cleaning, tap Before & After on the site panel → Start a cleaning job → pick what you are cleaning (Other lets you type it).',
+      'Take up to 3 BEFORE photos showing how it looks now.',
+      'Do the clean. You can close the screen — the job waits as "In progress".',
+      'Come back to Before & After, tap the job, and take up to 3 AFTER photos from the same spot as the before ones.',
+      'Tap Mark job done. It needs at least one before and one after photo.',
+      'Started one by mistake? Open it and tap Delete (only while it has no photos).',
     ],
   },
   {
@@ -152,7 +165,7 @@ export const ADMIN_GUIDE: Section[] = [
     steps: [
       'Overview — today\'s risk levels per pool and anything red/orange.',
       'Site Tasks → Tasks Done — pick a date to see exactly what each technician ticked off at each site, and who skipped what.',
-      'Every time a technician taps Finish shift, the office inbox gets a Site Visit email: hours on site, every task ticked (with photo counts), water tests, chemicals added, stock count and plant room log for that site that day. Tasks not ticked are left out of the email — Site Tasks → Tasks Done shows those. The subject line starts with ⚠️ if anything was red/orange or a fault was reported.',
+      'Every time a technician taps Finish shift, the office inbox gets a Site Visit email: hours on site, every task ticked (with photo counts), Before & After cleaning photos (ready to forward to the client), water tests, chemicals added, stock count and plant room log for that site that day. Tasks not ticked are left out of the email — Site Tasks → Tasks Done shows those. The subject line starts with ⚠️ if anything was red/orange or a fault was reported.',
       'Water Testing — every result. Click one for the full readings, LSI and AI advice. Every result is also emailed to info@aceaquatics.com.au. A wrong entry can be removed with Delete test at the bottom of that view (admins only, and it cannot be undone).',
       'Chemicals → Site Stock — which sites are low (orange strip at the top). Items at/below reorder are already on the To Order list against that site.',
     ],

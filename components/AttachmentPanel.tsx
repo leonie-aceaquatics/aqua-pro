@@ -15,7 +15,8 @@ interface Attachment {
 // Reusable image/file attachment panel — pass any entityType/entityId this app cares about.
 // Currently wired into Incidents and Asset Service Log (the two clearest use cases); adding it
 // elsewhere needs no schema or API change, just a new <AttachmentPanel /> call.
-export default function AttachmentPanel({ entityType, entityId, onChange }: { entityType: string; entityId: string; onChange?: () => void }) {
+// max: stop offering "Add photo" once this many are attached (Before & After allows 3 a side).
+export default function AttachmentPanel({ entityType, entityId, onChange, max }: { entityType: string; entityId: string; onChange?: () => void; max?: number }) {
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
@@ -111,10 +112,14 @@ export default function AttachmentPanel({ entityType, entityId, onChange }: { en
         </div>
       )}
 
-      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--aqua)', cursor: 'pointer' }}>
-        <Upload size={12} /> {uploading ? (progress || 'Uploading…') : 'Add photo / file'}
-        <input ref={fileInputRef} type="file" accept="image/*,video/*,.pdf,.mp4,.mov" style={{ display: 'none' }} onChange={handleFile} disabled={uploading} />
-      </label>
+      {max != null && attachments.length >= max && !uploading ? (
+        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{max} of {max} photos added</div>
+      ) : (
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--aqua)', cursor: 'pointer' }}>
+          <Upload size={12} /> {uploading ? (progress || 'Uploading…') : 'Add photo / file'}
+          <input ref={fileInputRef} type="file" accept="image/*,video/*,.pdf,.mp4,.mov" style={{ display: 'none' }} onChange={handleFile} disabled={uploading} />
+        </label>
+      )}
       {error && (
         <div style={{ fontSize: '12px', color: 'var(--red)', marginTop: '6px', lineHeight: 1.5 }}>
           {error}
