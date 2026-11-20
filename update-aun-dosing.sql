@@ -18,20 +18,8 @@ from pools p
 where t.pool_id = p.id and p.site_code in ('AQ-001-A', 'AQ-001-B') and t.parameter = 'totalChlorine';
 
 -- ── 2. Sodium bisulphate in place of hydrochloric acid ───────────────────────
--- Same pH steps as the TD-3 acid rows. Each amount is the bisulphate (93%) equivalent of the
--- printed 33% hydrochloric amount, about 1.36 g per mL, rounded up to the next 5 g.
---   Spa      100 / 200 / 400 mL HCl  →  140 / 275 / 545 g
---   Ice bath  20 /  40 /  75 mL HCl  →   30 /  55 / 105 g
-delete from pool_dose_chart
-where chemical = 'acid' and pool_id in (select id from pools where site_code in ('AQ-001-A', 'AQ-001-B'));
-
-insert into pool_dose_chart (pool_id, chemical, product, step, amount, unit, plain_terms)
-select p.id, 'acid', 'Sodium bisulphate (dry acid)', v.step, v.amount, 'g', null
-from pools p
-join (values
-  ('AQ-001-A', 0.1, 140), ('AQ-001-A', 0.2, 275), ('AQ-001-A', 0.4, 545),
-  ('AQ-001-B', 0.1, 30),  ('AQ-001-B', 0.2, 55),  ('AQ-001-B', 0.4, 105)
-) as v(site_code, step, amount) on v.site_code = p.site_code;
+-- Moved to update-aun-volumes-ph.sql, which sets the bisulphate rows for the current volumes.
+-- (Inserting them here as well put back the 16,000 L amounts whenever this file was re-run.)
 
 -- ── 3. No alkalinity or calcium dosing ───────────────────────────────────────
 delete from pool_dose_chart
