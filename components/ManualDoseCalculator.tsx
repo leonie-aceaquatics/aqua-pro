@@ -1,40 +1,29 @@
 'use client'
 import { useState, useMemo } from 'react'
-import { Beaker, Phone } from 'lucide-react'
-import { manualDoses, DOSING_RULES, type ManualDose } from '@/lib/manual-dose'
+import { manualDosesForSite, dosingRules, type ManualDose, type DoseChartRow } from '@/lib/manual-dose'
 import type { SiteTarget } from '@/lib/water-chemistry'
+import ManualDoseList from './ManualDoseList'
 
 // "What would I add?" for a manually dosed site, without saving anything.
 //
-// Only the four things an operator at a site like this actually measures. No calcium hardness
-// (that is on the service provider's weekly panel), no cyanuric acid, no salt, no controller
+// Only the four things an operator at a site like this actually measures, plus calcium hardness
+// where the site's posted chart covers it (AUN's weekly test). No cyanuric acid, no salt, no controller
 // readings and no UV — none of it exists at a hand-dosed bath, and asking for it invites
 // someone to write a number in that nobody tested.
 
 export default function ManualDoseCalculator({
-  pool, targets, acidDosesToday = 0,
-}: { pool: any; targets: SiteTarget[]; acidDosesToday?: number }) {
-  const [v, setV] = useState({ free_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '' })
+  pool, targets, acidDosesToday = 0, chart = [],
+}: { pool: any; targets: SiteTarget[]; acidDosesToday?: number; chart?: DoseChartRow[] }) {
+  const [v, setV] = useState({ free_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '', calcium_hardness: '' })
+  // Calcium hardness only where the site's chart says how to raise it (a weekly test)
+  const hasCalcium = chart.some(r => r.chemical === 'calcium_chloride')
   const n = (x: string) => x === '' ? null : Number(x)
 
-  const t = (p: string) => targets.find(x => x.parameter === p)
-
-  const doses: ManualDose[] = useMemo(() => {
-    const fcT = t('freeChlorine'), phT = t('ph'), taT = t('totalAlkalinity')
-    return manualDoses(
-      { freeChlorine: n(v.free_chlorine), totalChlorine: n(v.total_chlorine), ph: n(v.ph), totalAlkalinity: n(v.total_alkalinity) },
-      {
-        freeChlorineIdeal: fcT?.ideal_value ?? 3, freeChlorineMin: fcT?.min_value ?? 2, freeChlorineMax: fcT?.max_value ?? 5,
-        phMin: phT?.min_value ?? 7.3, phMax: phT?.max_value ?? 7.6,
-        alkalinityMin: taT?.min_value ?? 80, alkalinityIdeal: taT?.ideal_value ?? 100,
-      },
-      {
-        volumeLitres: Number(pool?.volume_litres) || 0,
-        fixedAcidDoseG: pool?.fixed_acid_dose_g, fixedAcidMaxDoses: pool?.fixed_acid_max_doses,
-        fixedSodaAshDoseG: pool?.fixed_soda_ash_dose_g, acidDosesSoFar: acidDosesToday,
-      },
-    )
-  }, [v, targets, pool, acidDosesToday]) // eslint-disable-line react-hooks/exhaustive-deps
+  const doses: ManualDose[] = useMemo(() => manualDosesForSite(
+    { freeChlorine: n(v.free_chlorine), totalChlorine: n(v.total_chlorine), ph: n(v.ph), totalAlkalinity: n(v.total_alkalinity),
+      calciumHardness: n(v.calcium_hardness) },
+    pool, targets, acidDosesToday, chart,
+  ), [v, targets, pool, acidDosesToday, chart]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const label: React.CSSProperties = { fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '4px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }
   const field: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '10px 12px', fontSize: '16px', width: '100%', outline: 'none' }
@@ -62,42 +51,52 @@ export default function ManualDoseCalculator({
         {input('total_chlorine', 'Total chlorine (mg/L)', '3.2')}
         {input('ph', 'pH', '7.45')}
         {input('total_alkalinity', 'Total alkalinity (mg/L)', '100')}
+        {hasCalcium && input('calcium_hardness', 'Calcium hardness (mg/L) · weekly', '200')}
       </div>
 
       {doses.length === 0 ? (
         <div style={{ color: '#64748b', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>
-          Enter a reading above and the dose appears here.
+          {Object.values(v).some(x => x !== '')
+            ? 'Everything entered is within this site’s targets. Nothing to add.'
+            : 'Enter a reading above and the dose appears here.'}
         </div>
       ) : (
-        <div style={{ background: 'var(--surface)', border: '1px solid #fdcb6e50', borderRadius: '10px', padding: '16px' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#fdcb6e', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>
-            <Beaker size={13} style={{ verticalAlign: '-2px', marginRight: '5px' }} />What to add
-          </div>
-          {doses.map((d, i) => (
-            <div key={i} style={{ padding: '10px 12px', borderRadius: '8px', marginBottom: '8px',
-              background: d.severity === 'stop' ? '#d6303122' : 'var(--surface-2)',
-              border: `1px solid ${d.severity === 'stop' ? '#d63031' : 'var(--border)'}` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'baseline', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '14px', fontWeight: '700', color: d.severity === 'stop' ? '#ff7675' : '#e2e8f0' }}>{d.chemical}</span>
-                <span style={{ fontSize: '17px', fontWeight: '800', color: d.severity === 'stop' ? '#ff7675' : '#00b4d8' }}>{d.amount}</span>
-              </div>
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>{d.reason}</div>
-              {d.note && <div style={{ fontSize: '12px', color: d.severity === 'stop' ? '#ff7675' : '#fdcb6e', marginTop: '4px' }}>{d.note}</div>}
-              {d.severity === 'stop' && (
-                <a href="tel:0422470214" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '8px', color: '#fff', background: '#d63031', padding: '10px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: '700' }}>
-                  <Phone size={15} /> Call Ace 0422 470 214
-                </a>
-              )}
-            </div>
-          ))}
-          <div style={{ borderTop: '1px solid var(--border)', paddingTop: '8px' }}>
-            {DOSING_RULES.map(r => <div key={r} style={{ fontSize: '11px', color: '#64748b', marginBottom: '2px' }}>· {r}</div>)}
-          </div>
+        <ManualDoseList doses={doses} rules={dosingRules(pool.retest_wait_minutes)} footer={
           <div style={{ fontSize: '12px', color: '#fdcb6e', marginTop: '8px' }}>
             Nothing here is saved. When you dose for real, record it on the round so the dose and its retest are in the record.
           </div>
-        </div>
+        } />
       )}
+
+      {chart.length > 0 && <PostedChart chart={chart} />}
     </>
+  )
+}
+
+const CHART_HEADINGS: Record<string, string> = {
+  hypochlorite: 'Raise free chlorine', acid: 'Lower pH', bicarbonate: 'Raise alkalinity',
+  calcium_chloride: 'Raise calcium hardness', salt: 'Raise salt', soda_ash: 'Raise pH',
+  thiosulphate: 'Lower chlorine', superchlorination: 'Superchlorination (pool closed) — by combined chlorine reading',
+  diarrhoea: 'Diarrhoea in the water',
+}
+
+// The posted chart itself, so the phone matches the wall
+function PostedChart({ chart }: { chart: DoseChartRow[] }) {
+  const groups = Object.keys(CHART_HEADINGS).filter(c => chart.some(r => r.chemical === c))
+  return (
+    <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginTop: '12px' }}>
+      <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>Posted dose chart</div>
+      {groups.map(g => (
+        <div key={g} style={{ marginBottom: '10px' }}>
+          <div style={{ fontSize: '12px', fontWeight: '700', color: '#e2e8f0', marginBottom: '4px' }}>{CHART_HEADINGS[g]}</div>
+          {chart.filter(r => r.chemical === g).map(r => (
+            <div key={r.step} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '12px', color: '#94a3b8', padding: '2px 0' }}>
+              <span>{g === 'diarrhoea' ? r.product : `${g === 'superchlorination' ? 'reading' : 'by'} ${r.step}`}</span>
+              <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{r.amount} {r.unit}{r.plain_terms ? ` · ${r.plain_terms}` : ''}</span>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
   )
 }

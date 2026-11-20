@@ -1,7 +1,7 @@
 'use client'
 import { useState, useMemo } from 'react'
 import { CheckCircle, AlertTriangle, Beaker, Eye, Phone } from 'lucide-react'
-import { manualDoses, DOSING_RULES, type ManualDose } from '@/lib/manual-dose'
+import { manualDosesForSite, dosingRules, type ManualDose, type DoseChartRow } from '@/lib/manual-dose'
 import type { SiteTarget } from '@/lib/water-chemistry'
 
 // One round on one body of water, for a manually dosed site.
@@ -26,6 +26,8 @@ export interface RoundFormProps {
   roundKey: string
   roundLabel: string
   acidDosesToday: number
+  /** The site's posted dose chart, where it has one. */
+  chart?: DoseChartRow[]
   /** Recording a retest after a dose, rather than a fresh round reading. */
   retestOf?: string | null
   onSaved: () => void
@@ -37,7 +39,7 @@ function targetOf(targets: SiteTarget[], p: string) {
 }
 
 export default function ManualRoundForm({
-  pool, targets, roundKey, roundLabel, acidDosesToday, retestOf, onSaved, onCancel,
+  pool, targets, roundKey, roundLabel, acidDosesToday, chart = [], retestOf, onSaved, onCancel,
 }: RoundFormProps) {
   const [form, setForm] = useState(BLANK)
   const [clear, setClear] = useState<boolean | null>(null)
@@ -65,27 +67,18 @@ export default function ManualRoundForm({
     if (ph != null && phT?.close_above != null && ph > phT.close_above) out.push(`pH ${ph} is above ${phT.close_above}`)
     if (combined != null && ccT?.close_above != null && combined > ccT.close_above) out.push(`Combined chlorine ${combined} is above ${ccT.close_above}`)
     if (combined != null && fc != null && combined > fc) out.push(`Combined chlorine ${combined} is above the free chlorine ${fc}`)
+    const tempT = t('temperature'), temp = num(form.temperature_c)
+    if (temp != null && tempT?.close_above != null && temp > tempT.close_above) out.push(`Temperature ${temp} °C is at the legal limit for this pool. Turn the heat off`)
+    if (temp != null && tempT?.close_below != null && temp < tempT.close_below) out.push(`Temperature ${temp} °C is below ${tempT.close_below} °C`)
     if (clear === false) out.push('The floor of the bath is not clearly visible')
     return out
-  }, [fc, tc, ph, combined, clear, targets]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fc, tc, ph, combined, clear, targets, form.temperature_c]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const doses: ManualDose[] = useMemo(() => {
-    const fcT = t('freeChlorine'), phT = t('ph'), taT = t('totalAlkalinity')
-    if (!fcT || !phT || !taT) return []
-    return manualDoses(
-      { freeChlorine: fc, totalChlorine: tc, ph, totalAlkalinity: ta },
-      {
-        freeChlorineIdeal: fcT.ideal_value ?? 3, freeChlorineMin: fcT.min_value ?? 2, freeChlorineMax: fcT.max_value ?? 5,
-        phMin: phT.min_value ?? 7.3, phMax: phT.max_value ?? 7.6,
-        alkalinityMin: taT.min_value ?? 80, alkalinityIdeal: taT.ideal_value ?? 100,
-      },
-      {
-        volumeLitres: Number(pool.volume_litres) || 0,
-        fixedAcidDoseG: pool.fixed_acid_dose_g, fixedAcidMaxDoses: pool.fixed_acid_max_doses,
-        fixedSodaAshDoseG: pool.fixed_soda_ash_dose_g, acidDosesSoFar: acidDosesToday,
-      },
-    )
-  }, [fc, tc, ph, ta, targets, pool, acidDosesToday]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (!t('freeChlorine') || !t('ph') || !t('totalAlkalinity')) return []
+    return manualDosesForSite({ freeChlorine: fc, totalChlorine: tc, ph, totalAlkalinity: ta }, pool, targets, acidDosesToday, chart)
+  }, [fc, tc, ph, ta, targets, pool, acidDosesToday, chart]) // eslint-disable-line react-hooks/exhaustive-deps
+  const wait = pool.retest_wait_minutes ?? 15
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -173,7 +166,7 @@ export default function ManualRoundForm({
           {closures.map(c => <div key={c} style={{ color: '#e2e8f0', fontSize: '13px', marginBottom: '2px' }}>· {c}</div>)}
           <div style={{ color: '#e2e8f0', fontSize: '13px', marginTop: '8px' }}>
             Get everyone out, put the closure sign on, tell the duty manager. You need nobody&apos;s permission.
-            Record it here, do the corrective work, and retest. Shannon decides when it reopens.
+            Record it here, do the corrective work, and retest. The manager decides when it reopens.
           </div>
         </div>
       )}
@@ -202,7 +195,7 @@ export default function ManualRoundForm({
             </div>
           ))}
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: '8px', marginTop: '4px' }}>
-            {DOSING_RULES.map(r => <div key={r} style={{ fontSize: '11px', color: '#64748b', marginBottom: '2px' }}>· {r}</div>)}
+            {dosingRules(pool.retest_wait_minutes).map(r => <div key={r} style={{ fontSize: '11px', color: '#64748b', marginBottom: '2px' }}>· {r}</div>)}
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px', cursor: 'pointer' }}>
             <input type="checkbox" checked={bathersClear} onChange={e => setBathersClear(e.target.checked)} style={{ width: '20px', height: '20px', accentColor: '#00b894' }} />
@@ -228,7 +221,7 @@ export default function ManualRoundForm({
       </div>
       {doses.length > 0 && (
         <div style={{ fontSize: '12px', color: '#fdcb6e', textAlign: 'center', marginTop: '10px' }}>
-          After you dose: circulate 15 minutes, then record a retest. A dose with no retest is the most common reason a record fails.
+          After you dose: wait {wait} minutes, then record a retest. A dose with no retest is the most common reason a record fails.
         </div>
       )}
     </form>

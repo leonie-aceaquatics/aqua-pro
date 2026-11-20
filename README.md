@@ -52,6 +52,8 @@ add-site-tasks-seed.sql                ← site_tasks.category + the standard 36
 add-site-stock-migration.sql           ← per-site chemical stock (site_chemical_stock), chemical_orders.pool_id, stock-count site task
 add-splash-pad-migration.sql           ← splash_pad pool type, site_tasks.pool_type, splash pad visit checks, water_tests.fault_report
 add-cleaning-jobs-migration.sql        ← Before & After cleaning jobs (cleaning_jobs) + cleaning_before/cleaning_after/recommendation photo types
+setup-aun-bathhouse.sql                ← AUN Bathhouse as its own org: spa + ice bath as manual dosing sites, WQRMP v2.0 targets, five rounds, task list
+add-aun-dose-chart.sql                 ← AUN posted dose chart (TD-3) as pool_dose_chart rows, retest wait per vessel (60 / 25 min), temperature closure limits
 ```
 
 After running each migration, run `NOTIFY pgrst, 'reload schema';` in the SQL editor so PostgREST picks up the new tables/columns immediately instead of erroring on the next request.

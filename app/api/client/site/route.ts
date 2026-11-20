@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const day = todayLocal()
   const { start, end } = localDayRange(day)
 
-  const [{ data: pool }, { data: targets }, { data: rounds }, { data: tests }, { data: doses }] = await Promise.all([
+  const [{ data: pool }, { data: targets }, { data: rounds }, { data: tests }, { data: doses }, { data: chart }] = await Promise.all([
     supabaseAdmin.from('pools').select('*').eq('id', poolId).single(),
     supabaseAdmin.from('pool_water_targets').select('*').eq('pool_id', poolId),
     supabaseAdmin.from('pool_rounds').select('*').eq('pool_id', poolId).order('sort_order'),
@@ -29,6 +29,8 @@ export async function GET(req: NextRequest) {
     supabaseAdmin.from('chemical_usage_log')
       .select('id, applied_at, quantity, chemicals(name)')
       .eq('pool_id', poolId).gte('applied_at', start).lte('applied_at', end),
+    // The dose chart posted at this site's dosing point, if it has one
+    supabaseAdmin.from('pool_dose_chart').select('*').eq('pool_id', poolId).order('chemical').order('step'),
   ])
 
   if (!pool) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -39,6 +41,6 @@ export async function GET(req: NextRequest) {
   }).length
 
   return NextResponse.json({
-    pool, targets: targets ?? [], rounds: rounds ?? [], tests: tests ?? [], acidDosesToday, day,
+    pool, targets: targets ?? [], rounds: rounds ?? [], tests: tests ?? [], acidDosesToday, day, chart: chart ?? [],
   })
 }

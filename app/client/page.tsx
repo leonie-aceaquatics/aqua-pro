@@ -217,6 +217,7 @@ export default function ClientPortalPage() {
               roundKey={round.key} roundLabel={round.label}
               retestOf={round.retestOf ?? null}
               acidDosesToday={site.acidDosesToday ?? 0}
+              chart={site.chart ?? []}
               onCancel={() => setRound(null)}
               onSaved={() => { setRound(null); loadSite(selected.id); load() }}
             />
@@ -290,7 +291,7 @@ export default function ClientPortalPage() {
           <div style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', marginBottom: '4px' }}>Dose calculator</div>
           <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>{selected.name}</div>
           {site
-            ? <ManualDoseCalculator pool={site.pool} targets={site.targets} acidDosesToday={site.acidDosesToday ?? 0} />
+            ? <ManualDoseCalculator pool={site.pool} targets={site.targets} acidDosesToday={site.acidDosesToday ?? 0} chart={site.chart ?? []} />
             : <div style={{ color: '#64748b', fontSize: '13px' }}>Loading…</div>}
         </div>
       )}

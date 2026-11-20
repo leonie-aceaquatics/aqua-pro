@@ -21,8 +21,23 @@ export interface ManualDose {
   severity: 'dose' | 'warn' | 'stop'
 }
 
+/** One row of a site's posted dose chart (pool_dose_chart). */
+export interface DoseChartRow {
+  chemical: string
+  product: string
+  /** How far the reading moves: mg/L, or pH units for acid. */
+  step: number
+  amount: number
+  unit: string
+  plain_terms?: string | null
+}
+
 export interface ManualDoseConfig {
   volumeLitres: number
+  /** The site's posted chart. Where it has a row for a chemical, the chart wins over the formula. */
+  chart?: DoseChartRow[]
+  /** One full turnover: how long to circulate before the retest. */
+  retestMinutes?: number | null
   /** Grams of dry acid per dose. Never calculated. */
   fixedAcidDoseG?: number | null
   fixedAcidMaxDoses?: number | null
@@ -40,6 +55,9 @@ export interface ManualDoseTargets {
   phMax: number
   alkalinityMin: number
   alkalinityIdeal: number
+  phIdeal?: number
+  calciumMin?: number | null
+  calciumIdeal?: number | null
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10
@@ -71,6 +89,7 @@ export interface ManualDoseInput {
   totalChlorine?: number | null
   ph?: number | null
   totalAlkalinity?: number | null
+  calciumHardness?: number | null
 }
 
 /**
@@ -87,16 +106,41 @@ export function manualDoses(
   const vol = config.volumeLitres
   if (!vol || vol <= 0) return out
 
-  const { freeChlorine: fc, ph, totalAlkalinity: ta } = values
+  const { freeChlorine: fc, ph, totalAlkalinity: ta, calciumHardness: ch } = values
+  const chart = config.chart ?? []
+  const hasChart = chart.length > 0
+  const wait = config.retestMinutes ?? 15
+  const rows = (c: string) => chart.filter(r => r.chemical === c).sort((a, b) => a.step - b.step)
+  // Chart amount per unit of change, read off its largest row (the chart is linear for these).
+  const chartRate = (c: string) => {
+    const all = rows(c)
+    const r = all[all.length - 1]
+    return r ? { per: r.amount / r.step, unit: r.unit, product: r.product } : null
+  }
+  const powderNote = 'Dissolve in a bucket of water first, then pour in. Never tip dry powder into the pool.'
 
   // ── Alkalinity first: it is the buffer everything else sits on ────────────
   if (ta != null && ta < targets.alkalinityMin) {
     const deficit = targets.alkalinityIdeal - ta
+    const rate = chartRate('bicarbonate')
     out.push({
       chemical: 'Sodium bicarbonate',
-      amount: `${round1(bicarbonateG(deficit, vol))} g`,
+      amount: rate ? `${Math.round(deficit * rate.per)} ${rate.unit}` : `${round1(bicarbonateG(deficit, vol))} g`,
       reason: `Alkalinity ${ta} is below ${targets.alkalinityMin}. Bring it to ${targets.alkalinityIdeal}.`,
-      note: 'Bicarbonate, not soda ash. Circulate 15 minutes before adding chlorine.',
+      note: `Bicarbonate, not soda ash.${hasChart ? ' ' + powderNote : ''} Circulate ${wait} minutes before adding anything else.`,
+      severity: 'dose',
+    })
+  }
+
+  // ── Calcium hardness (weekly test), only where the chart covers it ───────
+  const caRate = chartRate('calcium_chloride')
+  if (ch != null && caRate && targets.calciumMin != null && ch < targets.calciumMin) {
+    const ideal = targets.calciumIdeal ?? targets.calciumMin
+    out.push({
+      chemical: caRate.product,
+      amount: `${Math.round((ideal - ch) * caRate.per)} ${caRate.unit}`,
+      reason: `Calcium hardness ${ch} is below ${targets.calciumMin}. Bring it to ${ideal}.`,
+      note: `Gets hot in water. ${powderNote} One chemical at a time: wait ${wait} minutes, then retest.`,
       severity: 'dose',
     })
   }
@@ -105,9 +149,10 @@ export function manualDoses(
   if (fc != null) {
     if (fc < targets.freeChlorineMin) {
       const deficit = targets.freeChlorineIdeal - fc
+      const rate = chartRate('hypochlorite')
       out.push({
-        chemical: 'Sodium hypochlorite 12.5%',
-        amount: `${round1(hypochloriteMl(deficit, vol))} mL`,
+        chemical: rate?.product ?? 'Sodium hypochlorite 12.5%',
+        amount: rate ? `${Math.round(deficit * rate.per)} ${rate.unit}` : `${round1(hypochloriteMl(deficit, vol))} mL`,
         reason: `Free chlorine ${fc} is below the ${targets.freeChlorineMin} operating floor. Bring it to ${targets.freeChlorineIdeal}.`,
         note: 'Measure into the cylinder labelled CHLORINE. Clear the bath, pour into moving water at the return.',
         severity: 'dose',
@@ -117,8 +162,10 @@ export function manualDoses(
       out.push({
         chemical: 'Nothing — let it fall',
         amount: 'No dose',
-        reason: `Free chlorine ${fc} is above ${targets.freeChlorineMax}. It will fall on its own, and the bath is drained at close anyway.`,
-        note: `If it genuinely has to come down now, sodium thiosulphate is ${round1(thiosulphateG(fc - targets.freeChlorineIdeal, vol))} g — dissolve in warm water first. Thiosulphate does not stop at your target, so overshoot and the bath sits at zero.`,
+        reason: `Free chlorine ${fc} is above ${targets.freeChlorineMax}. It will fall on its own.`,
+        note: hasChart && rows('thiosulphate').length === 0
+          ? 'Stop any manual chlorine dosing. Above 10 mg/L close the pool, stop dosing and dilute.'
+          : `If it genuinely has to come down now, sodium thiosulphate is ${round1(thiosulphateG(fc - targets.freeChlorineIdeal, vol))} g — dissolve in warm water first. Thiosulphate does not stop at your target, so overshoot and the bath sits at zero.`,
         severity: 'warn',
       })
     }
@@ -129,7 +176,46 @@ export function manualDoses(
     if (ph > targets.phMax) {
       const used = config.acidDosesSoFar ?? 0
       const max = config.fixedAcidMaxDoses ?? 2
-      if (used >= max) {
+      const acidRows = rows('acid')
+      if (acidRows.length > 0) {
+        // Read off the posted chart, never worked out. The drop wanted is rounded DOWN to a row,
+        // so the dose errs low; anything past the biggest row is the chart's own "call Ace".
+        const ideal = targets.phIdeal ?? (targets.phMin + targets.phMax) / 2
+        const drop = Math.round((ph - ideal) * 10) / 10
+        const row = [...acidRows].reverse().find(r => r.step <= drop + 1e-9) ?? acidRows[0]
+        const biggest = acidRows[acidRows.length - 1]
+        if (drop > biggest.step + 1e-9 || used >= max) {
+          out.push({
+            chemical: 'STOP — call Ace Aquatics on 0422 470 214',
+            amount: 'No further acid',
+            reason: used >= max
+              ? `pH is still ${ph} after ${used} acid doses. That is the cap.`
+              : `pH ${ph} needs more than the biggest acid dose on the chart.`,
+            note: 'Close the pool if pH is above 7.8. Do not keep dosing.',
+            severity: 'stop',
+          })
+        } else {
+          out.push({
+            chemical: row.product,
+            amount: `${row.amount} ${row.unit}`,
+            reason: `pH ${ph} is above ${targets.phMax}. Chart row: lower pH by ${row.step}.`,
+            note: `${row.plain_terms ? row.plain_terms + '. ' : ''}Acid goes INTO water. Never near chlorine. Wait ${wait} minutes, retest. Dose ${used + 1} of ${max}.`,
+            fixed: true,
+            maxDoses: max,
+            severity: 'dose',
+          })
+        }
+      } else if (config.fixedAcidDoseG == null) {
+        // A site with no fixed step set gets no number at all. Falling back to Senza's 7 g
+        // would hand a 16,000 L spa a dose sized for a 390 L bath.
+        out.push({
+          chemical: 'Acid — use the dose chart at the dosing point',
+          amount: 'Per posted chart',
+          reason: `pH ${ph} is above ${targets.phMax}. No fixed acid dose is set for this site in Aqua Pro.`,
+          note: 'Never calculate acid. If there is no chart, do not dose: call Ace Aquatics on 0422 470 214.',
+          severity: 'warn',
+        })
+      } else if (used >= max) {
         out.push({
           chemical: 'STOP — call Ace Aquatics on 0422 470 214',
           amount: 'No further acid',
@@ -140,9 +226,9 @@ export function manualDoses(
       } else {
         out.push({
           chemical: 'Dry acid (sodium bisulphate)',
-          amount: `${config.fixedAcidDoseG ?? 7} g`,
+          amount: `${config.fixedAcidDoseG} g`,
           reason: `pH ${ph} is above ${targets.phMax}. Fixed dose — this is never calculated.`,
-          note: `Weigh it on the scales with its own scoop. Circulate 15 minutes, retest. Dose ${used + 1} of ${max}.`,
+          note: `Weigh it on the scales with its own scoop. Circulate ${wait} minutes, retest. Dose ${used + 1} of ${max}.`,
           fixed: true,
           maxDoses: max,
           severity: 'dose',
@@ -150,9 +236,22 @@ export function manualDoses(
       }
     } else if (ph < targets.phMin) {
       const lowAlk = ta != null && ta < targets.alkalinityMin
+      if (hasChart && rows('soda_ash').length === 0) {
+        // This site holds no soda ash. Low pH here means the acid doser is overdoing it.
+        out.push({
+          chemical: lowAlk ? 'Sodium bicarbonate (see above)' : 'No soda ash at this site',
+          amount: lowAlk ? 'Fix alkalinity first' : 'No dose',
+          reason: `pH ${ph} is below ${targets.phMin}.`,
+          note: 'Check the Halo Doser is not over-dosing acid, and that alkalinity is in range. Below 7.2 close the pool and call Ace Aquatics on 0422 470 214.',
+          severity: 'warn',
+        })
+        return out
+      }
       out.push({
         chemical: lowAlk ? 'Sodium bicarbonate (see above)' : 'Soda ash (sodium carbonate)',
-        amount: lowAlk ? 'Fix alkalinity first' : `${config.fixedSodaAshDoseG ?? 4} g per 10 mg/L`,
+        amount: lowAlk
+          ? 'Fix alkalinity first'
+          : config.fixedSodaAshDoseG == null ? 'Per posted chart' : `${config.fixedSodaAshDoseG} g per 10 mg/L`,
         reason: `pH ${ph} is below ${targets.phMin}.`,
         note: lowAlk
           ? 'Alkalinity is low too. Bicarbonate lifts both — correct that first, circulate, then retest pH before reaching for soda ash.'
@@ -166,9 +265,49 @@ export function manualDoses(
   return out
 }
 
+/**
+ * manualDoses() fed straight from a site's own pool_water_targets rows and pool record, so the
+ * technician form, the calculator and the client portal all give the same answer for one site.
+ */
+export function manualDosesForSite(
+  values: ManualDoseInput,
+  pool: any,
+  targets: { parameter: string; min_value: number | null; max_value: number | null; ideal_value: number | null }[],
+  acidDosesToday = 0,
+  chart: DoseChartRow[] = [],
+): ManualDose[] {
+  const t = (p: string) => targets.find(x => x.parameter === p)
+  const fcT = t('freeChlorine'), phT = t('ph'), taT = t('totalAlkalinity'), caT = t('calciumHardness')
+  return manualDoses(
+    values,
+    {
+      freeChlorineIdeal: fcT?.ideal_value ?? 3, freeChlorineMin: fcT?.min_value ?? 2, freeChlorineMax: fcT?.max_value ?? 5,
+      phMin: phT?.min_value ?? 7.3, phMax: phT?.max_value ?? 7.6,
+      alkalinityMin: taT?.min_value ?? 80, alkalinityIdeal: taT?.ideal_value ?? 100,
+      phIdeal: phT?.ideal_value ?? undefined,
+      calciumMin: caT?.min_value, calciumIdeal: caT?.ideal_value,
+    },
+    {
+      volumeLitres: Number(pool?.volume_litres) || 0,
+      chart, retestMinutes: pool?.retest_wait_minutes,
+      fixedAcidDoseG: pool?.fixed_acid_dose_g, fixedAcidMaxDoses: pool?.fixed_acid_max_doses,
+      fixedSodaAshDoseG: pool?.fixed_soda_ash_dose_g, acidDosesSoFar: acidDosesToday,
+    },
+  )
+}
+
 /** The three rules, shown above every dose so they are never out of sight. */
 export const DOSING_RULES = [
   'Test, dose, circulate 15 minutes, retest. Never dose twice without a test in between.',
   'Measure, never estimate. Use the labelled cylinder or scoop for that chemical only.',
   'Never dose with a bather in the bath. Clear it first, every time.',
 ]
+
+/** The rules with this site's own wait before the retest. */
+export const dosingRules = (retestMinutes?: number | null) => retestMinutes && retestMinutes !== 15
+  ? [
+      `The pump must be running. Test, dose ONE chemical, wait ${retestMinutes} minutes (one turnover), retest.`,
+      DOSING_RULES[1],
+      'Never dose with anyone in the water. Clear it first, every time.',
+    ]
+  : DOSING_RULES

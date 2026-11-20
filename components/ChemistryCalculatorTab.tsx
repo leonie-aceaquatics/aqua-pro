@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { Calculator } from 'lucide-react'
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS } from '@/lib/water-chemistry'
 import { CALCULATOR_TIPS, LSI_TIPS } from '@/lib/pool-guide'
+import ManualDoseCalculator from './ManualDoseCalculator'
 
 const BLANK = { free_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '', calcium_hardness: '', cyanuric_acid: '', salt_level: '', temperature_c: '' }
 
@@ -18,6 +19,39 @@ export default function ChemistryCalculatorTab({ initialPoolId = '', compact = f
   useEffect(() => {
     fetch('/api/admin/pools').then(r => r.json()).then(d => setPools(d.pools ?? []))
   }, [])
+
+  // A hand-dosed site (Senza, AUN) gets its own calculator: its own targets, fixed acid steps,
+  // nothing calculated for acid. The plant formulas below are for controller-dosed pools.
+  const pool = pools.find(p => p.id === poolId)
+  const manual = pool?.dosing_type === 'manual'
+  const [site, setSite] = useState<any>(null)
+  useEffect(() => {
+    setSite(null)
+    if (!manual) return
+    fetch(`/api/client/site?pool_id=${poolId}`).then(r => r.json()).then(setSite).catch(() => {})
+  }, [poolId, manual])
+
+  const poolSelect = (
+    <select required value={poolId} onChange={e => { setPoolId(e.target.value); setResult(null) }}>
+      <option value="">Select pool…</option>
+      {pools.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+    </select>
+  )
+
+  if (manual) {
+    return (
+      <>
+        <div className="card" style={{ marginBottom: '14px' }}>
+          <label>Pool *</label>
+          {poolSelect}
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>Manual dosing site: doses use this site’s own targets.</div>
+        </div>
+        {site?.pool
+          ? <ManualDoseCalculator pool={site.pool} targets={site.targets ?? []} acidDosesToday={site.acidDosesToday ?? 0} chart={site.chart ?? []} />
+          : <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Loading this site’s targets…</div>}
+      </>
+    )
+  }
 
   // Combined chlorine = total − free (DPD3 − DPD1); shown read-only, recomputed server-side too
   const combinedChlorine = values.free_chlorine !== '' && values.total_chlorine !== ''
@@ -72,10 +106,7 @@ export default function ChemistryCalculatorTab({ initialPoolId = '', compact = f
           <form onSubmit={calculate}>
             <div style={{ marginBottom: '14px' }}>
               <label>Pool *</label>
-              <select required value={poolId} onChange={e => setPoolId(e.target.value)}>
-                <option value="">Select pool…</option>
-                {pools.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+              {poolSelect}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
               <div><label>Free Chlorine (ppm)</label><input type="number" step="0.1" value={values.free_chlorine} onChange={e => setValues(v => ({ ...v, free_chlorine: e.target.value }))} /></div>

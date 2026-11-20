@@ -5,6 +5,8 @@ import { Droplets, MapPin, CheckCircle, Clock, ChevronRight, LogOut, FlaskConica
 import { RISK_COLOURS, RISK_LABELS, calculateLSI, classifyLSI, LSI_LABELS, calculateDoses,
   type PoolType, type SanitiserType, type PhCorrectionMethod } from '@/lib/water-chemistry'
 import { buildPrefills } from '@/lib/dose-prefill'
+import { manualDosesForSite, dosingRules } from '@/lib/manual-dose'
+import ManualDoseList from '@/components/ManualDoseList'
 import PlantLog from '@/components/PlantLog'
 import ChemistryCalculatorTab from '@/components/ChemistryCalculatorTab'
 import ChangePassword from '@/components/ChangePassword'
@@ -189,9 +191,29 @@ export default function TechnicianPage() {
   // stock list so the amount can be recorded with one tap instead of read off one screen and
   // retyped into another. Anything the engine is not certain about offers no button at all.
   const dosableChemicals = chemicals.filter(c => c.dosable !== false)
+
+  // A hand-dosed site (Senza, AUN) is dosed from its own targets and fixed acid steps, not the
+  // plant formulas: load its setup when the site is opened.
+  const [manualSite, setManualSite] = useState<any>(null)
+  useEffect(() => {
+    setManualSite(null)
+    if (!selected?.pool_id) return
+    fetch(`/api/client/site?pool_id=${selected.pool_id}`).then(r => r.json())
+      .then(d => { if (d.pool?.dosing_type === 'manual') setManualSite(d) }).catch(() => {})
+  }, [selected?.pool_id])
+  const manualList = useMemo(() => {
+    if (!manualSite) return []
+    const num = (v: string) => v === '' ? null : Number(v)
+    return manualDosesForSite(
+      { freeChlorine: num(testForm.free_chlorine), totalChlorine: num(testForm.total_chlorine),
+        ph: num(testForm.ph), totalAlkalinity: num(testForm.total_alkalinity), calciumHardness: num(testForm.calcium_hardness) },
+      manualSite.pool, manualSite.targets ?? [], manualSite.acidDosesToday ?? 0, manualSite.chart ?? [],
+    )
+  }, [testForm, manualSite])
+
   const prefills = useMemo(() => {
     const pool = selected?.pools
-    if (!pool || !Number(pool.volume_litres)) return []
+    if (manualSite || !pool || !Number(pool.volume_litres)) return []
     const num = (v: string) => v === '' ? undefined : Number(v)
     try {
       const recs = calculateDoses(
@@ -208,7 +230,7 @@ export default function TechnicianPage() {
       )
       return buildPrefills(recs, dosableChemicals)
     } catch { return [] }
-  }, [testForm, selected, chemicals])   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [testForm, selected, chemicals, manualSite])   // eslint-disable-line react-hooks/exhaustive-deps
 
   /** Put a suggested amount straight into the Chemicals Added list, or take it out again. */
   function togglePrefill(p: { chemical: { id: string }; amount: number }) {
@@ -222,9 +244,10 @@ export default function TechnicianPage() {
     // The readings called for a dose and nothing was recorded. Ask once — a tech who genuinely
     // added nothing says so and carries on; a tech who forgot gets the chance before it is gone.
     const recorded = doses.filter(d => d.chemical_id && Number(d.quantity) > 0)
-    if (prefills.length > 0 && recorded.length === 0 && !doseSkipAsked) {
+    const neededDose = prefills.length > 0 || manualList.some(d => d.severity === 'dose')
+    if (neededDose && recorded.length === 0 && !doseSkipAsked) {
       setDoseSkipAsked(true)
-      setTestError('You have not recorded any chemicals, but these readings needed some. If you dosed, tap the suggestion above. If you added nothing, press Submit again.')
+      setTestError('You have not recorded any chemicals, but these readings needed some. If you dosed, record it under Chemicals Added. If you added nothing, press Submit again.')
       return
     }
     setSaving(true)
@@ -742,6 +765,13 @@ export default function TechnicianPage() {
                 <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Chemicals Added (manual dosing)</div>
                 <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>Record everything you put in, every time — this is what the site gets invoiced for. Leave empty only if the controller did the dosing.</div>
 
+                {manualList.length > 0 && (
+                  <ManualDoseList doses={manualList} rules={dosingRules(manualSite.pool?.retest_wait_minutes)} footer={
+                    <div style={{ fontSize: '12px', color: '#fdcb6e', marginTop: '8px' }}>
+                      Record what you put in below. After dosing, wait {manualSite.pool?.retest_wait_minutes ?? 15} minutes and log a retest.
+                    </div>
+                  } />
+                )}
                 {prefills.length > 0 && (
                   <div style={{ background: 'var(--surface-2)', border: '1px solid #00b4d840', borderRadius: '8px', padding: '12px', marginBottom: '12px' }}>
                     <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px' }}>
