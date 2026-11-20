@@ -51,6 +51,8 @@ export interface ManualDoseTargets {
   freeChlorineIdeal: number
   freeChlorineMin: number
   freeChlorineMax: number
+  /** Close the pool above this (the legal maximum). */
+  freeChlorineClose?: number | null
   phMin: number
   phMax: number
   alkalinityMin: number
@@ -61,6 +63,8 @@ export interface ManualDoseTargets {
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10
+// Up to the next 5 (mL or g), ignoring floating-point dust: 1.4 × 130 is 182, not 185
+const ceil5 = (n: number) => Math.ceil(n / 5 - 1e-9) * 5
 
 // Sodium hypochlorite 12.5%: mL = deficit (mg/L) × volume (L) ÷ 125
 // Checked: 390 L, raise 1.0 → 3.12 mL. Printed chart says 3.1 mL.
@@ -119,8 +123,11 @@ export function manualDoses(
   }
   const powderNote = 'Dissolve in a bucket of water first, then pour in. Never tip dry powder into the pool.'
 
+  // A chart site with no bicarbonate row doesn't dose alkalinity at all (AUN)
+  const dosesAlkalinity = !hasChart || rows('bicarbonate').length > 0
+
   // ── Alkalinity first: it is the buffer everything else sits on ────────────
-  if (ta != null && ta < targets.alkalinityMin) {
+  if (dosesAlkalinity && ta != null && ta < targets.alkalinityMin) {
     const deficit = targets.alkalinityIdeal - ta
     const rate = chartRate('bicarbonate')
     out.push({
@@ -152,10 +159,19 @@ export function manualDoses(
       const rate = chartRate('hypochlorite')
       out.push({
         chemical: rate?.product ?? 'Sodium hypochlorite 12.5%',
-        amount: rate ? `${Math.round(deficit * rate.per)} ${rate.unit}` : `${round1(hypochloriteMl(deficit, vol))} mL`,
+        // Chart sites round UP to the next 5 mL, so a cylinder can read it and it never lands short
+        amount: rate ? `${ceil5(deficit * rate.per)} ${rate.unit}` : `${round1(hypochloriteMl(deficit, vol))} mL`,
         reason: `Free chlorine ${fc} is below the ${targets.freeChlorineMin} operating floor. Bring it to ${targets.freeChlorineIdeal}.`,
         note: 'Measure into the cylinder labelled CHLORINE. Clear the bath, pour into moving water at the return.',
         severity: 'dose',
+      })
+    } else if (targets.freeChlorineClose != null && fc > targets.freeChlorineClose) {
+      out.push({
+        chemical: 'CLOSE the pool',
+        amount: 'No dose',
+        reason: `Free chlorine ${fc} is above the ${targets.freeChlorineClose} mg/L limit.`,
+        note: 'Get everyone out, stop all chlorine dosing and dilute. Do not reopen until it is back under the limit.',
+        severity: 'stop',
       })
     } else if (fc > targets.freeChlorineMax) {
       // The pack is explicit: most of the time the right answer is to let it fall or drain.
@@ -178,12 +194,19 @@ export function manualDoses(
       const max = config.fixedAcidMaxDoses ?? 2
       const acidRows = rows('acid')
       if (acidRows.length > 0) {
-        // Read off the posted chart, never worked out. The drop wanted is rounded DOWN to a row,
-        // so the dose errs low; anything past the biggest row is the chart's own "call Ace".
+        // Read off the posted chart, never worked out from a formula. Between two rows it goes
+        // in a straight line from one to the next (rounded up to 5); past the biggest row is the
+        // chart's own "call Ace".
         const ideal = targets.phIdeal ?? (targets.phMin + targets.phMax) / 2
         const drop = Math.round((ph - ideal) * 10) / 10
-        const row = [...acidRows].reverse().find(r => r.step <= drop + 1e-9) ?? acidRows[0]
         const biggest = acidRows[acidRows.length - 1]
+        const lower = [...acidRows].reverse().find(r => r.step <= drop + 1e-9)
+        const upper = acidRows.find(r => r.step >= drop - 1e-9)
+        const row = lower ?? acidRows[0]
+        const amount = !lower || !upper || lower === upper
+          ? row.amount
+          : ceil5(lower.amount + (upper.amount - lower.amount) * (drop - lower.step) / (upper.step - lower.step))
+        const powder = row.unit === 'g' || row.unit === 'kg'
         if (drop > biggest.step + 1e-9 || used >= max) {
           out.push({
             chemical: 'STOP — call Ace Aquatics on 0422 470 214',
@@ -197,9 +220,9 @@ export function manualDoses(
         } else {
           out.push({
             chemical: row.product,
-            amount: `${row.amount} ${row.unit}`,
-            reason: `pH ${ph} is above ${targets.phMax}. Chart row: lower pH by ${row.step}.`,
-            note: `${row.plain_terms ? row.plain_terms + '. ' : ''}Acid goes INTO water. Never near chlorine. Wait ${wait} minutes, retest. Dose ${used + 1} of ${max}.`,
+            amount: `${amount} ${row.unit}`,
+            reason: `pH ${ph} is above ${targets.phMax}. Lower it by ${drop} to ${ideal}.`,
+            note: `${amount === row.amount && row.plain_terms ? row.plain_terms + '. ' : ''}${powder ? powderNote + ' Never near chlorine.' : 'Acid goes INTO water. Never near chlorine.'} Wait ${wait} minutes, retest. Dose ${used + 1} of ${max}.`,
             fixed: true,
             maxDoses: max,
             severity: 'dose',
@@ -235,14 +258,14 @@ export function manualDoses(
         })
       }
     } else if (ph < targets.phMin) {
-      const lowAlk = ta != null && ta < targets.alkalinityMin
+      const lowAlk = dosesAlkalinity && ta != null && ta < targets.alkalinityMin
       if (hasChart && rows('soda_ash').length === 0) {
         // This site holds no soda ash. Low pH here means the acid doser is overdoing it.
         out.push({
           chemical: lowAlk ? 'Sodium bicarbonate (see above)' : 'No soda ash at this site',
           amount: lowAlk ? 'Fix alkalinity first' : 'No dose',
           reason: `pH ${ph} is below ${targets.phMin}.`,
-          note: 'Check the Halo Doser is not over-dosing acid, and that alkalinity is in range. Below 7.2 close the pool and call Ace Aquatics on 0422 470 214.',
+          note: `Check the Halo Doser is not over-dosing acid${dosesAlkalinity ? ', and that alkalinity is in range' : ''}. Below 7.2 close the pool and call Ace Aquatics on 0422 470 214.`,
           severity: 'warn',
         })
         return out
@@ -272,7 +295,7 @@ export function manualDoses(
 export function manualDosesForSite(
   values: ManualDoseInput,
   pool: any,
-  targets: { parameter: string; min_value: number | null; max_value: number | null; ideal_value: number | null }[],
+  targets: { parameter: string; min_value: number | null; max_value: number | null; ideal_value: number | null; close_above?: number | null }[],
   acidDosesToday = 0,
   chart: DoseChartRow[] = [],
 ): ManualDose[] {
@@ -282,6 +305,7 @@ export function manualDosesForSite(
     values,
     {
       freeChlorineIdeal: fcT?.ideal_value ?? 3, freeChlorineMin: fcT?.min_value ?? 2, freeChlorineMax: fcT?.max_value ?? 5,
+      freeChlorineClose: fcT?.close_above,
       phMin: phT?.min_value ?? 7.3, phMax: phT?.max_value ?? 7.6,
       alkalinityMin: taT?.min_value ?? 80, alkalinityIdeal: taT?.ideal_value ?? 100,
       phIdeal: phT?.ideal_value ?? undefined,

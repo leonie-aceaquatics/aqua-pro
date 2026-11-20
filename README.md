@@ -54,6 +54,7 @@ add-splash-pad-migration.sql           ← splash_pad pool type, site_tasks.pool
 add-cleaning-jobs-migration.sql        ← Before & After cleaning jobs (cleaning_jobs) + cleaning_before/cleaning_after/recommendation photo types
 setup-aun-bathhouse.sql                ← AUN Bathhouse as its own org: spa + ice bath as manual dosing sites, WQRMP v2.0 targets, five rounds, task list
 add-aun-dose-chart.sql                 ← AUN posted dose chart (TD-3) as pool_dose_chart rows, retest wait per vessel (60 / 25 min), temperature closure limits
+update-aun-dosing.sql                  ← AUN changes from Tony: chlorine target 6 spa / 3 ice (nothing done under 10), sodium bisulphate for pH, no alkalinity or calcium dosing
 ```
 
 After running each migration, run `NOTIFY pgrst, 'reload schema';` in the SQL editor so PostgREST picks up the new tables/columns immediately instead of erroring on the next request.

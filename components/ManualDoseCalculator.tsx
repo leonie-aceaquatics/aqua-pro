@@ -17,6 +17,8 @@ export default function ManualDoseCalculator({
   const [v, setV] = useState({ free_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '', calcium_hardness: '' })
   // Calcium hardness only where the site's chart says how to raise it (a weekly test)
   const hasCalcium = chart.some(r => r.chemical === 'calcium_chloride')
+  // A chart site with no bicarbonate row doesn't dose alkalinity, so don't ask for it
+  const hasAlkalinity = chart.length === 0 || chart.some(r => r.chemical === 'bicarbonate')
   const n = (x: string) => x === '' ? null : Number(x)
 
   const doses: ManualDose[] = useMemo(() => manualDosesForSite(
@@ -50,7 +52,7 @@ export default function ManualDoseCalculator({
         {input('free_chlorine', 'Free chlorine (mg/L)', '3.0')}
         {input('total_chlorine', 'Total chlorine (mg/L)', '3.2')}
         {input('ph', 'pH', '7.45')}
-        {input('total_alkalinity', 'Total alkalinity (mg/L)', '100')}
+        {hasAlkalinity && input('total_alkalinity', 'Total alkalinity (mg/L)', '100')}
         {hasCalcium && input('calcium_hardness', 'Calcium hardness (mg/L) · weekly', '200')}
       </div>
 
