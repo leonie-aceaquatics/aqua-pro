@@ -200,9 +200,10 @@ describe('AUN: the posted chart (ACE-2026-AUN-TRAIN-001, TD-3) wins over the for
     expect(spa.amount).toBe('660 g')          // 0.7 × 375 g / 0.4 = 656, up to 660
   })
 
-  it('after two acid doses today it still stops and calls Ace', () => {
+  it('no call-Ace cap: after two doses today it still gives the amount', () => {
     const [dose] = manualDosesForSite({ ph: 7.8 }, SPA, SPA_T, 2, SPA_CHART)
-    expect(dose.severity).toBe('stop')
+    expect(dose.severity).toBe('dose')
+    expect(dose.amount).toBe('375 g')
   })
 
   it('low pH takes sodium carbonate to 7.4', () => {

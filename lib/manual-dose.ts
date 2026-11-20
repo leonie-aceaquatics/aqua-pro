@@ -215,25 +215,15 @@ export function manualDoses(
         const row = acidRows[0]
         const amount = chartAmount(acidRows, drop)
         const powder = row.unit === 'g' || row.unit === 'kg'
-        if (used >= max) {
-          out.push({
-            chemical: 'STOP — call Ace Aquatics on 0422 470 214',
-            amount: 'No further acid',
-            reason: `pH is still ${ph} after ${used} acid doses. That is the cap.`,
-            note: 'Close the pool if pH is above 7.8. Do not keep dosing.',
-            severity: 'stop',
-          })
-        } else {
-          out.push({
-            chemical: row.product,
-            amount: `${amount} ${row.unit}`,
-            reason: `pH ${ph} is above ${targets.phMax}. Lower it by ${drop} to ${ideal}.`,
-            note: `${powder ? powderNote + ' Never near chlorine.' : 'Acid goes INTO water. Never near chlorine.'} Wait ${wait} minutes, retest. Dose ${used + 1} of ${max}.`,
-            fixed: true,
-            maxDoses: max,
-            severity: 'dose',
-          })
-        }
+        // No daily dose cap on a chart site: the amount is worked out to the target each time,
+        // so the operator is always told what to add (Tony, 21 Nov 2026)
+        out.push({
+          chemical: row.product,
+          amount: `${amount} ${row.unit}`,
+          reason: `pH ${ph} is above ${targets.phMax}. Lower it by ${drop} to ${ideal}.`,
+          note: `${powder ? powderNote + ' Never near chlorine.' : 'Acid goes INTO water. Never near chlorine.'} Wait ${wait} minutes, retest.`,
+          severity: 'dose',
+        })
       } else if (config.fixedAcidDoseG == null) {
         // A site with no fixed step set gets no number at all. Falling back to Senza's 7 g
         // would hand a 16,000 L spa a dose sized for a 390 L bath.
