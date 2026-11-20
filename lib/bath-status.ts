@@ -1,4 +1,5 @@
 import type { SiteTarget } from '@/lib/water-chemistry'
+import { toLocalInput } from './local-time'
 
 // Whether a body of water may be open right now, worked out from today's record.
 //
@@ -56,8 +57,10 @@ export function bathStatus(
   const ordered = [...tests].sort((a, b) => a.tested_at.localeCompare(b.tested_at))
   const latest = ordered[ordered.length - 1]
 
-  // Rounds whose time has gone by with nothing recorded against them.
-  const minutesNow = now.getHours() * 60 + now.getMinutes()
+  // Rounds whose time has gone by with nothing recorded against them. Round times are
+  // Melbourne wall-clock; the server runs on UTC, so read the hour in Melbourne.
+  const [hNow, mNow] = toLocalInput(now).slice(11).split(':').map(Number)
+  const minutesNow = hNow * 60 + mNow
   const overdue = rounds.filter(r => {
     const [h, m] = String(r.scheduled_at).split(':').map(Number)
     if (h * 60 + m > minutesNow) return false
