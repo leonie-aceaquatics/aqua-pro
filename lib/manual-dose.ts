@@ -63,6 +63,20 @@ export interface ManualDoseTargets {
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10
+/**
+ * The amount on a posted chart for a change in the reading: a straight line from nothing through
+ * each row, carried on at the biggest row's rate past the end, rounded up to the next 5.
+ */
+export function chartAmount(chartRows: DoseChartRow[], change: number): number {
+  const rs = [...chartRows].sort((a, b) => a.step - b.step)
+  let prev = { step: 0, amount: 0 }
+  for (const r of rs) {
+    if (change <= r.step + 1e-9) return ceil5(prev.amount + (r.amount - prev.amount) * (change - prev.step) / (r.step - prev.step))
+    prev = r
+  }
+  return ceil5(change * prev.amount / prev.step)
+}
+
 // Up to the next 5 (mL or g), ignoring floating-point dust: 1.4 × 130 is 182, not 185
 const ceil5 = (n: number) => Math.ceil(n / 5 - 1e-9) * 5
 
@@ -187,33 +201,25 @@ export function manualDoses(
     }
   }
 
-  // ── pH: fixed steps, never calculated ─────────────────────────────────────
+  // ── pH: from the posted chart or a fixed step, never a formula ────────────
   if (ph != null) {
     if (ph > targets.phMax) {
       const used = config.acidDosesSoFar ?? 0
       const max = config.fixedAcidMaxDoses ?? 2
       const acidRows = rows('acid')
       if (acidRows.length > 0) {
-        // Read off the posted chart, never worked out from a formula. Between two rows it goes
-        // in a straight line from one to the next (rounded up to 5); past the biggest row is the
-        // chart's own "call Ace".
+        // The exact amount to bring pH to the target, read off the posted chart: straight
+        // line between its rows, and on at the biggest row's rate past the end of it.
         const ideal = targets.phIdeal ?? (targets.phMin + targets.phMax) / 2
-        const drop = Math.round((ph - ideal) * 10) / 10
-        const biggest = acidRows[acidRows.length - 1]
-        const lower = [...acidRows].reverse().find(r => r.step <= drop + 1e-9)
-        const upper = acidRows.find(r => r.step >= drop - 1e-9)
-        const row = lower ?? acidRows[0]
-        const amount = !lower || !upper || lower === upper
-          ? row.amount
-          : ceil5(lower.amount + (upper.amount - lower.amount) * (drop - lower.step) / (upper.step - lower.step))
+        const drop = Math.round((ph - ideal) * 100) / 100
+        const row = acidRows[0]
+        const amount = chartAmount(acidRows, drop)
         const powder = row.unit === 'g' || row.unit === 'kg'
-        if (drop > biggest.step + 1e-9 || used >= max) {
+        if (used >= max) {
           out.push({
             chemical: 'STOP — call Ace Aquatics on 0422 470 214',
             amount: 'No further acid',
-            reason: used >= max
-              ? `pH is still ${ph} after ${used} acid doses. That is the cap.`
-              : `pH ${ph} needs more than the biggest acid dose on the chart.`,
+            reason: `pH is still ${ph} after ${used} acid doses. That is the cap.`,
             note: 'Close the pool if pH is above 7.8. Do not keep dosing.',
             severity: 'stop',
           })
@@ -222,7 +228,7 @@ export function manualDoses(
             chemical: row.product,
             amount: `${amount} ${row.unit}`,
             reason: `pH ${ph} is above ${targets.phMax}. Lower it by ${drop} to ${ideal}.`,
-            note: `${amount === row.amount && row.plain_terms ? row.plain_terms + '. ' : ''}${powder ? powderNote + ' Never near chlorine.' : 'Acid goes INTO water. Never near chlorine.'} Wait ${wait} minutes, retest. Dose ${used + 1} of ${max}.`,
+            note: `${powder ? powderNote + ' Never near chlorine.' : 'Acid goes INTO water. Never near chlorine.'} Wait ${wait} minutes, retest. Dose ${used + 1} of ${max}.`,
             fixed: true,
             maxDoses: max,
             severity: 'dose',
@@ -259,7 +265,20 @@ export function manualDoses(
       }
     } else if (ph < targets.phMin) {
       const lowAlk = dosesAlkalinity && ta != null && ta < targets.alkalinityMin
-      if (hasChart && rows('soda_ash').length === 0) {
+      const sodaRows = rows('soda_ash')
+      if (sodaRows.length > 0 && !lowAlk) {
+        const ideal = targets.phIdeal ?? (targets.phMin + targets.phMax) / 2
+        const rise = Math.round((ideal - ph) * 100) / 100
+        out.push({
+          chemical: sodaRows[0].product,
+          amount: `${chartAmount(sodaRows, rise)} ${sodaRows[0].unit}`,
+          reason: `pH ${ph} is below ${targets.phMin}. Raise it by ${rise} to ${ideal}.`,
+          note: `${powderNote} Wait ${wait} minutes, retest.`,
+          severity: 'dose',
+        })
+        return out
+      }
+      if (hasChart && sodaRows.length === 0) {
         // This site holds no soda ash. Low pH here means the acid doser is overdoing it.
         out.push({
           chemical: lowAlk ? 'Sodium bicarbonate (see above)' : 'No soda ash at this site',

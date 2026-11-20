@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { toStockUnit, smallUnitOf } from './dose-units'
 import { toBillUnit, buildSiteInvoices, invoicesToCsv, type UsageRow } from './chemical-invoicing'
 
 const row = (o: Partial<UsageRow>): UsageRow => ({
@@ -84,5 +85,17 @@ describe('the spreadsheet', () => {
   it('quotes a site name containing a comma', () => {
     const csv = invoicesToCsv(buildSiteInvoices([row({ pool_name: 'Acacia Place, Haven' })]), 'a', 'b')
     expect(csv).toContain('"Acacia Place, Haven"')
+  })
+})
+
+describe('dosing by the gram for a product stocked by the kilo', () => {
+  it('75 g of a kg product is saved as 0.075 kg', () => {
+    expect(toStockUnit(75, 'g', 'kg')).toBe(0.075)
+    expect(toStockUnit(250, 'mL', 'L')).toBe(0.25)
+  })
+  it('the stock unit itself is left alone', () => {
+    expect(toStockUnit(2, 'kg', 'kg')).toBe(2)
+    expect(toStockUnit(2, undefined, 'kg')).toBe(2)
+    expect(smallUnitOf('tablet')).toBeNull()
   })
 })

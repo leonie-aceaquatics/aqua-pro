@@ -13,6 +13,7 @@ import ChangePassword from '@/components/ChangePassword'
 import { POOL_GUIDE } from '@/lib/pool-guide'
 import SiteAccessDocs from '@/components/SiteAccessDocs'
 import QuickChemicalLog from '@/components/QuickChemicalLog'
+import { smallUnitOf, toStockUnit } from '@/lib/dose-units'
 import SiteIssueForm from '@/components/SiteIssueForm'
 import CleaningJobs from '@/components/CleaningJobs'
 import InstantAlerts from '@/components/InstantAlerts'
@@ -48,7 +49,7 @@ export default function TechnicianPage() {
     temperature_c: '', turbidity: '', uv_output_pct: '', uv_run_hours: '', balance_tank_pct: '', notes: '',
     controller_ph: '', controller_fcl: '', calibrate_ph: false, calibrate_fcl: false, fault_report: '',
   })
-  const [doses, setDoses] = useState<{ chemical_id: string; quantity: string }[]>([])
+  const [doses, setDoses] = useState<{ chemical_id: string; quantity: string; unit?: string }[]>([])
   const [doseSkipAsked, setDoseSkipAsked] = useState(false)   // asked once if they dosed but logged nothing
   const [chemicals, setChemicals] = useState<any[]>([])
   const [savedTest, setSavedTest] = useState<any>(null)   // just-saved test, for the photo step
@@ -260,7 +261,11 @@ export default function TechnicianPage() {
     const numFields = ['free_chlorine','combined_chlorine','total_chlorine','ph','total_alkalinity','calcium_hardness',
       'cyanuric_acid','salt_level','phosphates','temperature_c','turbidity','uv_output_pct','uv_run_hours','balance_tank_pct','controller_ph','controller_fcl']
     numFields.forEach(f => { if (payload[f] === '') payload[f] = null })
-    payload.doses = doses.filter(d => d.chemical_id && Number(d.quantity) > 0)
+    // Anything typed in g or mL is saved in the product's stock unit
+    payload.doses = doses.filter(d => d.chemical_id && Number(d.quantity) > 0).map(d => {
+      const c = chemicals.find(x => x.id === d.chemical_id)
+      return { chemical_id: d.chemical_id, quantity: String(toStockUnit(Number(d.quantity), d.unit, c?.dose_unit ?? c?.unit)) }
+    })
 
     try {
       const res = await fetch('/api/admin/water-tests', {
@@ -804,10 +809,19 @@ export default function TechnicianPage() {
                         <option value="">Product…</option>
                         {dosableChemicals.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                       </select>
-                      <input type="number" inputMode="decimal" step="0.1" min="0" placeholder="Qty" value={d.quantity}
+                      <input type="number" inputMode="decimal" step="any" min="0" placeholder="Qty" value={d.quantity}
                         onChange={e => setDoses(ds => ds.map((x, j) => j === i ? { ...x, quantity: e.target.value } : x))}
                         style={{ width: '70px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '10px 8px', fontSize: '14px', textAlign: 'center' }} />
-                      <span style={{ fontSize: '12px', color: '#64748b', width: '26px' }}>{chem?.dose_unit ?? chem?.unit ?? ''}</span>
+                      {(() => {
+                        // Tap kg to switch to g (or L to mL) for a small dose
+                        const stock = chem?.dose_unit ?? chem?.unit ?? ''
+                        const small = smallUnitOf(stock)
+                        const shown = d.unit ?? stock
+                        return small ? (
+                          <button type="button" onClick={() => setDoses(ds => ds.map((x, j) => j === i ? { ...x, unit: shown === stock ? small : stock } : x))}
+                            style={{ fontSize: '12px', fontWeight: '700', color: '#00b4d8', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '6px', padding: '8px 6px', minWidth: '38px', cursor: 'pointer' }}>{shown}</button>
+                        ) : <span style={{ fontSize: '12px', color: '#64748b', width: '26px' }}>{stock}</span>
+                      })()}
                       <button type="button" onClick={() => setDoses(ds => ds.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}><X size={16} /></button>
                     </div>
                   )

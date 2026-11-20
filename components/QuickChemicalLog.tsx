@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { Package, CheckCircle, Minus, Plus, Search } from 'lucide-react'
+import { smallUnitOf, toStockUnit } from '@/lib/dose-units'
 
 // "What did you put in?" in as few taps as the job allows.
 //
@@ -42,6 +43,8 @@ export default function QuickChemicalLog({
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Products the tech has switched to g / mL for this entry
+  const [small, setSmall] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     fetch(`/api/technician/chemical-usage?pool_id=${poolId}`)
@@ -62,13 +65,23 @@ export default function QuickChemicalLog({
 
   /** Tapping a tile records the amount used here last time, or one preset step if it is new. */
   const tapTile = (c: any) => {
-    if (qtyOf(c.id)) { setQty(c.id, ''); return }
+    if (qtyOf(c.id)) { setQty(c.id, ''); setSmall(m => ({ ...m, [c.id]: false })); return }
     const unit = unitOf(c)
     setQty(c.id, String(c.last_quantity ?? presetsFor(unit)[1] ?? 1))
   }
 
+  const shownUnit = (c: any) => small[c.id] ? smallUnitOf(unitOf(c)) ?? unitOf(c) : unitOf(c)
+
+  /** kg ⇄ g (or L ⇄ mL), carrying the amount across so the tile stays on */
+  const switchUnit = (c: any) => {
+    const toSmall = !small[c.id]
+    const q = Number(qtyOf(c.id) || 0)
+    setSmall(m => ({ ...m, [c.id]: toSmall }))
+    if (q > 0) setQty(c.id, String(toSmall ? tidy(q * 1000) : q / 1000))
+  }
+
   const nudge = (c: any, dir: 1 | -1) => {
-    const unit = unitOf(c)
+    const unit = shownUnit(c)
     const next = tidy(Math.max(0, Number(qtyOf(c.id) || 0) + dir * stepFor(unit)))
     setQty(c.id, next > 0 ? String(next) : '')
   }
@@ -79,7 +92,11 @@ export default function QuickChemicalLog({
     try {
       const res = await fetch('/api/technician/chemical-usage', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pool_id: poolId, items, notes }),
+        // Saved in each product's stock unit, whatever it was typed in
+        body: JSON.stringify({ pool_id: poolId, notes, items: items.map(i => {
+          const c = products.find(p => p.id === i.chemical_id)
+          return { ...i, quantity: String(toStockUnit(Number(i.quantity), c ? shownUnit(c) : undefined, c ? unitOf(c) : undefined)) }
+        }) }),
       })
       const d = await res.json().catch(() => ({}))
       if (!res.ok) { setError(d.error ?? 'Could not record this.'); setSaving(false); return }
@@ -107,7 +124,8 @@ export default function QuickChemicalLog({
       ].filter(g => g.list.length > 0)
 
   function renderTile(c: any) {
-    const unit = unitOf(c)
+    const unit = shownUnit(c)
+    const smallUnit = smallUnitOf(unitOf(c))
     const on = !!qtyOf(c.id)
     return (
       <div key={c.id} style={{ background: 'var(--surface)', border: `1px solid ${on ? '#00b894' : 'var(--border)'}`, borderRadius: '10px', padding: '12px', marginBottom: '8px' }}>
@@ -116,7 +134,7 @@ export default function QuickChemicalLog({
           {on ? <CheckCircle size={18} color="#00b894" style={{ flexShrink: 0 }} /> : <Package size={18} color="#64748b" style={{ flexShrink: 0 }} />}
           <span style={{ flex: 1, fontSize: '14px', fontWeight: '600', color: on ? '#00b894' : '#e2e8f0' }}>{c.name}</span>
           {!on && c.last_quantity != null && (
-            <span style={{ fontSize: '12px', color: '#64748b', flexShrink: 0 }}>last: {c.last_quantity} {unit}</span>
+            <span style={{ fontSize: '12px', color: '#64748b', flexShrink: 0 }}>last: {c.last_quantity} {unitOf(c)}</span>
           )}
         </button>
 
@@ -128,7 +146,10 @@ export default function QuickChemicalLog({
               <input type="number" inputMode="decimal" step="any" min="0" value={qtyOf(c.id)}
                 onChange={e => setQty(c.id, e.target.value)}
                 style={{ flex: 1, minWidth: 0, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: '#e2e8f0', padding: '12px', fontSize: '18px', fontWeight: '700', textAlign: 'center', outline: 'none' }} />
-              <span style={{ fontSize: '14px', color: '#94a3b8', width: '34px' }}>{unit}</span>
+              {smallUnit ? (
+                <button type="button" onClick={() => switchUnit(c)} aria-label="switch unit"
+                  style={{ fontSize: '14px', fontWeight: '700', color: '#00b4d8', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', minWidth: '44px', height: '44px', cursor: 'pointer' }}>{unit}</button>
+              ) : <span style={{ fontSize: '14px', color: '#94a3b8', width: '34px' }}>{unit}</span>}
               <button type="button" onClick={() => nudge(c, 1)} aria-label="more"
                 style={{ width: '44px', height: '44px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: '#e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Plus size={18} /></button>
             </div>

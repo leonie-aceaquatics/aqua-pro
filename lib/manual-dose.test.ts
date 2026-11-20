@@ -122,47 +122,46 @@ describe('a site dosed from its own targets', () => {
 })
 
 describe('AUN: the posted chart (ACE-2026-AUN-TRAIN-001, TD-3) wins over the formula', () => {
-  // As changed by Tony on 21 Nov 2026: chlorine 6 (spa) / 3 (ice), nothing done under 10,
-  // sodium bisulphate for pH, no alkalinity or calcium dosing.
+  // As changed by Tony on 21 Nov 2026: spa 11,000 L and ice bath 2,900 L; chlorine 6 / 3 and
+  // nothing done under 10; pH to 7.4 with sodium bisulphate down and sodium carbonate up, in
+  // exact amounts; no alkalinity or calcium dosing.
   const row = (chemical: string, product: string, step: number, amount: number, unit: string) =>
     ({ chemical, product, step, amount, unit })
-  const BIS = 'Sodium bisulphate (dry acid)'
+  const CL = 'Liquid chlorine 12.5%', BIS = 'Sodium bisulphate (dry acid)', SODA = 'Sodium carbonate (soda ash)'
   const SPA_CHART = [
-    row('hypochlorite', 'Liquid chlorine 12.5%', 1.0, 130, 'mL'), row('hypochlorite', 'Liquid chlorine 12.5%', 5.0, 650, 'mL'),
-    row('acid', BIS, 0.1, 140, 'g'), row('acid', BIS, 0.2, 275, 'g'), row('acid', BIS, 0.4, 545, 'g'),
-    row('salt', 'Pool salt', 1000, 16, 'kg'),
+    row('hypochlorite', CL, 1.0, 88, 'mL'), row('hypochlorite', CL, 5.0, 440, 'mL'),
+    row('acid', BIS, 0.1, 95, 'g'), row('acid', BIS, 0.2, 190, 'g'), row('acid', BIS, 0.4, 375, 'g'),
+    row('soda_ash', SODA, 0.1, 85, 'g'), row('soda_ash', SODA, 0.2, 165, 'g'), row('soda_ash', SODA, 0.4, 330, 'g'),
+    row('salt', 'Pool salt', 1000, 11, 'kg'),
   ]
   const ICE_CHART = [
-    row('hypochlorite', 'Liquid chlorine 12.5%', 5.0, 125, 'mL'),
-    row('acid', BIS, 0.1, 30, 'g'), row('acid', BIS, 0.2, 55, 'g'), row('acid', BIS, 0.4, 105, 'g'),
+    row('hypochlorite', CL, 5.0, 116, 'mL'),
+    row('acid', BIS, 0.1, 25, 'g'), row('acid', BIS, 0.2, 50, 'g'), row('acid', BIS, 0.4, 100, 'g'),
+    row('soda_ash', SODA, 0.1, 22, 'g'), row('soda_ash', SODA, 0.2, 44, 'g'), row('soda_ash', SODA, 0.4, 88, 'g'),
   ]
-  const SPA = { volume_litres: 16000, retest_wait_minutes: 60 }
-  const ICE = { volume_litres: 3000, retest_wait_minutes: 25 }
+  const SPA = { volume_litres: 11000, retest_wait_minutes: 60 }
+  const ICE = { volume_litres: 2900, retest_wait_minutes: 25 }
+  const PH = { parameter: 'ph', min_value: 7.3, max_value: 7.5, ideal_value: 7.4 }
   const SPA_T = [
     { parameter: 'freeChlorine', min_value: 5.0, max_value: 10, ideal_value: 6.0, close_above: 10 },
-    { parameter: 'ph', min_value: 7.4, max_value: 7.6, ideal_value: 7.5 },
+    PH,
     { parameter: 'totalAlkalinity', min_value: 100, max_value: 120, ideal_value: 110 },
     { parameter: 'calciumHardness', min_value: 150, max_value: 200, ideal_value: 175 },
   ]
   const ICE_T = [
     { parameter: 'freeChlorine', min_value: 2.5, max_value: 10, ideal_value: 3.0, close_above: 10 },
-    { parameter: 'ph', min_value: 7.4, max_value: 7.6, ideal_value: 7.5 },
+    PH,
     { parameter: 'totalAlkalinity', min_value: 120, max_value: 150, ideal_value: 135 },
   ]
 
-  it('spa chlorine 3.0 → 6.0 is 3 × the chart’s half cup', () => {
+  it('spa chlorine 3.0 → 6.0 is 3 × 88 mL, up to the next 5', () => {
     const [dose] = manualDosesForSite({ freeChlorine: 3.0 }, SPA, SPA_T, 0, SPA_CHART)
-    expect(dose.amount).toBe('390 mL')
+    expect(dose.amount).toBe('265 mL')
   })
 
-  it('ice bath chlorine 1.0 → 3.0 is 50 mL', () => {
+  it('ice bath chlorine 1.0 → 3.0 is 2 × 23.2 mL, up to 50', () => {
     const [dose] = manualDosesForSite({ freeChlorine: 1.0 }, ICE, ICE_T, 0, ICE_CHART)
     expect(dose.amount).toBe('50 mL')
-  })
-
-  it('chlorine rounds up to the next 5 mL', () => {
-    const [dose] = manualDosesForSite({ freeChlorine: 2.3 }, ICE, ICE_T, 0, ICE_CHART)
-    expect(dose.amount).toBe('20 mL')   // 0.7 × 25 = 17.5
   })
 
   it('high chlorine is left alone up to 10', () => {
@@ -175,37 +174,56 @@ describe('AUN: the posted chart (ACE-2026-AUN-TRAIN-001, TD-3) wins over the for
     expect(dose.chemical).toBe('CLOSE the pool')
   })
 
-  it('spa pH 7.7 reads the 0.2 row: 275 g of bisulphate, waits 60 minutes', () => {
-    const [dose] = manualDosesForSite({ ph: 7.7 }, SPA, SPA_T, 0, SPA_CHART)
+  it('pH in 7.3 to 7.5 needs nothing', () => {
+    expect(manualDosesForSite({ ph: 7.45 }, SPA, SPA_T, 0, SPA_CHART)).toEqual([])
+  })
+
+  it('spa pH 7.8 to 7.4 is the 0.4 row: 375 g of bisulphate, waits 60 minutes', () => {
+    const [dose] = manualDosesForSite({ ph: 7.8 }, SPA, SPA_T, 0, SPA_CHART)
     expect(dose.chemical).toBe(BIS)
-    expect(dose.amount).toBe('275 g')
+    expect(dose.amount).toBe('375 g')
+    expect(dose.reason).toContain('7.4')
     expect(dose.note).toContain('60 minutes')
     expect(dose.note).toContain('bucket')
   })
 
-  it('spa pH 7.8 goes between the 0.2 and 0.4 rows: 410 g', () => {
-    const [dose] = manualDosesForSite({ ph: 7.8 }, SPA, SPA_T, 0, SPA_CHART)
-    expect(dose.amount).toBe('410 g')   // 275 + 270 / 2 = 410, up to the next 5
+  it('spa pH 7.65 is between rows: 190 + a quarter of the way to 375 → 240 g', () => {
+    const [dose] = manualDosesForSite({ ph: 7.65 }, SPA, SPA_T, 0, SPA_CHART)
+    expect(dose.amount).toBe('240 g')
   })
 
-  it('ice bath pH 7.9 reads the 0.4 row: 105 g', () => {
-    const [dose] = manualDosesForSite({ ph: 7.9 }, ICE, ICE_T, 0, ICE_CHART)
-    expect(dose.amount).toBe('105 g')
+  it('past the end of the chart it keeps going at the same rate, no stop', () => {
+    const [ice] = manualDosesForSite({ ph: 7.9 }, ICE, ICE_T, 0, ICE_CHART)
+    expect(ice.amount).toBe('125 g')          // 0.5 × 100 g / 0.4
+    const [spa] = manualDosesForSite({ ph: 8.1 }, SPA, SPA_T, 0, SPA_CHART)
+    expect(spa.severity).toBe('dose')
+    expect(spa.amount).toBe('660 g')          // 0.7 × 375 g / 0.4 = 656, up to 660
   })
 
-  it('more than the biggest row on the chart means stop and call Ace', () => {
-    const [dose] = manualDosesForSite({ ph: 8.1 }, SPA, SPA_T, 0, SPA_CHART)
+  it('after two acid doses today it still stops and calls Ace', () => {
+    const [dose] = manualDosesForSite({ ph: 7.8 }, SPA, SPA_T, 2, SPA_CHART)
     expect(dose.severity).toBe('stop')
+  })
+
+  it('low pH takes sodium carbonate to 7.4', () => {
+    const [dose] = manualDosesForSite({ ph: 7.1 }, SPA, SPA_T, 0, SPA_CHART)
+    expect(dose.chemical).toBe(SODA)
+    expect(dose.amount).toBe('250 g')         // raise 0.3: 165 + half of 165, up to 250
+  })
+
+  it('ice bath pH 7.2 → 7.4 is the 0.2 row of sodium carbonate', () => {
+    const [dose] = manualDosesForSite({ ph: 7.2 }, ICE, ICE_T, 0, ICE_CHART)
+    expect(dose.amount).toBe('45 g')          // 44, up to the next 5
   })
 
   it('no alkalinity or calcium dosing at AUN', () => {
     expect(manualDosesForSite({ totalAlkalinity: 60, calciumHardness: 100 }, SPA, SPA_T, 0, SPA_CHART)).toEqual([])
   })
 
-  it('low pH: no soda ash at AUN, so it points at the acid doser instead', () => {
-    const [dose] = manualDosesForSite({ ph: 7.3, totalAlkalinity: 60 }, SPA, SPA_T, 0, SPA_CHART)
+  it('a chart site with no soda ash points at the acid doser instead', () => {
+    const noSoda = SPA_CHART.filter(r => r.chemical !== 'soda_ash')
+    const [dose] = manualDosesForSite({ ph: 7.2, totalAlkalinity: 60 }, SPA, SPA_T, 0, noSoda)
     expect(dose.amount).toBe('No dose')
     expect(dose.note).toContain('Halo Doser')
-    expect(dose.note).not.toContain('alkalinity')
   })
 })
