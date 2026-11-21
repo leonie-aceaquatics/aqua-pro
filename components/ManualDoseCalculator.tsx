@@ -1,6 +1,6 @@
 'use client'
 import { useState, useMemo } from 'react'
-import { manualDosesForSite, dosingRules, type ManualDose, type DoseChartRow } from '@/lib/manual-dose'
+import { manualDosesForSite, dosingRules, phProductStrength, type ManualDose, type DoseChartRow } from '@/lib/manual-dose'
 import type { SiteTarget } from '@/lib/water-chemistry'
 import ManualDoseList from './ManualDoseList'
 
@@ -17,8 +17,6 @@ export default function ManualDoseCalculator({
   const [v, setV] = useState({ free_chlorine: '', total_chlorine: '', ph: '', total_alkalinity: '', calcium_hardness: '' })
   // Calcium hardness only where the site's chart says how to raise it (a weekly test)
   const hasCalcium = chart.some(r => r.chemical === 'calcium_chloride')
-  // A chart site with no bicarbonate row doesn't dose alkalinity, so don't ask for it
-  const hasAlkalinity = chart.length === 0 || chart.some(r => r.chemical === 'bicarbonate')
   const n = (x: string) => x === '' ? null : Number(x)
 
   const doses: ManualDose[] = useMemo(() => manualDosesForSite(
@@ -52,7 +50,7 @@ export default function ManualDoseCalculator({
         {input('free_chlorine', 'Free chlorine (mg/L)', '3.0')}
         {input('total_chlorine', 'Total chlorine (mg/L)', '3.2')}
         {input('ph', 'pH', '7.45')}
-        {hasAlkalinity && input('total_alkalinity', 'Total alkalinity (mg/L)', '100')}
+        {input('total_alkalinity', 'Total alkalinity (mg/L) · needed for a pH dose', '100')}
         {hasCalcium && input('calcium_hardness', 'Calcium hardness (mg/L) · weekly', '200')}
       </div>
 
@@ -84,10 +82,20 @@ const CHART_HEADINGS: Record<string, string> = {
 
 // The posted chart itself, so the phone matches the wall
 function PostedChart({ chart }: { chart: DoseChartRow[] }) {
-  const groups = Object.keys(CHART_HEADINGS).filter(c => chart.some(r => r.chemical === c))
+  // pH products the app works out from alkalinity aren't listed as flat amounts — a flat amount
+  // is what took AUN's ice bath from 7.9 to 6.3
+  const fromAlkalinity = (c: string) => (c === 'acid' || c === 'soda_ash')
+    && chart.some(r => r.chemical === c && phProductStrength(r.product))
+  const groups = Object.keys(CHART_HEADINGS).filter(c => chart.some(r => r.chemical === c) && !fromAlkalinity(c))
+  const phWorkedOut = ['acid', 'soda_ash'].filter(fromAlkalinity)
   return (
     <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '16px', marginTop: '12px' }}>
       <div style={{ fontSize: '11px', fontWeight: '700', color: '#00b4d8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>Posted dose chart</div>
+      {phWorkedOut.length > 0 && (
+        <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '10px' }}>
+          pH ({phWorkedOut.map(c => chart.find(r => r.chemical === c)!.product).join(', ')}): no fixed amounts. The dose is worked out from your pH and alkalinity readings above.
+        </div>
+      )}
       {groups.map(g => (
         <div key={g} style={{ marginBottom: '10px' }}>
           <div style={{ fontSize: '12px', fontWeight: '700', color: '#e2e8f0', marginBottom: '4px' }}>{CHART_HEADINGS[g]}</div>

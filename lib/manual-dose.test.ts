@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { hypochloriteMl, bicarbonateG, thiosulphateG, manualDoses, manualDosesForSite } from './manual-dose'
+import { hypochloriteMl, bicarbonateG, thiosulphateG, manualDoses, manualDosesForSite, acidMmolPerL, phProductStrength } from './manual-dose'
 
 // Every number here is checked against the printed dose chart in ACE-2026-SEN-TP-001,
 // "Chlorine dose chart — one bath, 390 litres". If a formula drifts, these fail.
@@ -121,25 +121,24 @@ describe('a site dosed from its own targets', () => {
   })
 })
 
-describe('AUN: the posted chart (ACE-2026-AUN-TRAIN-001, TD-3) wins over the formula', () => {
-  // As changed by Tony on 21 Nov 2026: spa 11,000 L and ice bath 2,900 L; chlorine 6 / 3 and
-  // nothing done under 10; pH to 7.4 with sodium bisulphate down and sodium carbonate up, in
-  // exact amounts; no alkalinity or calcium dosing.
+describe('AUN: the posted chart (ACE-2026-AUN-TRAIN-001, TD-3), as Tony changed it', () => {
+  // 21 Nov 2026: spa 10,000 L and ice bath 2,900 L; chlorine 6 / 3 and nothing done under 10;
+  // pH to 7.4, worked out from the alkalinity reading; no alkalinity or calcium dosing.
   const row = (chemical: string, product: string, step: number, amount: number, unit: string) =>
     ({ chemical, product, step, amount, unit })
   const CL = 'Liquid chlorine 12.5%', BIS = 'Sodium bisulphate (dry acid)', SODA = 'Sodium carbonate (soda ash)'
   const SPA_CHART = [
-    row('hypochlorite', CL, 1.0, 88, 'mL'), row('hypochlorite', CL, 5.0, 440, 'mL'),
-    row('acid', BIS, 0.1, 95, 'g'), row('acid', BIS, 0.2, 190, 'g'), row('acid', BIS, 0.4, 375, 'g'),
-    row('soda_ash', SODA, 0.1, 85, 'g'), row('soda_ash', SODA, 0.2, 165, 'g'), row('soda_ash', SODA, 0.4, 330, 'g'),
-    row('salt', 'Pool salt', 1000, 11, 'kg'),
+    row('hypochlorite', CL, 1.0, 80, 'mL'), row('hypochlorite', CL, 5.0, 400, 'mL'),
+    row('acid', BIS, 0.1, 85, 'g'), row('acid', BIS, 0.2, 170, 'g'), row('acid', BIS, 0.4, 340, 'g'),
+    row('soda_ash', SODA, 0.1, 75, 'g'), row('soda_ash', SODA, 0.2, 150, 'g'), row('soda_ash', SODA, 0.4, 300, 'g'),
+    row('salt', 'Pool salt', 1000, 10, 'kg'),
   ]
   const ICE_CHART = [
     row('hypochlorite', CL, 5.0, 116, 'mL'),
     row('acid', BIS, 0.1, 25, 'g'), row('acid', BIS, 0.2, 50, 'g'), row('acid', BIS, 0.4, 100, 'g'),
     row('soda_ash', SODA, 0.1, 22, 'g'), row('soda_ash', SODA, 0.2, 44, 'g'), row('soda_ash', SODA, 0.4, 88, 'g'),
   ]
-  const SPA = { volume_litres: 11000, retest_wait_minutes: 60 }
+  const SPA = { volume_litres: 10000, retest_wait_minutes: 60 }
   const ICE = { volume_litres: 2900, retest_wait_minutes: 25 }
   const PH = { parameter: 'ph', min_value: 7.3, max_value: 7.5, ideal_value: 7.4 }
   const SPA_T = [
@@ -154,9 +153,9 @@ describe('AUN: the posted chart (ACE-2026-AUN-TRAIN-001, TD-3) wins over the for
     { parameter: 'totalAlkalinity', min_value: 120, max_value: 150, ideal_value: 135 },
   ]
 
-  it('spa chlorine 3.0 → 6.0 is 3 × 88 mL, up to the next 5', () => {
+  it('spa chlorine 3.0 → 6.0 is 3 × 80 mL', () => {
     const [dose] = manualDosesForSite({ freeChlorine: 3.0 }, SPA, SPA_T, 0, SPA_CHART)
-    expect(dose.amount).toBe('265 mL')
+    expect(dose.amount).toBe('240 mL')
   })
 
   it('ice bath chlorine 1.0 → 3.0 is 2 × 23.2 mL, up to 50', () => {
@@ -175,46 +174,62 @@ describe('AUN: the posted chart (ACE-2026-AUN-TRAIN-001, TD-3) wins over the for
   })
 
   it('pH in 7.3 to 7.5 needs nothing', () => {
-    expect(manualDosesForSite({ ph: 7.45 }, SPA, SPA_T, 0, SPA_CHART)).toEqual([])
+    expect(manualDosesForSite({ ph: 7.45, totalAlkalinity: 60 }, SPA, SPA_T, 0, SPA_CHART)).toEqual([])
   })
 
-  it('spa pH 7.8 to 7.4 is the 0.4 row: 375 g of bisulphate, waits 60 minutes', () => {
-    const [dose] = manualDosesForSite({ ph: 7.8 }, SPA, SPA_T, 0, SPA_CHART)
+  it('the overshoot Tony saw: ice bath 7.9 at TA 35 takes 13 g, not the 125 g the flat chart gave', () => {
+    // The same model says 125 g would land at 6.3, which is what happened.
+    expect(acidMmolPerL(35, 7.9, 6.32) * 2900 / (1000 * 0.93 / 120.06)).toBeCloseTo(125, -1)
+    const [dose] = manualDosesForSite({ ph: 7.9, totalAlkalinity: 35 }, ICE, ICE_T, 0, ICE_CHART)
     expect(dose.chemical).toBe(BIS)
-    expect(dose.amount).toBe('375 g')
+    expect(dose.amount).toBe('13 g')
+    expect(dose.note).toContain('low')
+    expect(dose.note).toContain('25 minutes')
+  })
+
+  it('spa 7.8 → 7.4 at TA 100 is 110 g, and waits 60 minutes', () => {
+    const [dose] = manualDosesForSite({ ph: 7.8, totalAlkalinity: 100 }, SPA, SPA_T, 0, SPA_CHART)
+    expect(dose.amount).toBe('110 g')
     expect(dose.reason).toContain('7.4')
     expect(dose.note).toContain('60 minutes')
     expect(dose.note).toContain('bucket')
   })
 
-  it('spa pH 7.65 is between rows: 190 + a quarter of the way to 375 → 240 g', () => {
-    const [dose] = manualDosesForSite({ ph: 7.65 }, SPA, SPA_T, 0, SPA_CHART)
-    expect(dose.amount).toBe('240 g')
+  it('rounds DOWN, so it never lands past 7.4: 49.9 g is 49 g', () => {
+    const [dose] = manualDosesForSite({ ph: 7.65, totalAlkalinity: 60 }, SPA, SPA_T, 0, SPA_CHART)
+    expect(dose.amount).toBe('49 g')
   })
 
-  it('past the end of the chart it keeps going at the same rate, no stop', () => {
-    const [ice] = manualDosesForSite({ ph: 7.9 }, ICE, ICE_T, 0, ICE_CHART)
-    expect(ice.amount).toBe('125 g')          // 0.5 × 100 g / 0.4
-    const [spa] = manualDosesForSite({ ph: 8.1 }, SPA, SPA_T, 0, SPA_CHART)
-    expect(spa.severity).toBe('dose')
-    expect(spa.amount).toBe('660 g')          // 0.7 × 375 g / 0.4 = 656, up to 660
+  it('no amount without an alkalinity reading', () => {
+    const [dose] = manualDosesForSite({ ph: 7.9 }, ICE, ICE_T, 0, ICE_CHART)
+    expect(dose.amount).toBe('Test alkalinity first')
+    expect(dose.severity).toBe('warn')
+  })
+
+  it('more than 0.5 out: half the dose, then retest', () => {
+    const [dose] = manualDosesForSite({ ph: 8.1, totalAlkalinity: 100 }, SPA, SPA_T, 0, SPA_CHART)
+    expect(dose.amount).toBe('75 g')
+    expect(dose.note).toContain('HALF of the 150 g')
   })
 
   it('no call-Ace cap: after two doses today it still gives the amount', () => {
-    const [dose] = manualDosesForSite({ ph: 7.8 }, SPA, SPA_T, 2, SPA_CHART)
+    const [dose] = manualDosesForSite({ ph: 7.8, totalAlkalinity: 100 }, SPA, SPA_T, 2, SPA_CHART)
     expect(dose.severity).toBe('dose')
-    expect(dose.amount).toBe('375 g')
+    expect(dose.amount).toBe('110 g')
   })
 
-  it('low pH takes sodium carbonate to 7.4', () => {
-    const [dose] = manualDosesForSite({ ph: 7.1 }, SPA, SPA_T, 0, SPA_CHART)
-    expect(dose.chemical).toBe(SODA)
-    expect(dose.amount).toBe('250 g')         // raise 0.3: 165 + half of 165, up to 250
+  it('low pH takes sodium carbonate, worked out the same way', () => {
+    const [spa] = manualDosesForSite({ ph: 7.1, totalAlkalinity: 100 }, SPA, SPA_T, 0, SPA_CHART)
+    expect(spa.chemical).toBe(SODA)
+    expect(spa.amount).toBe('140 g')
+    const [ice] = manualDosesForSite({ ph: 7.2, totalAlkalinity: 60 }, ICE, ICE_T, 0, ICE_CHART)
+    expect(ice.amount).toBe('14 g')
   })
 
-  it('ice bath pH 7.2 → 7.4 is the 0.2 row of sodium carbonate', () => {
-    const [dose] = manualDosesForSite({ ph: 7.2 }, ICE, ICE_T, 0, ICE_CHART)
-    expect(dose.amount).toBe('45 g')          // 44, up to the next 5
+  it('after an overshoot to 6.3 it adds half the carbonate and retests', () => {
+    const [dose] = manualDosesForSite({ ph: 6.3, totalAlkalinity: 20 }, ICE, ICE_T, 0, ICE_CHART)
+    expect(dose.amount).toBe('47 g')
+    expect(dose.note).toContain('HALF of the 95 g')
   })
 
   it('no alkalinity or calcium dosing at AUN', () => {
@@ -226,5 +241,16 @@ describe('AUN: the posted chart (ACE-2026-AUN-TRAIN-001, TD-3) wins over the for
     const [dose] = manualDosesForSite({ ph: 7.2, totalAlkalinity: 60 }, SPA, SPA_T, 0, noSoda)
     expect(dose.amount).toBe('No dose')
     expect(dose.note).toContain('Halo Doser')
+  })
+})
+
+describe('pH dose model', () => {
+  it('knows the products by name', () => {
+    expect(phProductStrength('Sodium bisulphate (dry acid)')?.unit).toBe('g')
+    expect(phProductStrength('Hydrochloric acid 33%')?.mmolPerUnit).toBeCloseTo(10.5, 1)
+    expect(phProductStrength('Pool salt')).toBeNull()
+  })
+  it('half the alkalinity takes half the acid', () => {
+    expect(acidMmolPerL(50, 7.8, 7.4)).toBeCloseTo(acidMmolPerL(100, 7.8, 7.4) / 2, 6)
   })
 })

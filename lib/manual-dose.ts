@@ -102,6 +102,54 @@ export const bicarbonateG = (deficitMgL: number, volumeLitres: number) =>
 export const thiosulphateG = (excessMgL: number, volumeLitres: number) =>
   (excessMgL * volumeLitres) / 1170
 
+// ── pH dose from the alkalinity (carbonate buffer) ────────────────────────────
+// How far a dose moves pH depends on the alkalinity: at TA 35 the same scoop moves it about three
+// times as far as at TA 100. AUN learned this the hard way (7.9 → 6.3 on a flat chart, 21 Nov
+// 2026). So where a site's product is known, the pH dose is worked out from the TA reading.
+//
+// Alkalinity is taken as bicarbonate; r = CO2 / HCO3 = 10^(pKa − pH). Lowering pH from r1 to r2
+// takes TA × (r2 − r1) / (1 + r2) mmol/L of acid; raising it takes TA × (r1 − r2) / (1 + 2·r2)
+// mmol/L of sodium carbonate (each one turns a CO2 into two HCO3). pKa 6.3 is the apparent value
+// in salty pool water; the low side of the textbook range, so doses err slightly low.
+export const CARBONIC_PKA = 6.3
+
+const ratio = (ph: number) => Math.pow(10, CARBONIC_PKA - ph)
+
+/** mmol/L of acid (H+) to take pH from `from` down to `to` at this alkalinity (mg/L as CaCO3). */
+export const acidMmolPerL = (taMgL: number, from: number, to: number) =>
+  (taMgL / 50) * (ratio(to) - ratio(from)) / (1 + ratio(to))
+
+/** mmol/L of sodium carbonate to take pH from `from` up to `to` at this alkalinity. */
+export const sodaAshMmolPerL = (taMgL: number, from: number, to: number) =>
+  (taMgL / 50) * (ratio(from) - ratio(to)) / (1 + 2 * ratio(to))
+
+/** mmol of active ingredient in one gram or mL of a pH product, recognised by name. */
+export function phProductStrength(product: string): { mmolPerUnit: number; unit: string } | null {
+  if (/bisulphate|bisulfate|dry acid/i.test(product)) return { mmolPerUnit: 1000 * 0.93 / 120.06, unit: 'g' }   // 93% NaHSO4
+  if (/carbonate|soda ash/i.test(product)) return { mmolPerUnit: 1000 / 105.99, unit: 'g' }                    // Na2CO3
+  if (/hydrochloric|muriatic/i.test(product)) {
+    const pct = Number(product.match(/(\d+(?:\.\d+)?)\s*%/)?.[1] ?? 33)
+    return { mmolPerUnit: 1.16 * 10 * pct / 36.46, unit: 'mL' }                                             // ~1.16 g/mL
+  }
+  return null
+}
+
+/** Rounded DOWN so a pH dose never lands past the target: whole grams under 50, else to 5. */
+const floorDose = (n: number): number => n < 50 ? Math.max(1, Math.floor(n + 1e-9)) : Math.floor(n / 5 + 1e-9) * 5
+
+/**
+ * A pH dose worked out from alkalinity. Past 0.5 of a pH unit the model is least sure (CO2 gassing
+ * off, other buffers), so only half goes in, then a retest — the next reading sets the rest.
+ */
+function phDose(mmolPerL: number, change: number, vol: number, strength: { mmolPerUnit: number; unit: string }) {
+  const full = floorDose(mmolPerL * vol / strength.mmolPerUnit)
+  const half = change > 0.5 + 1e-9
+  return {
+    amount: `${half ? floorDose(full / 2) : full} ${strength.unit}`,
+    halfNote: half ? `That is HALF of the ${full} ${strength.unit} it would take. pH this far out: add half, wait, retest, then dose again from the new reading. ` : '',
+  }
+}
+
 export interface ManualDoseInput {
   freeChlorine?: number | null
   totalChlorine?: number | null
@@ -213,17 +261,37 @@ export function manualDoses(
         const ideal = targets.phIdeal ?? (targets.phMin + targets.phMax) / 2
         const drop = Math.round((ph - ideal) * 100) / 100
         const row = acidRows[0]
-        const amount = chartAmount(acidRows, drop)
         const powder = row.unit === 'g' || row.unit === 'kg'
+        const strength = phProductStrength(row.product)
+        const handling = `${powder ? powderNote + ' Never near chlorine.' : 'Acid goes INTO water. Never near chlorine.'} Wait ${wait} minutes, retest.`
         // No daily dose cap on a chart site: the amount is worked out to the target each time,
         // so the operator is always told what to add (Tony, 21 Nov 2026)
-        out.push({
-          chemical: row.product,
-          amount: `${amount} ${row.unit}`,
-          reason: `pH ${ph} is above ${targets.phMax}. Lower it by ${drop} to ${ideal}.`,
-          note: `${powder ? powderNote + ' Never near chlorine.' : 'Acid goes INTO water. Never near chlorine.'} Wait ${wait} minutes, retest.`,
-          severity: 'dose',
-        })
+        if (strength && ta == null) {
+          out.push({
+            chemical: row.product,
+            amount: 'Test alkalinity first',
+            reason: `pH ${ph} is above ${targets.phMax}. How much it takes depends on the alkalinity.`,
+            note: 'Enter the total alkalinity reading and the amount appears. Never guess a pH dose.',
+            severity: 'warn',
+          })
+        } else if (strength) {
+          const d = phDose(acidMmolPerL(ta!, ph, ideal), drop, vol, strength)
+          out.push({
+            chemical: row.product,
+            amount: d.amount,
+            reason: `pH ${ph} is above ${targets.phMax}. Lower it to ${ideal} at alkalinity ${ta}.`,
+            note: `${d.halfNote}${ta! < 80 ? `Alkalinity ${ta} is low, so pH moves a long way for a small dose. ` : ''}${handling}`,
+            severity: 'dose',
+          })
+        } else {
+          out.push({
+            chemical: row.product,
+            amount: `${chartAmount(acidRows, drop)} ${row.unit}`,
+            reason: `pH ${ph} is above ${targets.phMax}. Lower it by ${drop} to ${ideal}.`,
+            note: handling,
+            severity: 'dose',
+          })
+        }
       } else if (config.fixedAcidDoseG == null) {
         // A site with no fixed step set gets no number at all. Falling back to Senza's 7 g
         // would hand a 16,000 L spa a dose sized for a 390 L bath.
@@ -259,11 +327,21 @@ export function manualDoses(
       if (sodaRows.length > 0 && !lowAlk) {
         const ideal = targets.phIdeal ?? (targets.phMin + targets.phMax) / 2
         const rise = Math.round((ideal - ph) * 100) / 100
-        out.push({
+        const strength = phProductStrength(sodaRows[0].product)
+        const d = strength && ta != null ? phDose(sodaAshMmolPerL(ta, ph, ideal), rise, vol, strength) : null
+        out.push(strength && ta == null ? {
           chemical: sodaRows[0].product,
-          amount: `${chartAmount(sodaRows, rise)} ${sodaRows[0].unit}`,
-          reason: `pH ${ph} is below ${targets.phMin}. Raise it by ${rise} to ${ideal}.`,
-          note: `${powderNote} Wait ${wait} minutes, retest.`,
+          amount: 'Test alkalinity first',
+          reason: `pH ${ph} is below ${targets.phMin}. How much it takes depends on the alkalinity.`,
+          note: 'Enter the total alkalinity reading and the amount appears. Never guess a pH dose.',
+          severity: 'warn',
+        } : {
+          chemical: sodaRows[0].product,
+          amount: d ? d.amount : `${chartAmount(sodaRows, rise)} ${sodaRows[0].unit}`,
+          reason: strength
+            ? `pH ${ph} is below ${targets.phMin}. Raise it to ${ideal} at alkalinity ${ta}.`
+            : `pH ${ph} is below ${targets.phMin}. Raise it by ${rise} to ${ideal}.`,
+          note: `${d?.halfNote ?? ''}${powderNote} Wait ${wait} minutes, retest — pH also drifts up on its own after an acid overshoot.`,
           severity: 'dose',
         })
         return out
